@@ -2,19 +2,45 @@
 
 ### Local app loop
 
-1. Start the local stack:
+In development, Postgres runs in Docker and the app runs locally with Node.
+
+1. Create a local env file:
 
 ```bash
-docker compose --env-file .env.dev -f docker-compose.dev.yml up -d --build
+cp .env.dev.example .env.dev
 ```
 
-2. Open:
+2. Start Postgres:
+
+```bash
+docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
+```
+
+3. Install dependencies and prepare the database:
+
+```bash
+set -a; source .env.dev; set +a
+npm ci
+npm run prisma:generate
+npm run prisma:migrate:dev
+npm run prisma:seed
+```
+
+4. Start the app locally:
+
+```bash
+npm run dev
+```
+
+If you open a new terminal, run `set -a; source .env.dev; set +a` again before running local app, Prisma, test, lint, or build commands.
+
+5. Open:
 
 ```text
 http://localhost:3000
 ```
 
-3. Log in with the seeded demo account:
+6. Log in with the seeded demo account:
 
 ```text
 account@taskewr.com / taskewr
@@ -22,12 +48,13 @@ account@taskewr.com / taskewr
 
 ### Verification commands
 
-Run the current baseline checks from inside Docker:
+Run the current baseline checks locally:
 
 ```bash
-docker compose --env-file .env.dev -f docker-compose.dev.yml exec app npm run lint
-docker compose --env-file .env.dev -f docker-compose.dev.yml exec app npm test
-docker compose --env-file .env.dev -f docker-compose.dev.yml exec -e NODE_ENV=production app npm run build:prod
+set -a; source .env.dev; set +a
+npm run lint
+npm test
+npm run build:prod
 ```
 
 ### Deployment flow

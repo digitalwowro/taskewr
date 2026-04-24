@@ -5,9 +5,10 @@
 Run these checks before treating a change as release-ready:
 
 ```bash
-docker compose --env-file .env.dev -f docker-compose.dev.yml exec app npm run lint
-docker compose --env-file .env.dev -f docker-compose.dev.yml exec app npm test
-docker compose --env-file .env.dev -f docker-compose.dev.yml exec -e NODE_ENV=production app npm run build:prod
+set -a; source .env.dev; set +a
+npm run lint
+npm test
+npm run build:prod
 node scripts/smoke-authenticated.mjs
 ```
 

@@ -2,12 +2,10 @@ import { randomBytes, scryptSync } from "node:crypto";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-
-const connectionString =
-  process.env.DATABASE_URL ?? "postgresql://taskewr:choose-a-strong-password@localhost:5432/taskewr?schema=public";
+import { getDatabaseUrl } from "../src/lib/env";
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString }),
+  adapter: new PrismaPg({ connectionString: getDatabaseUrl() }),
 });
 
 function hashPassword(password: string) {

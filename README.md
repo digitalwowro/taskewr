@@ -41,6 +41,13 @@ POSTGRES_USER="taskewr"
 POSTGRES_PASSWORD="choose-a-strong-password"
 
 DATABASE_URL="postgresql://taskewr:choose-a-strong-password@db:5432/taskewr?schema=public"
+SESSION_SECRET="replace-with-a-long-random-secret"
+```
+
+Generate a strong session secret with:
+
+```bash
+openssl rand -base64 48
 ```
 
 Start:
@@ -104,6 +111,7 @@ docker run -d \
   -e PORT=3000 \
   -e NODE_ENV=production \
   -e DATABASE_URL=postgresql://taskewr:choose-a-strong-password@taskewr-db:5432/taskewr?schema=public \
+  -e SESSION_SECRET=replace-with-a-long-random-secret \
   -v taskewr_uploads:/app/storage/uploads \
   ghcr.io/digitalwowro/taskewr:latest
 ```
@@ -157,9 +165,23 @@ Recreate the container with the latest image.
 
 ## 🧪 Local Development
 
+In development, run Postgres in Docker and run the Next.js app locally with Node.
+
+Requirements:
+
+* Node.js 22+
+* Docker Engine 24+
+* Docker Compose v2
+
 ```bash
 cp .env.dev.example .env.dev
-docker compose --env-file .env.dev -f docker-compose.dev.yml up -d --build
+docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
+set -a; source .env.dev; set +a
+npm ci
+npm run prisma:generate
+npm run prisma:migrate:dev
+npm run prisma:seed
+npm run dev
 ```
 
 Open:
@@ -171,10 +193,12 @@ http://localhost:3000
 Useful commands:
 
 ```bash
-docker compose --env-file .env.dev -f docker-compose.dev.yml logs -f app
+docker compose --env-file .env.dev -f docker-compose.dev.yml logs -f db
 docker compose --env-file .env.dev -f docker-compose.dev.yml down
-docker compose --env-file .env.dev -f docker-compose.dev.yml exec app npm run lint
-docker compose --env-file .env.dev -f docker-compose.dev.yml exec app npm test
+set -a; source .env.dev; set +a
+npm run lint
+npm test
+npm run build
 ```
 
 ---

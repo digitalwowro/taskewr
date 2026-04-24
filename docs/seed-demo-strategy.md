@@ -34,11 +34,12 @@
 
 ## Local Workflow
 - Rebuild schema changes with:
-  - `docker compose --env-file .env.dev -f docker-compose.dev.yml exec app npm run prisma:migrate:dev`
+  - `set -a; source .env.dev; set +a`
+  - `npm run prisma:migrate:dev`
 - Reseed demo data with:
-  - `docker compose --env-file .env.dev -f docker-compose.dev.yml exec app npm run prisma:seed`
+  - `set -a; source .env.dev; set +a`
+  - `npm run prisma:seed`
 
 ## Production Safety
 - Production must never depend on seed data.
 - Seed commands should only run in explicitly intended environments.
-

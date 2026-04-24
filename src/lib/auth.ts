@@ -1,14 +1,9 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
+import { getSessionSecret } from "@/lib/env";
 import type { SessionPayload } from "@/types/auth";
 
 export const SESSION_COOKIE_NAME = "taskewr_session";
-
-const DEFAULT_SESSION_SECRET = "taskewr-dev-session-secret";
-
-function getSessionSecret() {
-  return process.env.SESSION_SECRET || DEFAULT_SESSION_SECRET;
-}
 
 function toBase64Url(value: string | Buffer) {
   return Buffer.from(value)

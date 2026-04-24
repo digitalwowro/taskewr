@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: taskewr
+          POSTGRES_USER: taskewr
+          POSTGRES_PASSWORD: taskewr
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taskewr -d taskewr"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_URL: http://localhost:3000
+      DATABASE_URL: postgresql://taskewr:taskewr@localhost:5432/taskewr?schema=public
+      SESSION_SECRET: ci-session-secret-that-is-long-enough-for-production-checks
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Apply migrations
+        run: npm run prisma:migrate
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build:prod

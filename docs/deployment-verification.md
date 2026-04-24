@@ -1,10 +1,12 @@
 # Deployment Verification
 
-## Local Docker Verification
+## Local Verification
 - Run tests:
-  - `docker compose --env-file .env.dev -f docker-compose.dev.yml exec app npm test`
+  - `set -a; source .env.dev; set +a`
+  - `npm test`
 - Run production build:
-  - `docker compose --env-file .env.dev -f docker-compose.dev.yml exec -e NODE_ENV=production app npm run build:prod`
+  - `set -a; source .env.dev; set +a`
+  - `npm run build:prod`
 
 ## Authentication Verification
 - Verify unauthenticated app pages redirect to `/auth/login`
@@ -17,6 +19,7 @@
 - Ensure the container starts with migration-on-boot behavior intact.
 
 ## Remote Linux Verification
+- Generate a strong `SESSION_SECRET` with `openssl rand -base64 48`.
 - Pull latest image:
   - `docker compose pull`
 - Restart stack:
@@ -27,4 +30,3 @@
 - Keep database backups external to the container lifecycle.
 - Keep `.env` only on the server.
 - Rehearse rollback by redeploying the previous image tag if a release fails.
-
