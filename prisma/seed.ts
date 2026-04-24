@@ -1,11 +1,13 @@
 import { randomBytes, scryptSync } from "node:crypto";
 
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { getDatabaseUrl } from "../src/lib/env";
 
+const pool = new Pool({ connectionString: getDatabaseUrl() });
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: getDatabaseUrl() }),
+  adapter: new PrismaPg(pool, { disposeExternalPool: true }),
 });
 
 function hashPassword(password: string) {

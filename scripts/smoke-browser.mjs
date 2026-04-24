@@ -17,7 +17,6 @@ async function main() {
     await page.locator('input[name="email"]').fill(EMAIL);
     await page.locator('input[name="password"]').fill(PASSWORD);
     await page.getByRole("button", { name: "Log In" }).click();
-    await page.waitForURL(`${BASE_URL}/`);
     await page.getByRole("heading", { name: "Dashboard" }).waitFor();
 
     await page.goto(`${BASE_URL}/projects/1?view=board`);

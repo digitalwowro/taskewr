@@ -29,6 +29,7 @@ jobs:
       APP_URL: http://localhost:3000
       DATABASE_URL: postgresql://taskewr:taskewr@localhost:5432/taskewr?schema=public
       SESSION_SECRET: ci-session-secret-that-is-long-enough-for-production-checks
+      TASKEWR_BASE_URL: http://127.0.0.1:3000
 
     steps:
       - name: Check out source
@@ -57,3 +58,25 @@ jobs:
 
       - name: Build
         run: npm run build:prod
+
+      - name: Seed smoke data
+        run: npm run prisma:seed
+
+      - name: Install browser dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        run: |
+          npm run start > /tmp/taskewr-next.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl -fsS "$TASKEWR_BASE_URL/api/v1/health" > /dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              cat /tmp/taskewr-next.log
+              exit 1
+            fi
+            sleep 2
+          done
+          npm run smoke:auth
+          npm run smoke:browser

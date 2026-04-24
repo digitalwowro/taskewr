@@ -9,7 +9,7 @@ import {
   HorizontalListRow,
   MetricCard,
   ProjectBoardLane,
-  ProjectMockRow,
+  ProjectRow,
   ProjectSection,
 } from "@/components/app/ui";
 import type { ProjectView } from "@/domain/projects/constants";
@@ -213,7 +213,7 @@ export function ProjectsContent({
         {activeProjects.length > 0 ? (
           <div className="space-y-3">
             {activeProjects.map((project) => (
-              <ProjectMockRow
+              <ProjectRow
                 key={project.id}
                 project={project}
                 onEdit={onEditProject}
@@ -254,7 +254,7 @@ export function ProjectsContent({
           archivedProjects.length > 0 ? (
             <div className="space-y-3">
               {archivedProjects.map((project) => (
-                <ProjectMockRow
+                <ProjectRow
                   key={project.id}
                   project={project}
                   onEdit={onEditProject}

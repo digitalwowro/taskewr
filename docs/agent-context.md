@@ -128,7 +128,9 @@ When the app is running locally, use `npm run smoke:auth` for the authenticated 
 
 Use `npm run smoke:browser` for a browser-level login, dashboard, project, task create/edit, and board status smoke path.
 
-CI runs install, Prisma generation, migrations against Postgres, lint, tests, and production build.
+CI runs install, Prisma generation, migrations against Postgres, lint, tests, production build, seed, and both smoke scripts.
+
+Use `npm run clean:macos` to remove local `.DS_Store` files outside ignored dependency/build/git folders.
 
 ## Operational Notes
 

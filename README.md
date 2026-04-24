@@ -199,6 +199,7 @@ set -a; source .env.dev; set +a
 npm run lint
 npm test
 npm run build
+npm run clean:macos
 ```
 
 ---

@@ -336,7 +336,7 @@ export function ProjectStatusBadge({ archived }: { archived?: boolean }) {
   );
 }
 
-export function ProjectMockRow({
+export function ProjectRow({
   project,
   onEdit,
   onOpen,
