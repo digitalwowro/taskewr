@@ -1,0 +1,81 @@
+"use client";
+
+import { TaskEditorModal } from "@/components/mock-app/task-editor-modal";
+import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
+import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
+
+type TaskSaveInput = {
+  projectId: number;
+  title: string;
+  description: string;
+  parentTaskId: number | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  startDate: string | null;
+  dueDate: string | null;
+  labels: string[];
+};
+
+type TaskModalSwitcherProps = {
+  initialSection: "dashboard" | "projects" | "project_detail" | "task_detail";
+  selectedTask: TaskListItem | null;
+  taskEditorTask: TaskListItem | null;
+  taskDetails: Record<string, TaskDetails>;
+  projectOptions: Array<{ id: string; name: string }>;
+  parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
+  taskMutationPending: boolean;
+  taskMutationError: string | null;
+  onCloseTaskRoute: () => void;
+  onCloseInlineTaskEditor: () => void;
+  onSaveTask: (targetTask: TaskListItem, input: TaskSaveInput) => Promise<void>;
+};
+
+export function TaskModalSwitcher({
+  initialSection,
+  selectedTask,
+  taskEditorTask,
+  taskDetails,
+  projectOptions,
+  parentTaskOptionsByProject,
+  taskMutationPending,
+  taskMutationError,
+  onCloseTaskRoute,
+  onCloseInlineTaskEditor,
+  onSaveTask,
+}: TaskModalSwitcherProps) {
+  if (initialSection === "task_detail") {
+    return (
+      <TaskEditorModal
+        key={selectedTask?.id ?? "task-detail-empty"}
+        task={selectedTask}
+        taskDetails={taskDetails}
+        projectOptions={projectOptions}
+        parentTaskOptionsByProject={parentTaskOptionsByProject}
+        onClose={onCloseTaskRoute}
+        onSave={(input) =>
+          selectedTask ? onSaveTask(selectedTask, input) : Promise.resolve()
+        }
+        isSaving={taskMutationPending}
+        error={taskMutationError}
+      />
+    );
+  }
+
+  if (!taskEditorTask) {
+    return null;
+  }
+
+  return (
+    <TaskEditorModal
+      key={taskEditorTask.id}
+      task={taskEditorTask}
+      taskDetails={taskDetails}
+      projectOptions={projectOptions}
+      parentTaskOptionsByProject={parentTaskOptionsByProject}
+      onClose={onCloseInlineTaskEditor}
+      onSave={(input) => onSaveTask(taskEditorTask, input)}
+      isSaving={taskMutationPending}
+      error={taskMutationError}
+    />
+  );
+}

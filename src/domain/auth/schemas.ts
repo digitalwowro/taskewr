@@ -1,0 +1,31 @@
+import { z } from "zod";
+
+export const loginSchema = z.object({
+  email: z.email().transform((value) => value.trim().toLowerCase()),
+  password: z.string().min(1).max(200),
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
+
+export const profileUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    email: z.email().transform((value) => value.trim().toLowerCase()),
+    currentPassword: z.string().max(200).optional().or(z.literal("")),
+    newPassword: z.string().min(7).max(200).optional().or(z.literal("")),
+    avatarUrl: z.string().max(2_000_000).nullable().optional(),
+  })
+  .superRefine((value, ctx) => {
+    const hasCurrentPassword = Boolean(value.currentPassword);
+    const hasNewPassword = Boolean(value.newPassword);
+
+    if (hasNewPassword && !hasCurrentPassword) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["currentPassword"],
+        message: "Current password is required to set a new password.",
+      });
+    }
+  });
+
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;

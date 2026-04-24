@@ -1,0 +1,212 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int               @id @default(autoincrement())
+  name          String
+  email         String            @unique
+  avatarUrl     String?           @map("avatar_url")
+  passwordHash  String?           @map("password_hash")
+  timezone      String?           @db.VarChar(100)
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  workspaces    Workspace[]       @relation("WorkspaceOwners")
+  memberships   WorkspaceMember[]
+  authAccounts  AuthAccount[]
+  assignedTasks Task[]            @relation("AssignedTasks")
+  projects      Project[]         @relation("OwnedProjects")
+  labels        Label[]           @relation("OwnedLabels")
+  createdTasks  Task[]            @relation("CreatedTasks")
+  updatedTasks  Task[]            @relation("UpdatedTasks")
+  auditLogs     AuditLog[]        @relation("AuditActors")
+
+  @@map("users")
+}
+
+model Workspace {
+  id          Int               @id @default(autoincrement())
+  ownerUserId Int?              @map("owner_user_id")
+  name        String            @db.VarChar(160)
+  slug        String            @unique @db.VarChar(160)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  owner       User?             @relation("WorkspaceOwners", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  memberships WorkspaceMember[]
+  projects    Project[]
+  cycles      Cycle[]
+  labels      Label[]
+  auditLogs   AuditLog[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          Int       @id @default(autoincrement())
+  workspaceId Int       @map("workspace_id")
+  userId      Int       @map("user_id")
+  role        String    @db.VarChar(40)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@map("workspace_members")
+}
+
+model AuthAccount {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  provider          String   @db.VarChar(64)
+  providerAccountId String   @map("provider_account_id") @db.VarChar(190)
+  accountType       String   @map("account_type") @db.VarChar(40)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("auth_accounts")
+}
+
+model Project {
+  id          Int        @id @default(autoincrement())
+  workspaceId Int?       @map("workspace_id")
+  ownerUserId Int?       @map("owner_user_id")
+  name        String     @db.VarChar(200)
+  description String?
+  sortOrder   Int        @default(1) @map("sort_order")
+  archivedAt  DateTime?  @map("archived_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  owner       User?      @relation("OwnedProjects", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  tasks       Task[]
+  cycles      Cycle[]
+
+  @@index([workspaceId])
+  @@index([archivedAt])
+  @@index([sortOrder])
+  @@map("projects")
+}
+
+model Task {
+  id              Int         @id @default(autoincrement())
+  projectId       Int         @map("project_id")
+  createdByUserId Int?        @map("created_by_user_id")
+  updatedByUserId Int?        @map("updated_by_user_id")
+  assigneeUserId  Int?        @map("assignee_user_id")
+  cycleId         Int?        @map("cycle_id")
+  parentTaskId    Int?        @map("parent_task_id")
+  title           String      @db.VarChar(200)
+  description     String?
+  status          String      @db.VarChar(24)
+  priority        String      @db.VarChar(24)
+  startDate       DateTime?   @map("start_date") @db.Date
+  dueDate         DateTime?   @map("due_date") @db.Date
+  sortOrder       Int         @default(1) @map("sort_order")
+  version         Int         @default(1)
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator         User?       @relation("CreatedTasks", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updater         User?       @relation("UpdatedTasks", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  assignee        User?       @relation("AssignedTasks", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  cycle           Cycle?      @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  parentTask      Task?       @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  childTasks      Task[]      @relation("TaskHierarchy")
+  taskLabels      TaskLabel[]
+
+  @@index([projectId])
+  @@index([assigneeUserId])
+  @@index([cycleId])
+  @@index([parentTaskId])
+  @@index([status])
+  @@index([priority])
+  @@index([startDate])
+  @@index([dueDate])
+  @@index([projectId, status, sortOrder])
+  @@map("tasks")
+}
+
+model Cycle {
+  id          Int        @id @default(autoincrement())
+  workspaceId Int?       @map("workspace_id")
+  projectId   Int        @map("project_id")
+  name        String     @db.VarChar(160)
+  status      String     @default("planned") @db.VarChar(32)
+  startDate   DateTime   @map("start_date") @db.Date
+  endDate     DateTime   @map("end_date") @db.Date
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([startDate, endDate])
+  @@map("cycles")
+}
+
+model Label {
+  id          Int         @id @default(autoincrement())
+  workspaceId Int?        @map("workspace_id")
+  ownerUserId Int?        @map("owner_user_id")
+  name        String      @db.VarChar(120)
+  color       String      @default("#0f766e") @db.VarChar(7)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  workspace   Workspace?  @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  owner       User?       @relation("OwnedLabels", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  taskLabels  TaskLabel[]
+
+  @@unique([ownerUserId, name])
+  @@index([workspaceId])
+  @@map("labels")
+}
+
+model TaskLabel {
+  id        Int      @id @default(autoincrement())
+  labelId   Int      @map("label_id")
+  taskId    Int      @map("task_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  label     Label    @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([labelId, taskId])
+  @@index([taskId])
+  @@map("label_task")
+}
+
+model AuditLog {
+  id          Int        @id @default(autoincrement())
+  workspaceId Int?       @map("workspace_id")
+  actorUserId Int?       @map("actor_user_id")
+  entityType  String     @map("entity_type") @db.VarChar(48)
+  entityId    String     @map("entity_id") @db.VarChar(120)
+  action      String     @db.VarChar(80)
+  summary     Json?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  actor       User?      @relation("AuditActors", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@map("audit_logs")
+}
