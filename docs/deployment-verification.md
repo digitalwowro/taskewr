@@ -9,6 +9,7 @@
   - `npm run build:prod`
 
 ## Authentication Verification
+- Verify `/api/v1/health` returns `200` when the app can reach the database.
 - Verify unauthenticated app pages redirect to `/auth/login`
 - Verify login works with the seeded demo account
 - Verify authenticated app pages return successfully

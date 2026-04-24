@@ -2,7 +2,14 @@ import { cookies } from "next/headers";
 
 import { loginSchema, profileUpdateSchema, type LoginInput, type ProfileUpdateInput } from "@/domain/auth/schemas";
 import { AuthenticationError, NotFoundError, ValidationError } from "@/domain/common/errors";
-import { SESSION_COOKIE_NAME, createSessionToken, hashPassword, parseSessionToken, verifyPassword } from "@/lib/auth";
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_MAX_AGE_SECONDS,
+  createSessionToken,
+  hashPassword,
+  parseSessionToken,
+  verifyPassword,
+} from "@/lib/auth";
 import type { AuthenticatedActor, SessionPayload } from "@/types/auth";
 import { db } from "@/lib/db";
 
@@ -49,7 +56,7 @@ export class AuthService {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60 * 24 * 14,
+      maxAge: SESSION_MAX_AGE_SECONDS,
     });
   }
 

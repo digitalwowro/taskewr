@@ -22,6 +22,7 @@ node scripts/smoke-authenticated.mjs
 - Verify task edit/create/share behavior.
 - Verify shell search opens matching tasks.
 - Verify logout returns protected routes to login.
+- Verify `/api/v1/health` reports healthy database connectivity.
 
 ### Remote deployment QA
 

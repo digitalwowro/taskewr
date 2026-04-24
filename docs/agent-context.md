@@ -97,6 +97,7 @@ set -a; source .env.dev; set +a
 ## Auth And Access
 
 - Pages should require authentication unless explicitly public, such as `/auth/login`.
+- `/api/v1/health` is intentionally public and checks database connectivity.
 - API routes should report domain/auth errors through `toErrorResponse`.
 - Current access checks are workspace-scoped and owner-oriented, but the schema is prepared for broader memberships and future sharing.
 - Be careful when adding project/task queries: preserve workspace filtering and private-by-default behavior.
@@ -129,6 +130,7 @@ CI runs install, Prisma generation, migrations against Postgres, lint, tests, an
 ## Operational Notes
 
 - Production startup runs migrations through `docker/entrypoint.sh`.
+- `/api/v1/health` can be used by deployment smoke checks and reverse-proxy monitoring.
 - Demo seeding is intentional for local and explicit QA environments only; production must not depend on seed data.
 - The production compose file should continue to persist both Postgres data and app uploads.
 - If adding upload or file-storage behavior, keep `/app/storage/uploads` compatible with the existing production volume.

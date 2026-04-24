@@ -15,7 +15,7 @@ test("session tokens round-trip valid payloads", () => {
     workspaceId: 3,
     workspaceRole: "owner",
     timezone: "Europe/Bucharest",
-    issuedAt: 1_775_200_000_000,
+    issuedAt: Date.now(),
   };
 
   const token = createSessionToken(payload);
@@ -29,7 +29,7 @@ test("session token parsing rejects tampered payloads", () => {
     workspaceId: 3,
     workspaceRole: "owner",
     timezone: "Europe/Bucharest",
-    issuedAt: 1_775_200_000_000,
+    issuedAt: Date.now(),
   };
 
   const token = createSessionToken(payload);
@@ -45,6 +45,28 @@ test("session token parsing rejects tampered payloads", () => {
 
   assert.equal(parseSessionToken(`${tamperedPayload}.${encodedSignature}`), null);
   assert.equal(parseSessionToken(`${encodedPayload}.tampered`), null);
+});
+
+test("session token parsing rejects expired and far-future tokens", () => {
+  const basePayload: SessionPayload = {
+    userId: 7,
+    workspaceId: 3,
+    workspaceRole: "owner",
+    timezone: "Europe/Bucharest",
+    issuedAt: Date.now(),
+  };
+
+  const expiredToken = createSessionToken({
+    ...basePayload,
+    issuedAt: Date.now() - 1000 * 60 * 60 * 24 * 15,
+  });
+  const futureToken = createSessionToken({
+    ...basePayload,
+    issuedAt: Date.now() + 1000 * 60 * 10,
+  });
+
+  assert.equal(parseSessionToken(expiredToken), null);
+  assert.equal(parseSessionToken(futureToken), null);
 });
 
 test("password hashing and verification work for matching credentials", () => {

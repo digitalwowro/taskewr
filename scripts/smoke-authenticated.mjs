@@ -17,6 +17,7 @@ async function expectStatus(path, status, init = {}) {
 }
 
 async function main() {
+  await expectStatus("/api/v1/health", 200);
   await expectStatus("/auth/login", 200);
 
   const login = await expectStatus("/api/v1/auth/login", 200, {
