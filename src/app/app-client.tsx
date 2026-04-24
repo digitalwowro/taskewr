@@ -457,8 +457,12 @@ export function TaskewrApp({
   }, [activeProjects, defaultTaskProjectId, editingTaskId]);
   const taskEditorTask = editingTask ?? createTaskDraft;
   const selectedProjectTasks = useMemo(
-    () =>
-      sortAndFilterTasks(
+    () => {
+      if (!selectedProject) {
+        return [];
+      }
+
+      return sortAndFilterTasks(
         projectTasksByProjectId[selectedProject.id] ?? [],
         sort,
         direction,
@@ -466,13 +470,14 @@ export function TaskewrApp({
         selectedPriorities,
         startDate,
         endDate,
-      ),
+      );
+    },
     [
       direction,
       endDate,
       projectTasksByProjectId,
       selectedPriorities,
-      selectedProject.id,
+      selectedProject,
       selectedStatuses,
       sort,
       startDate,
@@ -498,6 +503,10 @@ export function TaskewrApp({
     [selectedProjectTasks],
   );
   const moveProjectTaskToStatus = (taskId: string, nextStatus: TaskStatus) => {
+    if (!selectedProject) {
+      return;
+    }
+
     const task = selectedProjectTasks.find((item) => item.id === taskId);
 
     if (!task) {
@@ -857,7 +866,7 @@ export function TaskewrApp({
             initialSection={initialSection}
             visibleTaskCount={visibleTaskCount}
             activeProjectCount={activeProjects.length}
-            selectedProjectName={selectedProject.name}
+            selectedProjectName={selectedProject?.name ?? "Project"}
             selectedProjectTaskCount={selectedProjectTasks.length}
             searchHrefBase=""
             onOpenTask={openTask}
@@ -967,7 +976,7 @@ export function TaskewrApp({
                   projectReorderPendingId={projectReorderPendingId}
                   onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
                 />
-              ) : initialSection === "project_detail" || initialSection === "task_detail" ? (
+              ) : (initialSection === "project_detail" || initialSection === "task_detail") && selectedProject ? (
                 <div className="space-y-2.5">
                   {initialSection === "project_detail" ? (
                     <ProjectTaskToolbar
