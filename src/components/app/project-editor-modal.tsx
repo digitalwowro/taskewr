@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { MockProject } from "@/app/mock-app-data";
+import type { AppProject } from "@/app/app-data";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 const NEW_PROJECT_ID = "NEW_PROJECT";
@@ -22,7 +22,7 @@ export function ProjectEditorModal({
   isSaving,
   error,
 }: {
-  project: MockProject | null;
+  project: AppProject | null;
   onClose: () => void;
   onSave: (input: { name: string; description: string }) => Promise<void>;
   onToggleArchive: () => Promise<void>;

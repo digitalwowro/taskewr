@@ -6,7 +6,7 @@ export type ProjectGroup = {
   items: TaskListItem[];
 };
 
-export type MockProject = {
+export type AppProject = {
   id: string;
   name: string;
   description: string;
@@ -15,12 +15,12 @@ export type MockProject = {
   updatedLabel: string;
 };
 
-export type MockAppData = {
+export type AppData = {
   todayItems: TaskListItem[];
   overdueItems: TaskListItem[];
   groupedProjects: ProjectGroup[];
   projectTasksByProjectId: Record<string, TaskListItem[]>;
-  activeProjects: MockProject[];
-  archivedProjects: MockProject[];
+  activeProjects: AppProject[];
+  archivedProjects: AppProject[];
   taskDetails: Record<string, TaskDetails>;
 };

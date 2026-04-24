@@ -1,6 +1,6 @@
 "use client";
 
-import type { MockProject, ProjectGroup } from "@/app/mock-app-data";
+import type { AppProject, ProjectGroup } from "@/app/app-data";
 import type { TaskStatus } from "@/domain/tasks/constants";
 import type { TaskListItem } from "@/domain/tasks/types";
 import {
@@ -11,7 +11,7 @@ import {
   ProjectBoardLane,
   ProjectMockRow,
   ProjectSection,
-} from "@/components/mock-app/ui";
+} from "@/components/app/ui";
 import type { ProjectView } from "@/domain/projects/constants";
 
 export function DashboardContent({
@@ -167,8 +167,8 @@ export function ProjectsContent({
   projectReorderPendingId,
   onOpenProject,
 }: {
-  activeProjects: MockProject[];
-  archivedProjects: MockProject[];
+  activeProjects: AppProject[];
+  archivedProjects: AppProject[];
   visibleProjectTaskCount: number;
   showArchivedProjects: boolean;
   onToggleArchived: () => void;
@@ -290,7 +290,7 @@ export function ProjectDetailContent({
   onEditProject,
   onBackToProjects,
 }: {
-  selectedProject: MockProject;
+  selectedProject: AppProject;
   selectedProjectOverdueTasks: TaskListItem[];
   projectView: ProjectView;
   projectBoardGroups: {

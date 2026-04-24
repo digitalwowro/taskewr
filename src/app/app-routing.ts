@@ -17,7 +17,7 @@ type TaskRouteFilterState = {
   projectView: ProjectView;
 };
 
-export function buildMockAppFilterQuery(
+export function buildAppFilterQuery(
   filters: TaskRouteFilterState,
   options?: { includeView?: boolean },
 ) {
@@ -37,29 +37,29 @@ export function buildMockAppFilterQuery(
   return params.toString();
 }
 
-export function buildMockTaskHref(taskId: string, filters: TaskRouteFilterState) {
-  const query = buildMockAppFilterQuery(filters, { includeView: true });
+export function buildTaskHref(taskId: string, filters: TaskRouteFilterState) {
+  const query = buildAppFilterQuery(filters, { includeView: true });
   const numericTaskId = taskId.replace("TSK-", "");
 
   return query ? `/tasks/${numericTaskId}?${query}` : `/tasks/${numericTaskId}`;
 }
 
-export function buildMockProjectHref(
+export function buildAppProjectHref(
   projectId: string,
   filters: TaskRouteFilterState,
   options?: { includeView?: boolean },
 ) {
-  const query = buildMockAppFilterQuery(filters, { includeView: options?.includeView });
+  const query = buildAppFilterQuery(filters, { includeView: options?.includeView });
 
   return query ? `/projects/${projectId}?${query}` : `/projects/${projectId}`;
 }
 
-export function buildMockPathQuery(
+export function buildPathQuery(
   pathname: string,
   filters: TaskRouteFilterState,
   options?: { includeView?: boolean },
 ) {
-  const query = buildMockAppFilterQuery(filters, { includeView: options?.includeView });
+  const query = buildAppFilterQuery(filters, { includeView: options?.includeView });
 
   return query ? `${pathname}?${query}` : pathname;
 }

@@ -2,31 +2,32 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { MockAppData } from "@/app/mock-app-data";
+import type { AppData } from "@/app/app-data";
 import {
-  buildMockPathQuery,
-  buildMockProjectHref,
-  buildMockTaskHref,
-} from "@/app/mock-app-routing";
+  buildPathQuery,
+  buildAppProjectHref,
+  buildTaskHref,
+} from "@/app/app-routing";
 import {
-  MockAppHeader,
-  MockAppSidebar,
-} from "@/components/mock-app/app-shell";
+  AppHeader,
+  AppSidebar,
+} from "@/components/app/app-shell";
 import {
   DashboardTaskToolbar,
   ProjectTaskToolbar,
-} from "@/components/mock-app/filter-toolbar";
+} from "@/components/app/filter-toolbar";
 import {
   DashboardContent,
   ProjectDetailContent,
   ProjectsContent,
-} from "@/components/mock-app/content-sections";
-import { ProfileModal } from "@/components/mock-app/profile-modal";
-import { ProjectEditorModal } from "@/components/mock-app/project-editor-modal";
-import { TaskModalSwitcher } from "@/components/mock-app/task-modal-switcher";
+} from "@/components/app/content-sections";
+import { ProfileModal } from "@/components/app/profile-modal";
+import { ProjectEditorModal } from "@/components/app/project-editor-modal";
+import { TaskModalSwitcher } from "@/components/app/task-modal-switcher";
 import { useClickOutside } from "@/hooks/use-click-outside";
 import { usePersistedSidebarState } from "@/hooks/use-persisted-sidebar-state";
 import { useTaskFilterToolbarState } from "@/hooks/use-task-filter-toolbar-state";
+import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from "@/lib/csrf-constants";
 import type { ProjectView } from "@/domain/projects/constants";
 import {
   PRIORITY_OPTIONS,
@@ -42,7 +43,7 @@ import {
 import type { TaskFilters, TaskListItem } from "@/domain/tasks/types";
 import {
   NAV_ITEMS,
-} from "@/app/mock-app-fallback-data";
+} from "@/app/app-fallback-data";
 
 type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail";
 const NEW_PROJECT_ID = "NEW_PROJECT";
@@ -72,7 +73,20 @@ class ApiRequestError extends Error {
 }
 
 async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, init);
+  const headers = new Headers(init?.headers);
+
+  if (init?.method && init.method !== "GET" && init.method !== "HEAD") {
+    const csrfToken = readCookie(CSRF_COOKIE_NAME);
+
+    if (csrfToken) {
+      headers.set(CSRF_HEADER_NAME, csrfToken);
+    }
+  }
+
+  const response = await fetch(input, {
+    ...init,
+    headers,
+  });
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as
@@ -82,6 +96,20 @@ async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Pro
   }
 
   return response.json() as Promise<T>;
+}
+
+function readCookie(name: string) {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return (
+    document.cookie
+      .split(";")
+      .map((cookie) => cookie.trim())
+      .find((cookie) => cookie.startsWith(`${name}=`))
+      ?.slice(name.length + 1) ?? null
+  );
 }
 
 function getDateRank(value: string | null) {
@@ -143,7 +171,7 @@ function sortAndFilterTasks(
     .sort((a, b) => compareTasks(a, b, sort, direction));
 }
 
-export function MockApp({
+export function TaskewrApp({
   initialSection,
   initialProjectId,
   initialTaskId,
@@ -154,7 +182,7 @@ export function MockApp({
   initialSection: AppSection;
   initialProjectId?: string;
   initialTaskId?: string;
-  data: MockAppData;
+  data: AppData;
   initialFilters?: TaskFilters;
   initialProjectView?: ProjectView;
 }) {
@@ -279,7 +307,7 @@ export function MockApp({
 
   const openTask = (taskId: string) => {
     router.push(
-      buildMockTaskHref(taskId, {
+      buildTaskHref(taskId, {
         sort,
         direction,
         selectedStatuses,
@@ -351,7 +379,7 @@ export function MockApp({
   const closeTaskRoute = () => {
     if (selectedProject?.id) {
       router.push(
-        buildMockProjectHref(selectedProject.id, currentTaskRouteState, {
+        buildAppProjectHref(selectedProject.id, currentTaskRouteState, {
           includeView: true,
         }),
       );
@@ -746,7 +774,7 @@ export function MockApp({
       return;
     }
 
-    const nextUrl = buildMockPathQuery(pathname, currentTaskRouteState, {
+    const nextUrl = buildPathQuery(pathname, currentTaskRouteState, {
       includeView: initialSection === "project_detail" || initialSection === "task_detail",
     });
 
@@ -805,7 +833,7 @@ export function MockApp({
   return (
     <main className="h-screen overflow-hidden bg-[var(--surface-base)] text-[var(--ink-strong)]">
       <div className="grid h-screen grid-cols-[auto_minmax(0,1fr)]">
-        <MockAppSidebar
+        <AppSidebar
           sidebarExpanded={sidebarExpanded}
           onToggleSidebar={() => setSidebarExpanded((current) => !current)}
           navItems={NAV_ITEMS}
@@ -825,7 +853,7 @@ export function MockApp({
         />
 
         <section className="flex min-w-0 min-h-0 flex-col overflow-hidden">
-          <MockAppHeader
+          <AppHeader
             initialSection={initialSection}
             visibleTaskCount={visibleTaskCount}
             activeProjectCount={activeProjects.length}
@@ -1083,8 +1111,8 @@ export default function Home({
   data,
   initialFilters,
 }: {
-  data: MockAppData;
+  data: AppData;
   initialFilters?: TaskFilters;
 }) {
-  return <MockApp initialSection="dashboard" data={data} initialFilters={initialFilters} />;
+  return <TaskewrApp initialSection="dashboard" data={data} initialFilters={initialFilters} />;
 }

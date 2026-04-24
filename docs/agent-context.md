@@ -57,6 +57,7 @@ set -a; source .env.dev; set +a
 ## Production
 
 - Production uses the image `ghcr.io/digitalwowro/taskewr:latest`.
+- Production images are published for `linux/amd64` and `linux/arm64`.
 - Production database URLs should use Docker service DNS, for example `db:5432`.
 - `SESSION_SECRET` is required in production.
 - The production app container runs Prisma migrations on startup through `docker/entrypoint.sh`.
@@ -81,7 +82,7 @@ set -a; source .env.dev; set +a
 - Keep page routes focused on composition, route params, auth redirects, and service calls.
 - Do not put Prisma queries directly in React components or page route components.
 - Prefer existing schemas and domain helpers over ad hoc validation.
-- Keep UI behavior consistent with existing `src/components/mock-app` patterns unless intentionally redesigning.
+- Keep UI behavior consistent with existing `src/components/app` patterns unless intentionally redesigning.
 
 ## Domain Expectations
 
@@ -124,6 +125,8 @@ npm run build:prod
 Use `docker compose --env-file .env.dev -f docker-compose.dev.yml config` to validate the development Postgres compose file.
 
 When the app is running locally, use `npm run smoke:auth` for the authenticated smoke path. Set `TASKEWR_BASE_URL`, `TASKEWR_SMOKE_EMAIL`, or `TASKEWR_SMOKE_PASSWORD` only when testing non-default environments.
+
+Use `npm run smoke:browser` for a browser-level login, dashboard, project, task create/edit, and board status smoke path.
 
 CI runs install, Prisma generation, migrations against Postgres, lint, tests, and production build.
 

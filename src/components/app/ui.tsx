@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { MockProject } from "@/app/mock-app-data";
+import type { AppProject } from "@/app/app-data";
 import type { TaskStatus } from "@/domain/tasks/constants";
 import type { TaskListItem } from "@/domain/tasks/types";
 
@@ -344,7 +344,7 @@ export function ProjectMockRow({
   onUnarchive,
   isReordering,
 }: {
-  project: MockProject;
+  project: AppProject;
   onEdit: (projectId: string) => void;
   onOpen: (projectId: string) => void;
   onMove: (projectId: string, direction: "up" | "down") => void;

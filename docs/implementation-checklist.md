@@ -1,14 +1,14 @@
 # Implementation Checklist
 
 ## Milestone 1: Remove Remaining Fallback Weight From The Shell
-- [x] Move the large fallback task/project/detail datasets out of [src/app/mock-app.tsx](D:/Code/taskewr/src/app/mock-app.tsx)
-- [x] Move route-level static nav definitions out of [src/app/mock-app.tsx](D:/Code/taskewr/src/app/mock-app.tsx)
+- [x] Move the large fallback task/project/detail datasets out of [src/app/app-client.tsx](../src/app/app-client.tsx)
+- [x] Move route-level static nav definitions out of [src/app/app-client.tsx](../src/app/app-client.tsx)
 - [x] Keep realistic seed/demo data, but isolate it from route coordination code
-- [x] Make [src/app/mock-app.tsx](D:/Code/taskewr/src/app/mock-app.tsx) primarily a coordinator, not a giant source file
+- [x] Make [src/app/app-client.tsx](../src/app/app-client.tsx) primarily a coordinator, not a giant source file
 - [x] Keep local Docker production build green after each extraction
 
 ## Milestone 2: Finish Shell Refactor
-- [x] Extract remaining route/state helpers from [src/app/mock-app.tsx](D:/Code/taskewr/src/app/mock-app.tsx)
+- [x] Extract remaining route/state helpers from [src/app/app-client.tsx](../src/app/app-client.tsx)
 - [x] Move URL/filter state helpers into small hooks or utilities
 - [x] Split dashboard/project/task route coordination into smaller containers
 - [x] Remove duplicated open/close/share/URL plumbing from the main shell

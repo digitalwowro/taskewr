@@ -1,5 +1,5 @@
-import HomeClient from "./mock-app";
-import { MockAppDataService } from "@/server/services/mock-app-data-service";
+import HomeClient from "./app-client";
+import { AppDataService } from "@/server/services/app-data-service";
 import { parseTaskFiltersFromSearchParams } from "@/domain/common/filters";
 import { buildPathWithSearch, requireAuthenticatedPage } from "@/lib/page-auth";
 
@@ -11,7 +11,7 @@ export default async function HomePage({
   const resolvedSearchParams = await searchParams;
   await requireAuthenticatedPage(buildPathWithSearch("/", resolvedSearchParams));
   const filters = parseTaskFiltersFromSearchParams(resolvedSearchParams);
-  const data = await new MockAppDataService().getDashboardData(filters);
+  const data = await new AppDataService().getDashboardData(filters);
 
   return <HomeClient data={data} initialFilters={filters} />;
 }

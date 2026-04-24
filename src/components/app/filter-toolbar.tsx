@@ -2,7 +2,7 @@
 
 import type { ReactNode, RefObject } from "react";
 import type { TaskSortDirection } from "@/domain/tasks/constants";
-import { CountPill, FilterChip } from "@/components/mock-app/ui";
+import { CountPill, FilterChip } from "@/components/app/ui";
 
 type LabeledOption<T extends string> = {
   value: T;

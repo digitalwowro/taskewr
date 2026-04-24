@@ -1,6 +1,6 @@
 "use client";
 
-import { TaskEditorModal } from "@/components/mock-app/task-editor-modal";
+import { TaskEditorModal } from "@/components/app/task-editor-modal";
 import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
 import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
 

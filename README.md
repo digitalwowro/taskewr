@@ -208,6 +208,7 @@ npm run build
 * [Architecture](./docs/architecture.md)
 * [Implementation checklist](./docs/implementation-checklist.md)
 * [Development guide](./docs/development.md)
+* [Production deployment](./docs/production-deployment.md)
 * [Release readiness](./docs/release-readiness.md)
 
 ---

@@ -37,9 +37,20 @@ async function main() {
     throw new Error("Login response did not include a session cookie.");
   }
 
-  const cookie = setCookie.split(";")[0];
+  const cookies = setCookie
+    .split(/,(?=\s*[^;,]+=)/)
+    .map((cookie) => cookie.split(";")[0].trim());
+  const cookie = cookies.join("; ");
+  const csrfCookie = cookies.find((item) => item.startsWith("taskewr_csrf="));
+
+  if (!csrfCookie) {
+    throw new Error("Login response did not include a CSRF cookie.");
+  }
+
+  const csrfToken = csrfCookie.slice("taskewr_csrf=".length);
   const headers = {
     Cookie: cookie,
+    "x-csrf-token": csrfToken,
   };
 
   await expectStatus("/api/v1/auth/me", 200, { headers });

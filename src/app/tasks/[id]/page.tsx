@@ -1,5 +1,5 @@
-import { MockApp } from "../../mock-app";
-import { MockAppDataService } from "@/server/services/mock-app-data-service";
+import { TaskewrApp } from "../../app-client";
+import { AppDataService } from "@/server/services/app-data-service";
 import { notFound } from "next/navigation";
 import {
   parseProjectViewFromSearchParams,
@@ -19,14 +19,14 @@ export default async function TaskDetailPage({
   await requireAuthenticatedPage(buildPathWithSearch(`/tasks/${id}`, resolvedSearchParams));
   const filters = parseTaskFiltersFromSearchParams(resolvedSearchParams);
   const view = parseProjectViewFromSearchParams(resolvedSearchParams);
-  const data = await new MockAppDataService().getDataForTask(id, filters);
+  const data = await new AppDataService().getDataForTask(id, filters);
 
   if (!data) {
     notFound();
   }
 
   return (
-    <MockApp
+    <TaskewrApp
       initialSection="task_detail"
       initialTaskId={id}
       data={data}

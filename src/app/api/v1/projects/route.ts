@@ -1,4 +1,5 @@
 import { ProjectService } from "@/server/services/project-service";
+import { assertValidCsrfToken } from "@/server/api/csrf";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonCreated, jsonOk } from "@/server/api/responders";
 
@@ -15,6 +16,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    assertValidCsrfToken(request);
     const body = await request.json();
     const project = await service.createProject(body);
     return jsonCreated(project);

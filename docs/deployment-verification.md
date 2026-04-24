@@ -7,6 +7,8 @@
 - Run production build:
   - `set -a; source .env.dev; set +a`
   - `npm run build:prod`
+- Run browser smoke while the local app is running:
+  - `npm run smoke:browser`
 
 ## Authentication Verification
 - Verify `/api/v1/health` returns `200` when the app can reach the database.

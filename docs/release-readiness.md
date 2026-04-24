@@ -10,6 +10,7 @@ npm run lint
 npm test
 npm run build:prod
 node scripts/smoke-authenticated.mjs
+npm run smoke:browser
 ```
 
 ### Manual browser QA

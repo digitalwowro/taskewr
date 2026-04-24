@@ -1,4 +1,5 @@
 import { TaskService } from "@/server/services/task-service";
+import { assertValidCsrfToken } from "@/server/api/csrf";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonOk } from "@/server/api/responders";
 
@@ -22,6 +23,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    assertValidCsrfToken(request);
     const { id } = await params;
     const body = await request.json();
     const task = await service.updateTask(Number(id), body);

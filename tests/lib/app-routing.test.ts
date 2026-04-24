@@ -2,11 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  buildMockAppFilterQuery,
-  buildMockPathQuery,
-  buildMockProjectHref,
-  buildMockTaskHref,
-} from "@/app/mock-app-routing";
+  buildAppFilterQuery,
+  buildPathQuery,
+  buildAppProjectHref,
+  buildTaskHref,
+} from "@/app/app-routing";
 
 const baseFilters = {
   sort: "priority" as const,
@@ -16,9 +16,9 @@ const baseFilters = {
   projectView: "board" as const,
 };
 
-test("buildMockAppFilterQuery includes explicit all-status state and optional view", () => {
+test("buildAppFilterQuery includes explicit all-status state and optional view", () => {
   assert.equal(
-    buildMockAppFilterQuery(
+    buildAppFilterQuery(
       {
         ...baseFilters,
         selectedStatuses: [],
@@ -30,27 +30,27 @@ test("buildMockAppFilterQuery includes explicit all-status state and optional vi
   );
 });
 
-test("buildMockTaskHref carries task filter context into shareable task routes", () => {
+test("buildTaskHref carries task filter context into shareable task routes", () => {
   assert.equal(
-    buildMockTaskHref("TSK-145", baseFilters),
+    buildTaskHref("TSK-145", baseFilters),
     "/tasks/145?sort=priority&direction=desc&status=todo%2Cin_progress&view=board",
   );
 });
 
-test("buildMockProjectHref omits project view unless explicitly requested", () => {
+test("buildAppProjectHref omits project view unless explicitly requested", () => {
   assert.equal(
-    buildMockProjectHref("1", baseFilters),
+    buildAppProjectHref("1", baseFilters),
     "/projects/1?sort=priority&direction=desc&status=todo%2Cin_progress",
   );
   assert.equal(
-    buildMockProjectHref("1", baseFilters, { includeView: true }),
+    buildAppProjectHref("1", baseFilters, { includeView: true }),
     "/projects/1?sort=priority&direction=desc&status=todo%2Cin_progress&view=board",
   );
 });
 
-test("buildMockPathQuery returns the bare pathname only when query state is empty", () => {
+test("buildPathQuery returns the bare pathname only when query state is empty", () => {
   assert.equal(
-    buildMockPathQuery("/projects/1", {
+    buildPathQuery("/projects/1", {
       sort: "priority",
       direction: "desc",
       selectedStatuses: [],

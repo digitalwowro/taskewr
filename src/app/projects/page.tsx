@@ -1,10 +1,10 @@
-import { MockApp } from "../mock-app";
-import { MockAppDataService } from "@/server/services/mock-app-data-service";
+import { TaskewrApp } from "../app-client";
+import { AppDataService } from "@/server/services/app-data-service";
 import { requireAuthenticatedPage } from "@/lib/page-auth";
 
 export default async function ProjectsPage() {
   await requireAuthenticatedPage("/projects");
-  const data = await new MockAppDataService().getProjectsPageData();
+  const data = await new AppDataService().getProjectsPageData();
 
-  return <MockApp initialSection="projects" data={data} />;
+  return <TaskewrApp initialSection="projects" data={data} />;
 }

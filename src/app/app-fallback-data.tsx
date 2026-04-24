@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { MockProject, ProjectGroup } from "@/app/mock-app-data";
+import type { AppProject, ProjectGroup } from "@/app/app-data";
 import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
 
 export type NavItem = {
@@ -365,7 +365,7 @@ export const DEFAULT_GROUPED_PROJECTS: ProjectGroup[] = [
   },
 ];
 
-export const DEFAULT_ACTIVE_PROJECTS: MockProject[] = [
+export const DEFAULT_ACTIVE_PROJECTS: AppProject[] = [
   {
     id: "1",
     name: "Channel Sales",
@@ -396,7 +396,7 @@ export const DEFAULT_ACTIVE_PROJECTS: MockProject[] = [
   },
 ];
 
-export const DEFAULT_ARCHIVED_PROJECTS: MockProject[] = [
+export const DEFAULT_ARCHIVED_PROJECTS: AppProject[] = [
   {
     id: "5",
     name: "Partner Training",

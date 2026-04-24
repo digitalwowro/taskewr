@@ -10,6 +10,7 @@
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts tests/*/*.test.ts tests/*/*/*.test.ts",
     "smoke:auth": "node scripts/smoke-authenticated.mjs",
+    "smoke:browser": "node scripts/smoke-browser.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
@@ -31,8 +32,9 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^24.12.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

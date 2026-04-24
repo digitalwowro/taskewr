@@ -1,5 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
-import type { MockAppData, MockProject, ProjectGroup } from "@/app/mock-app-data";
+import type { AppData, AppProject, ProjectGroup } from "@/app/app-data";
 import type { TaskDetails, TaskFilters, TaskListItem } from "@/domain/tasks/types";
 import { DEFAULT_TASK_FILTERS, normalizeTaskFilters } from "@/domain/common/filters";
 import { filterTaskItems, sortTaskItems } from "@/domain/dashboard/queries";
@@ -12,7 +12,7 @@ import { formatDashboardDueLabel, isOverdueDate } from "@/lib/time/dashboard-dat
 
 const ACTIVE_STATUSES = new Set(["todo", "in_progress"]);
 const DONE_STATUSES = new Set(["done", "canceled"]);
-type MockAppTaskRecord = Prisma.TaskGetPayload<{
+type AppTaskRecord = Prisma.TaskGetPayload<{
   include: {
     project: true;
     parentTask: true;
@@ -62,7 +62,7 @@ function formatArchivedLabel(date: Date | null) {
   return `Archived ${diffMonths} month${diffMonths === 1 ? "" : "s"} ago`;
 }
 
-function toTaskListItem(task: MockAppTaskRecord, timezone: string | null): TaskListItem {
+function toTaskListItem(task: AppTaskRecord, timezone: string | null): TaskListItem {
   const statusLabel =
     TASK_STATUS_LABELS[task.status as keyof typeof TASK_STATUS_LABELS] ??
     task.status.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
@@ -88,9 +88,9 @@ function toTaskListItem(task: MockAppTaskRecord, timezone: string | null): TaskL
 }
 
 function toTaskDetails(
-  task: MockAppTaskRecord,
+  task: AppTaskRecord,
   projects: { id: number; name: string; archivedAt: Date | null }[],
-  siblingTasks: MockAppTaskRecord[],
+  siblingTasks: AppTaskRecord[],
 ): TaskDetails {
   return {
     projectId: String(task.projectId),
@@ -109,7 +109,7 @@ function toTaskDetails(
   };
 }
 
-export class MockAppDataService {
+export class AppDataService {
   constructor(
     private readonly projectsRepository = new ProjectsRepository(db),
     private readonly tasksRepository = new TasksRepository(db),
@@ -127,11 +127,11 @@ export class MockAppDataService {
   }
 
   private buildData(
-    projects: Awaited<ReturnType<MockAppDataService["loadBaseRecords"]>>["projects"],
-    tasks: Awaited<ReturnType<MockAppDataService["loadBaseRecords"]>>["tasks"],
+    projects: Awaited<ReturnType<AppDataService["loadBaseRecords"]>>["projects"],
+    tasks: Awaited<ReturnType<AppDataService["loadBaseRecords"]>>["tasks"],
     timezone: string | null,
     filtersInput?: Partial<TaskFilters>,
-  ): MockAppData {
+  ): AppData {
     const filters = normalizeTaskFilters(filtersInput ?? DEFAULT_TASK_FILTERS);
     const taskItems = tasks.map((task) => toTaskListItem(task, timezone));
     const projectTasksByProjectId = Object.fromEntries(
@@ -151,7 +151,7 @@ export class MockAppDataService {
       ]),
     );
 
-    const activeProjects: MockProject[] = projects
+    const activeProjects: AppProject[] = projects
       .filter((project) => project.archivedAt === null)
       .map((project) => ({
         id: String(project.id),
@@ -161,7 +161,7 @@ export class MockAppDataService {
         updatedLabel: formatUpdatedLabel(project.updatedAt),
       }));
 
-    const archivedProjects: MockProject[] = projects
+    const archivedProjects: AppProject[] = projects
       .filter((project) => project.archivedAt !== null)
       .map((project) => ({
         id: String(project.id),
@@ -226,7 +226,7 @@ export class MockAppDataService {
     };
   }
 
-  async getData(filtersInput?: Partial<TaskFilters>): Promise<MockAppData> {
+  async getData(filtersInput?: Partial<TaskFilters>): Promise<AppData> {
     const { projects, tasks, timezone } = await this.loadBaseRecords();
     return this.buildData(projects, tasks, timezone, filtersInput);
   }

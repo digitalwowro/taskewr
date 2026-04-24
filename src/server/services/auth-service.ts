@@ -10,6 +10,7 @@ import {
   parseSessionToken,
   verifyPassword,
 } from "@/lib/auth";
+import { clearCsrfCookie, setCsrfCookie } from "@/lib/csrf";
 import type { AuthenticatedActor, SessionPayload } from "@/types/auth";
 import { db } from "@/lib/db";
 
@@ -58,11 +59,13 @@ export class AuthService {
       path: "/",
       maxAge: SESSION_MAX_AGE_SECONDS,
     });
+    await setCsrfCookie();
   }
 
   async clearSessionCookie() {
     const cookieStore = await cookies();
     cookieStore.delete(SESSION_COOKIE_NAME);
+    await clearCsrfCookie();
   }
 
   async getSession(): Promise<SessionPayload | null> {

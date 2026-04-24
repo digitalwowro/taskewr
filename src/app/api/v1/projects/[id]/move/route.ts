@@ -1,4 +1,5 @@
 import { ProjectService } from "@/server/services/project-service";
+import { assertValidCsrfToken } from "@/server/api/csrf";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonOk } from "@/server/api/responders";
 
@@ -9,6 +10,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
+    assertValidCsrfToken(request);
     const { id } = await context.params;
     const body = await request.json();
     const project = await service.moveProject(Number(id), body);

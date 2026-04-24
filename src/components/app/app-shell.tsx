@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { MockProject } from "@/app/mock-app-data";
+import type { AppProject } from "@/app/app-data";
 import { useClickOutside } from "@/hooks/use-click-outside";
 import {
   TASK_PRIORITY_LABELS,
@@ -30,12 +30,12 @@ type NavItem = {
   icon: ReactNode;
 };
 
-type MockAppSidebarProps = {
+type AppSidebarProps = {
   sidebarExpanded: boolean;
   onToggleSidebar: () => void;
   navItems: NavItem[];
   initialSection: AppSection;
-  activeProjects: MockProject[];
+  activeProjects: AppProject[];
   selectedProjectId?: string;
   onOpenSection: (sectionId: string) => void;
   onNewTask: () => void;
@@ -46,7 +46,7 @@ type MockAppSidebarProps = {
   avatarUrl?: string | null;
 };
 
-export function MockAppSidebar({
+export function AppSidebar({
   sidebarExpanded,
   onToggleSidebar,
   navItems,
@@ -60,7 +60,7 @@ export function MockAppSidebar({
   onLogout,
   avatarInitial = "R",
   avatarUrl,
-}: MockAppSidebarProps) {
+}: AppSidebarProps) {
   const visibleNavItems = navItems.filter((item) => item.id !== "search");
   const isDashboardActive = initialSection === "dashboard";
   const isProjectsActive =
@@ -263,7 +263,7 @@ export function MockAppSidebar({
   );
 }
 
-type MockAppHeaderProps = {
+type AppHeaderProps = {
   initialSection: AppSection;
   visibleTaskCount: number;
   activeProjectCount: number;
@@ -477,7 +477,7 @@ function HeaderSearch({
   );
 }
 
-export function MockAppHeader({
+export function AppHeader({
   initialSection,
   visibleTaskCount,
   activeProjectCount,
@@ -486,7 +486,7 @@ export function MockAppHeader({
   searchHrefBase,
   onOpenTask,
   onPrimaryAction,
-}: MockAppHeaderProps) {
+}: AppHeaderProps) {
   const searchPlaceholder =
     initialSection === "dashboard"
       ? "Search tasks and project work"
