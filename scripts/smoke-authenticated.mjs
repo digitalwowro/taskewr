@@ -1,3 +1,5 @@
+import { SMOKE_PROJECT_ID, SMOKE_TASK_ID } from "./smoke-constants.mjs";
+
 const BASE_URL = process.env.TASKEWR_BASE_URL || "http://127.0.0.1:3000";
 const EMAIL = process.env.TASKEWR_SMOKE_EMAIL || "account@taskewr.com";
 const PASSWORD = process.env.TASKEWR_SMOKE_PASSWORD || "taskewr";
@@ -56,8 +58,8 @@ async function main() {
   await expectStatus("/api/v1/auth/me", 200, { headers });
   await expectStatus("/api/v1/search?query=review", 200, { headers });
   await expectStatus("/", 200, { headers });
-  await expectStatus("/projects/1", 200, { headers });
-  await expectStatus("/tasks/145", 200, { headers });
+  await expectStatus(`/projects/${SMOKE_PROJECT_ID}`, 200, { headers });
+  await expectStatus(`/tasks/${SMOKE_TASK_ID}`, 200, { headers });
 }
 
 main().catch((error) => {

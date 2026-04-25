@@ -39,6 +39,28 @@ npm run smoke:auth
 npm run smoke:browser
 ```
 
+To verify that the Docker image starts like production, build an image and run the container smoke:
+
+```bash
+docker build -t taskewr:container-smoke .
+npm run smoke:container
+```
+
+The container smoke uses `.env.dev` by default and maps the app to `http://127.0.0.1:3010`.
+
+## Known Good Release
+
+Before calling a release good, confirm:
+
+- GitHub Actions CI passed.
+- GitHub Actions published `ghcr.io/digitalwowro/taskewr:latest`.
+- Production ran `docker compose pull`.
+- Production ran `docker compose up -d`.
+- `docker compose ps` shows the app and database running.
+- `/api/v1/health` returns a healthy database result.
+- Login works with the expected account.
+- The dashboard, a project page, and one task page load.
+
 ## Production Update
 
 On the production server:

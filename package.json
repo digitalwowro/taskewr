@@ -12,6 +12,7 @@
     "clean:macos": "find . -path ./node_modules -prune -o -path ./.git -prune -o -path ./.next -prune -o -name .DS_Store -type f -delete",
     "smoke:auth": "node scripts/smoke-authenticated.mjs",
     "smoke:browser": "node scripts/smoke-browser.mjs",
+    "smoke:container": "node scripts/smoke-container.mjs",
     "dev:reset": "node scripts/dev-reset.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
@@ -47,6 +48,7 @@
     "typescript": "^5"
   },
   "overrides": {
-    "@hono/node-server": "1.19.13"
+    "@hono/node-server": "1.19.13",
+    "postcss": "8.5.10"
   }
 }

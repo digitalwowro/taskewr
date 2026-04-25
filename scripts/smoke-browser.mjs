@@ -1,8 +1,17 @@
 import { chromium } from "@playwright/test";
+import { mkdir, writeFile } from "node:fs/promises";
+import { SMOKE_PROJECT_ID, SMOKE_TASK_ID } from "./smoke-constants.mjs";
 
 const BASE_URL = process.env.TASKEWR_BASE_URL || "http://127.0.0.1:3000";
 const EMAIL = process.env.TASKEWR_SMOKE_EMAIL || "account@taskewr.com";
 const PASSWORD = process.env.TASKEWR_SMOKE_PASSWORD || "taskewr";
+const ARTIFACT_DIR = process.env.TASKEWR_SMOKE_ARTIFACT_DIR || "test-results/smoke-browser";
+
+async function saveFailureArtifacts(page) {
+  await mkdir(ARTIFACT_DIR, { recursive: true });
+  await page.screenshot({ path: `${ARTIFACT_DIR}/failure.png`, fullPage: true });
+  await writeFile(`${ARTIFACT_DIR}/failure.html`, await page.content());
+}
 
 async function main() {
   const browser = await chromium.launch({
@@ -27,13 +36,13 @@ async function main() {
     await page.getByRole("button", { name: "Log In" }).click();
     await page.getByRole("heading", { name: "Dashboard" }).waitFor();
 
-    await page.goto(`${BASE_URL}/tasks/145`);
+    await page.goto(`${BASE_URL}/tasks/${SMOKE_TASK_ID}`);
     await page.getByRole("dialog").waitFor();
     await page.getByRole("button", { name: "Cancel" }).click();
     await page.waitForURL(/\/projects\/\d+/);
     await page.getByRole("button", { name: "+ New Task" }).waitFor();
 
-    await page.goto(`${BASE_URL}/projects/1?status=todo&priority=urgent`);
+    await page.goto(`${BASE_URL}/projects/${SMOKE_PROJECT_ID}?status=todo&priority=urgent`);
     await page.getByRole("button", { name: "+ New Task" }).waitFor();
 
     await page.goto(`${BASE_URL}/`);
@@ -51,7 +60,7 @@ async function main() {
     await dashboardEditDialog.getByRole("button", { name: "Save changes" }).click();
     await page.getByText(editedDashboardTaskTitle).first().waitFor();
 
-    await page.goto(`${BASE_URL}/projects/1?view=board`);
+    await page.goto(`${BASE_URL}/projects/${SMOKE_PROJECT_ID}?view=board`);
     await page.getByRole("button", { name: "+ New Task" }).click();
 
     const createDialog = page.getByRole("dialog", { name: "Create task" });
@@ -73,6 +82,11 @@ async function main() {
     }
 
     console.log(`browser smoke ok: ${editedProjectTaskTitle}`);
+  } catch (error) {
+    await saveFailureArtifacts(page).catch((artifactError) => {
+      console.error("Could not save browser smoke artifacts:", artifactError);
+    });
+    throw error;
   } finally {
     await browser.close();
   }

@@ -200,6 +200,7 @@ npm run lint
 npm test
 npm run build
 npm run dev:reset
+npm run smoke:container
 npm run clean:macos
 ```
 

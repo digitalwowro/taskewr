@@ -60,7 +60,15 @@ jobs:
         run: npm run build:prod
 
       - name: Build Docker image
-        run: docker build .
+        run: docker build -t taskewr:ci .
+
+      - name: Run container smoke test
+        env:
+          TASKEWR_CONTAINER_IMAGE: taskewr:ci
+          TASKEWR_CONTAINER_BASE_URL: http://127.0.0.1:3000
+          TASKEWR_CONTAINER_DATABASE_URL: postgresql://taskewr:taskewr@127.0.0.1:5432/taskewr?schema=public
+          TASKEWR_CONTAINER_DOCKER_ARGS: --network host
+        run: npm run smoke:container
 
       - name: Seed smoke data
         run: npm run prisma:seed

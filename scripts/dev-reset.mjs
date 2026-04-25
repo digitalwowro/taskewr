@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { config } from "dotenv";
 
-config({ path: ".env.dev" });
+config({ path: ".env.dev", quiet: true });
 
 const databaseUrl = process.env.DATABASE_URL;
 
