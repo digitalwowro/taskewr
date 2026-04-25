@@ -16,6 +16,8 @@ export type AppProject = {
 };
 
 export type AppData = {
+  recurringOverdueItems: TaskListItem[];
+  recurringTodayItems: TaskListItem[];
   todayItems: TaskListItem[];
   overdueItems: TaskListItem[];
   groupedProjects: ProjectGroup[];

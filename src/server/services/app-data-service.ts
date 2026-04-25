@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { AppData, AppProject, ProjectGroup } from "@/app/app-data";
 import type { TaskDetails, TaskFilters, TaskListItem } from "@/domain/tasks/types";
 import { DEFAULT_TASK_FILTERS, normalizeTaskFilters } from "@/domain/common/filters";
+import { bucketDashboardTasks } from "@/domain/dashboard/buckets";
 import { filterTaskItems, sortTaskItems } from "@/domain/dashboard/queries";
 import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from "@/domain/tasks/constants";
 import { AppContextService } from "@/server/services/app-context-service";
@@ -9,7 +10,7 @@ import { RepeatTaskService } from "@/server/services/repeat-task-service";
 import { ProjectsRepository } from "@/data/prisma/repositories/projects-repository";
 import { TasksRepository } from "@/data/prisma/repositories/tasks-repository";
 import { db } from "@/lib/db";
-import { formatDashboardDueLabel, isOverdueDate } from "@/lib/time/dashboard-dates";
+import { formatDashboardDueLabel } from "@/lib/time/dashboard-dates";
 
 const ACTIVE_STATUSES = new Set(["todo", "in_progress"]);
 const DONE_STATUSES = new Set(["done", "canceled"]);
@@ -206,26 +207,30 @@ export class AppDataService {
       (task) => task.project.archivedAt === null && !DONE_STATUSES.has(task.status),
     );
 
-    const overdueItems = activeTasks
-      .filter((task) => isOverdueDate(task.dueDate, new Date(), timezone))
-      .map((task) => toTaskListItem(task, timezone));
+    const activeTaskItems = activeTasks.map((task) => toTaskListItem(task, timezone));
+    const dashboardBuckets = bucketDashboardTasks(activeTaskItems, new Date(), timezone);
+    const overdueItems = dashboardBuckets.focusOverdueItems;
     const filteredOverdueItems = sortTaskItems(
       filterTaskItems(overdueItems, filters),
       filters,
     );
-
-    const todayPool = activeTasks
-      .filter((task) => ACTIVE_STATUSES.has(task.status))
-      .map((task) => toTaskListItem(task, timezone));
+    const recurringOverdueItems = sortTaskItems(
+      filterTaskItems(dashboardBuckets.recurringOverdueItems, filters),
+      filters,
+    );
+    const recurringTodayItems = sortTaskItems(
+      filterTaskItems(dashboardBuckets.recurringTodayItems, filters),
+      filters,
+    );
 
     const todayItems = sortTaskItems(
-      filterTaskItems(todayPool, filters),
+      filterTaskItems(dashboardBuckets.focusTodayItems, filters),
       filters,
-    ).filter((item) => !filteredOverdueItems.some((overdue) => overdue.id === item.id));
+    );
 
     const projectGroupsMap = new Map<string, TaskListItem[]>();
 
-    for (const item of taskItems) {
+    for (const item of dashboardBuckets.projectItems) {
       if (!ACTIVE_STATUSES.has(item.statusValue)) {
         continue;
       }
@@ -246,6 +251,8 @@ export class AppDataService {
     });
 
     return {
+      recurringOverdueItems,
+      recurringTodayItems,
       todayItems,
       overdueItems: filteredOverdueItems,
       groupedProjects,

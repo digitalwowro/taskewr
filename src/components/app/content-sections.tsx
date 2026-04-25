@@ -16,6 +16,8 @@ import type { ProjectView } from "@/domain/projects/constants";
 
 export function DashboardContent({
   visibleTaskCount,
+  filteredRecurringOverdueItems,
+  filteredRecurringTodayItems,
   filteredOverdueItems,
   filteredTodayItems,
   filteredProjects,
@@ -24,6 +26,8 @@ export function DashboardContent({
   onOpenProjectByName,
 }: {
   visibleTaskCount: number;
+  filteredRecurringOverdueItems: TaskListItem[];
+  filteredRecurringTodayItems: TaskListItem[];
   filteredOverdueItems: TaskListItem[];
   filteredTodayItems: TaskListItem[];
   filteredProjects: ProjectGroup[];
@@ -40,6 +44,82 @@ export function DashboardContent({
       </section>
 
       <section className="space-y-5 pt-2.5">
+        <article className="rounded-2xl border border-[rgba(37,99,235,0.14)] bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(246,249,255,1)_100%)] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
+          <header>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(37,99,235)]">
+                Recurring tasks
+              </p>
+              <h2 className="mt-2 text-lg font-semibold tracking-[-0.03em]">
+                Scheduled work window
+              </h2>
+            </div>
+          </header>
+          <div className="mt-4 space-y-4">
+            <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
+              <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
+                    Overdue
+                  </h3>
+                  <CountPill tone="red">{filteredRecurringOverdueItems.length}</CountPill>
+                </div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
+                  Needs action now
+                </p>
+              </div>
+              <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                <span>Task</span>
+                <span>Title</span>
+                <span className="text-center">Project</span>
+                <span className="text-center">Status</span>
+                <span className="text-center">Priority</span>
+                <span className="text-right">Due</span>
+              </div>
+              {filteredRecurringOverdueItems.length > 0 ? (
+                filteredRecurringOverdueItems.map((item) => (
+                  <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
+                ))
+              ) : (
+                <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+                  No overdue recurring tasks match the current filters.
+                </div>
+              )}
+            </section>
+
+            <section className="overflow-hidden rounded-xl border border-[rgba(37,99,235,0.12)] bg-white">
+              <div className="flex items-center justify-between border-b border-[rgba(37,99,235,0.12)] bg-[rgba(37,99,235,0.04)] px-4 py-2">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
+                    Today and Unscheduled
+                  </h3>
+                  <CountPill tone="blue">{filteredRecurringTodayItems.length}</CountPill>
+                </div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[rgb(37,99,235)]">
+                  Scheduled focus
+                </p>
+              </div>
+              <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                <span>Task</span>
+                <span>Title</span>
+                <span className="text-center">Project</span>
+                <span className="text-center">Status</span>
+                <span className="text-center">Priority</span>
+                <span className="text-right">Due</span>
+              </div>
+              {filteredRecurringTodayItems.length > 0 ? (
+                filteredRecurringTodayItems.map((item) => (
+                  <FocusItem key={item.id} {...item} onEdit={onEditTask} />
+                ))
+              ) : (
+                <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+                  No recurring tasks due today or unscheduled match the current filters.
+                </div>
+              )}
+            </section>
+          </div>
+        </article>
+
         <article className="rounded-2xl border border-[rgba(34,122,89,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(248,252,250,1)_100%)] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
           <header>
             <div>
@@ -87,7 +167,7 @@ export function DashboardContent({
               <div className="flex items-center justify-between border-b border-[rgba(34,122,89,0.12)] bg-[rgba(34,122,89,0.04)] px-4 py-2">
                 <div className="flex items-center gap-3">
                   <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-                    Everything else
+                    Today and Unscheduled
                   </h3>
                   <CountPill tone="green">{filteredTodayItems.length}</CountPill>
                 </div>
@@ -109,7 +189,7 @@ export function DashboardContent({
                 ))
               ) : (
                 <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                  No active tasks match the current filters.
+                  No tasks due today or unscheduled match the current filters.
                 </div>
               )}
             </section>

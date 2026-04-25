@@ -173,6 +173,8 @@ export function TaskewrApp({
   } = useTaskFilterToolbarState(initialFilters, initialProjectView);
   const todayItems = data.todayItems;
   const overdueItems = data.overdueItems;
+  const recurringOverdueItems = data.recurringOverdueItems;
+  const recurringTodayItems = data.recurringTodayItems;
   const groupedProjects = data.groupedProjects;
   const activeProjects = data.activeProjects;
   const archivedProjects = data.archivedProjects;
@@ -191,6 +193,48 @@ export function TaskewrApp({
         endDate,
       ),
     [direction, endDate, selectedPriorities, selectedStatuses, sort, startDate, todayItems],
+  );
+  const filteredRecurringOverdueItems = useMemo(
+    () =>
+      sortAndFilterTasks(
+        recurringOverdueItems,
+        sort,
+        direction,
+        selectedStatuses,
+        selectedPriorities,
+        startDate,
+        endDate,
+      ),
+    [
+      direction,
+      endDate,
+      recurringOverdueItems,
+      selectedPriorities,
+      selectedStatuses,
+      sort,
+      startDate,
+    ],
+  );
+  const filteredRecurringTodayItems = useMemo(
+    () =>
+      sortAndFilterTasks(
+        recurringTodayItems,
+        sort,
+        direction,
+        selectedStatuses,
+        selectedPriorities,
+        startDate,
+        endDate,
+      ),
+    [
+      direction,
+      endDate,
+      recurringTodayItems,
+      selectedPriorities,
+      selectedStatuses,
+      sort,
+      startDate,
+    ],
   );
   const filteredOverdueItems = useMemo(
     () =>
@@ -226,10 +270,20 @@ export function TaskewrApp({
 
   const visibleTaskCount = useMemo(
     () =>
-      filteredTodayItems.length +
-      filteredOverdueItems.length +
-      filteredProjects.reduce((sum, project) => sum + project.items.length, 0),
-    [filteredOverdueItems.length, filteredProjects, filteredTodayItems.length],
+      new Set([
+        ...filteredRecurringOverdueItems.map((task) => task.id),
+        ...filteredRecurringTodayItems.map((task) => task.id),
+        ...filteredTodayItems.map((task) => task.id),
+        ...filteredOverdueItems.map((task) => task.id),
+        ...filteredProjects.flatMap((project) => project.items.map((task) => task.id)),
+      ]).size,
+    [
+      filteredOverdueItems,
+      filteredProjects,
+      filteredRecurringOverdueItems,
+      filteredRecurringTodayItems,
+      filteredTodayItems,
+    ],
   );
   const visibleProjectTaskCount = useMemo(
     () => activeProjects.reduce((sum, project) => sum + project.taskCount, 0),
@@ -623,6 +677,8 @@ export function TaskewrApp({
 
                     <DashboardContent
                       visibleTaskCount={visibleTaskCount}
+                      filteredRecurringOverdueItems={filteredRecurringOverdueItems}
+                      filteredRecurringTodayItems={filteredRecurringTodayItems}
                       filteredOverdueItems={filteredOverdueItems}
                       filteredTodayItems={filteredTodayItems}
                       filteredProjects={filteredProjects}

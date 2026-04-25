@@ -51,8 +51,11 @@ async function main() {
     const dashboardCreateDialog = page.getByRole("dialog", { name: "Create task" });
     await dashboardCreateDialog.locator("input").first().fill(dashboardTaskTitle);
     await dashboardCreateDialog.locator("textarea").first().fill("Created from the dashboard smoke flow.");
+    await dashboardCreateDialog.locator('input[type="date"]').last().fill(new Date().toISOString().slice(0, 10));
     await dashboardCreateDialog.getByLabel("Repeat this task").check();
     await dashboardCreateDialog.getByRole("button", { name: "Create task" }).click();
+    await page.getByText("Recurring tasks", { exact: true }).waitFor();
+    await page.getByRole("heading", { name: "Today and Unscheduled" }).first().waitFor();
     await page.getByText(dashboardTaskTitle).first().waitFor();
 
     await page.getByText(dashboardTaskTitle).first().click();

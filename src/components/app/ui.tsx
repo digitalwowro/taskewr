@@ -100,13 +100,14 @@ export function CountPill({
   tone,
   children,
 }: {
-  tone: "green" | "red";
+  tone: "green" | "red" | "blue";
   children: ReactNode;
 }) {
   const tones = {
     green:
       "border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]",
     red: "border-[rgba(193,62,62,0.18)] bg-[rgba(193,62,62,0.08)] text-[var(--accent-red)]",
+    blue: "border-[rgba(37,99,235,0.18)] bg-[rgba(37,99,235,0.08)] text-[rgb(37,99,235)]",
   };
 
   return (
