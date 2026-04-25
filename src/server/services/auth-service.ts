@@ -14,11 +14,15 @@ import { clearCsrfCookie, setCsrfCookie } from "@/lib/csrf";
 import type { AuthenticatedActor, SessionPayload } from "@/types/auth";
 import { db } from "@/lib/db";
 
+type AuthDatabase = Pick<typeof db, "user">;
+
 export class AuthService {
+  constructor(private readonly database: AuthDatabase = db) {}
+
   async loginWithPassword(input: LoginInput): Promise<SessionPayload> {
     const payload = loginSchema.parse(input);
 
-    const user = await db.user.findUnique({
+    const user = await this.database.user.findUnique({
       where: { email: payload.email },
       include: {
         memberships: {
@@ -84,11 +88,33 @@ export class AuthService {
       return null;
     }
 
+    const user = await this.database.user.findUnique({
+      where: { id: session.userId },
+      select: {
+        timezone: true,
+        memberships: {
+          where: {
+            workspaceId: session.workspaceId,
+          },
+          select: {
+            workspaceId: true,
+            role: true,
+          },
+          take: 1,
+        },
+      },
+    });
+    const membership = user?.memberships[0];
+
+    if (!user || !membership) {
+      return null;
+    }
+
     return {
       userId: session.userId,
-      workspaceId: session.workspaceId,
-      workspaceRole: session.workspaceRole,
-      timezone: session.timezone,
+      workspaceId: membership.workspaceId,
+      workspaceRole: membership.role,
+      timezone: user.timezone,
     };
   }
 
@@ -99,7 +125,7 @@ export class AuthService {
       return null;
     }
 
-    const user = await db.user.findUnique({
+    const user = await this.database.user.findUnique({
       where: { id: actor.userId },
       select: {
         id: true,
@@ -130,7 +156,7 @@ export class AuthService {
 
     const payload = profileUpdateSchema.parse(input);
 
-    const user = await db.user.findUnique({
+    const user = await this.database.user.findUnique({
       where: { id: actor.userId },
       select: {
         id: true,
@@ -144,7 +170,7 @@ export class AuthService {
     }
 
     if (payload.email !== user.email) {
-      const existingUser = await db.user.findUnique({
+      const existingUser = await this.database.user.findUnique({
         where: { email: payload.email },
         select: { id: true },
       });
@@ -168,7 +194,7 @@ export class AuthService {
           })()
         : {};
 
-    const updatedUser = await db.user.update({
+    const updatedUser = await this.database.user.update({
       where: { id: actor.userId },
       data: {
         name: payload.name,

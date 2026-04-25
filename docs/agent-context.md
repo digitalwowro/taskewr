@@ -136,6 +136,7 @@ Use `npm run clean:macos` to remove local `.DS_Store` files outside ignored depe
 
 - Production startup runs migrations through `docker/entrypoint.sh`.
 - `/api/v1/health` can be used by deployment smoke checks and reverse-proxy monitoring.
+- `npm audit` currently reports a moderate PostCSS advisory through Next/PostCSS; do not run `npm audit fix --force` because npm suggests an unsafe Next downgrade. Revisit via safe Next/PostCSS patch updates or Dependabot.
 - Demo seeding is intentional for local and explicit QA environments only; production must not depend on seed data.
 - The production compose file should continue to persist both Postgres data and app uploads.
 - If adding upload or file-storage behavior, keep `/app/storage/uploads` compatible with the existing production volume.

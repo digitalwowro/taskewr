@@ -26,8 +26,9 @@ import { ProjectEditorModal } from "@/components/app/project-editor-modal";
 import { TaskModalSwitcher } from "@/components/app/task-modal-switcher";
 import { useClickOutside } from "@/hooks/use-click-outside";
 import { usePersistedSidebarState } from "@/hooks/use-persisted-sidebar-state";
+import { NEW_TASK_ID, useTaskEditorState } from "@/hooks/use-task-editor-state";
 import { useTaskFilterToolbarState } from "@/hooks/use-task-filter-toolbar-state";
-import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from "@/lib/csrf-constants";
+import { ApiRequestError, isUnauthorizedError, requestJson } from "@/lib/api-client";
 import type { ProjectView } from "@/domain/projects/constants";
 import {
   PRIORITY_OPTIONS,
@@ -47,7 +48,6 @@ import {
 
 type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail";
 const NEW_PROJECT_ID = "NEW_PROJECT";
-const NEW_TASK_ID = "NEW_TASK";
 type CurrentUserProfile = {
   userId: number;
   name: string;
@@ -60,56 +60,6 @@ type CurrentUserProfile = {
 
 function getTaskByNumericId(tasks: TaskListItem[], id: string) {
   return tasks.find((task) => task.id.replace("TSK-", "") === id) ?? null;
-}
-
-class ApiRequestError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly code?: string,
-  ) {
-    super(message);
-  }
-}
-
-async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-
-  if (init?.method && init.method !== "GET" && init.method !== "HEAD") {
-    const csrfToken = readCookie(CSRF_COOKIE_NAME);
-
-    if (csrfToken) {
-      headers.set(CSRF_HEADER_NAME, csrfToken);
-    }
-  }
-
-  const response = await fetch(input, {
-    ...init,
-    headers,
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { error?: string; code?: string }
-      | null;
-    throw new ApiRequestError(payload?.error ?? "Request failed.", response.status, payload?.code);
-  }
-
-  return response.json() as Promise<T>;
-}
-
-function readCookie(name: string) {
-  if (typeof document === "undefined") {
-    return null;
-  }
-
-  return (
-    document.cookie
-      .split(";")
-      .map((cookie) => cookie.trim())
-      .find((cookie) => cookie.startsWith(`${name}=`))
-      ?.slice(name.length + 1) ?? null
-  );
 }
 
 function getDateRank(value: string | null) {
@@ -194,7 +144,6 @@ export function TaskewrApp({
   );
   const [showArchivedProjects, setShowArchivedProjects] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState<CurrentUserProfile | null>(null);
   const [profileMutationPending, setProfileMutationPending] = useState(false);
@@ -235,8 +184,6 @@ export function TaskewrApp({
     activeStatusLabels,
     activePriorityLabels,
   } = useTaskFilterToolbarState(initialFilters, initialProjectView);
-  const [taskMutationPending, setTaskMutationPending] = useState(false);
-  const [taskMutationError, setTaskMutationError] = useState<string | null>(null);
   const [projectMutationPending, setProjectMutationPending] = useState(false);
   const [projectMutationError, setProjectMutationError] = useState<string | null>(null);
   const [projectReorderPendingId, setProjectReorderPendingId] = useState<string | null>(null);
@@ -323,9 +270,6 @@ export function TaskewrApp({
     router.push(`/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
   }, [router]);
 
-  const isUnauthorizedError = (error: unknown) =>
-    error instanceof ApiRequestError && error.status === 401;
-
   const allTasks = useMemo(() => {
     const dedupedTasks = new Map<string, TaskListItem>();
 
@@ -358,11 +302,6 @@ export function TaskewrApp({
       }, {}),
     [allTasks],
   );
-  const editingTask = useMemo(
-    () => allTasks.find((task) => task.id === editingTaskId) ?? null,
-    [allTasks, editingTaskId],
-  );
-
   const currentTaskRouteState = useMemo(
     () => ({
       sort,
@@ -427,35 +366,22 @@ export function TaskewrApp({
     initialSection === "project_detail" || initialSection === "task_detail"
       ? selectedProject?.id ?? activeProjects[0]?.id ?? ""
       : activeProjects[0]?.id ?? "";
-  const createTaskDraft = useMemo<TaskListItem | null>(() => {
-    if (editingTaskId !== NEW_TASK_ID || !defaultTaskProjectId) {
-      return null;
-    }
-
-    const draftProject =
-      activeProjects.find((project) => project.id === defaultTaskProjectId) ?? activeProjects[0];
-
-    if (!draftProject) {
-      return null;
-    }
-
-    return {
-      id: NEW_TASK_ID,
-      projectId: draftProject.id,
-      title: "",
-      project: draftProject.name,
-      status: "Todo",
-      statusValue: "todo",
-      due: "",
-      dueDate: null,
-      priority: "Medium",
-      priorityValue: "medium",
-      startDate: null,
-      createdAt: "",
-      updatedAt: "",
-    };
-  }, [activeProjects, defaultTaskProjectId, editingTaskId]);
-  const taskEditorTask = editingTask ?? createTaskDraft;
+  const {
+    setEditingTaskId,
+    taskEditorTask,
+    taskMutationError,
+    taskMutationPending,
+    handleTaskSave,
+  } = useTaskEditorState({
+    activeProjects,
+    allTasks,
+    closeTaskRoute,
+    defaultTaskProjectId,
+    initialSection,
+    initialTaskId,
+    redirectToLogin,
+    refreshApp: () => router.refresh(),
+  });
   const selectedProjectTasks = useMemo(
     () => {
       if (!selectedProject) {
@@ -541,61 +467,6 @@ export function TaskewrApp({
         }
       });
   };
-  const handleTaskSave = async (
-    targetTask: TaskListItem,
-    input: {
-      projectId: number;
-      title: string;
-      description: string;
-      parentTaskId: number | null;
-      status: TaskStatus;
-      priority: TaskPriority;
-      startDate: string | null;
-      dueDate: string | null;
-      labels: string[];
-    },
-  ) => {
-    setTaskMutationPending(true);
-    setTaskMutationError(null);
-
-    try {
-      if (targetTask.id === NEW_TASK_ID) {
-        await requestJson(`/api/v1/tasks`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(input),
-        });
-      } else {
-        await requestJson(`/api/v1/tasks/${targetTask.id.replace("TSK-", "")}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(input),
-        });
-      }
-
-      router.refresh();
-
-      if (initialSection === "dashboard" || targetTask.id === NEW_TASK_ID) {
-        setEditingTaskId(null);
-      } else {
-        closeTaskRoute();
-      }
-    } catch (error) {
-      if (isUnauthorizedError(error)) {
-        redirectToLogin();
-        return;
-      }
-
-      setTaskMutationError(error instanceof Error ? error.message : "Could not save task.");
-    } finally {
-      setTaskMutationPending(false);
-    }
-  };
-
   const handleProjectSave = async (input: { name: string; description: string }) => {
     if (!editingProject) {
       return;
@@ -770,7 +641,6 @@ export function TaskewrApp({
       return;
     }
 
-    setTaskMutationError(null);
     setEditingTaskId(NEW_TASK_ID);
   };
 
@@ -806,10 +676,6 @@ export function TaskewrApp({
     projectSortMenuOpen || projectStatusMenuOpen || projectPriorityMenuOpen || projectDateMenuOpen,
     closeProjectMenus,
   );
-
-  useEffect(() => {
-    setTaskMutationError(null);
-  }, [editingTaskId, initialTaskId]);
 
   useEffect(() => {
     setProjectMutationError(null);
