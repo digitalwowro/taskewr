@@ -57,6 +57,14 @@ npm test
 npm run build:prod
 ```
 
+If local data or login sessions get tangled while developing, reset the local database:
+
+```bash
+npm run dev:reset
+```
+
+After a reset, log out or clear cookies for `localhost` if the browser was already signed in.
+
 ### Deployment flow
 
 The production image is published to:

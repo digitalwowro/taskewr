@@ -199,6 +199,7 @@ set -a; source .env.dev; set +a
 npm run lint
 npm test
 npm run build
+npm run dev:reset
 npm run clean:macos
 ```
 
@@ -209,6 +210,7 @@ npm run clean:macos
 * [Architecture](./docs/architecture.md)
 * [Implementation checklist](./docs/implementation-checklist.md)
 * [Development guide](./docs/development.md)
+* [Operator checklist](./docs/operator-checklist.md)
 * [Production deployment](./docs/production-deployment.md)
 * [Release readiness](./docs/release-readiness.md)
 

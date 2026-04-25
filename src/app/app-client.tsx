@@ -26,9 +26,11 @@ import { ProjectEditorModal } from "@/components/app/project-editor-modal";
 import { TaskModalSwitcher } from "@/components/app/task-modal-switcher";
 import { useClickOutside } from "@/hooks/use-click-outside";
 import { usePersistedSidebarState } from "@/hooks/use-persisted-sidebar-state";
+import { useProfileState } from "@/hooks/use-profile-state";
+import { useProjectEditorState } from "@/hooks/use-project-editor-state";
 import { NEW_TASK_ID, useTaskEditorState } from "@/hooks/use-task-editor-state";
 import { useTaskFilterToolbarState } from "@/hooks/use-task-filter-toolbar-state";
-import { ApiRequestError, isUnauthorizedError, requestJson } from "@/lib/api-client";
+import { isUnauthorizedError, requestJson } from "@/lib/api-client";
 import type { ProjectView } from "@/domain/projects/constants";
 import {
   PRIORITY_OPTIONS,
@@ -47,16 +49,6 @@ import {
 } from "@/app/app-fallback-data";
 
 type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail";
-const NEW_PROJECT_ID = "NEW_PROJECT";
-type CurrentUserProfile = {
-  userId: number;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  workspaceId: number;
-  workspaceRole: string;
-  timezone: string | null;
-};
 
 function getTaskByNumericId(tasks: TaskListItem[], id: string) {
   return tasks.find((task) => task.id.replace("TSK-", "") === id) ?? null;
@@ -143,11 +135,6 @@ export function TaskewrApp({
     "taskewr.sidebarExpanded",
   );
   const [showArchivedProjects, setShowArchivedProjects] = useState(false);
-  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [currentUserProfile, setCurrentUserProfile] = useState<CurrentUserProfile | null>(null);
-  const [profileMutationPending, setProfileMutationPending] = useState(false);
-  const [profileMutationError, setProfileMutationError] = useState<string | null>(null);
   const [draggingProjectTaskId, setDraggingProjectTaskId] = useState<string | null>(null);
   const {
     projectSortMenuOpen,
@@ -184,9 +171,6 @@ export function TaskewrApp({
     activeStatusLabels,
     activePriorityLabels,
   } = useTaskFilterToolbarState(initialFilters, initialProjectView);
-  const [projectMutationPending, setProjectMutationPending] = useState(false);
-  const [projectMutationError, setProjectMutationError] = useState<string | null>(null);
-  const [projectReorderPendingId, setProjectReorderPendingId] = useState<string | null>(null);
   const todayItems = data.todayItems;
   const overdueItems = data.overdueItems;
   const groupedProjects = data.groupedProjects;
@@ -269,6 +253,15 @@ export function TaskewrApp({
   const redirectToLogin = useCallback(() => {
     router.push(`/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
   }, [router]);
+  const {
+    profileModalOpen,
+    currentUserProfile,
+    profileMutationPending,
+    profileMutationError,
+    openProfileModal,
+    closeProfileModal,
+    handleProfileSave,
+  } = useProfileState({ redirectToLogin });
 
   const allTasks = useMemo(() => {
     const dedupedTasks = new Map<string, TaskListItem>();
@@ -328,26 +321,27 @@ export function TaskewrApp({
     router.push("/projects");
   };
 
-  const allProjects = useMemo(
-    () => [...activeProjects, ...archivedProjects],
-    [activeProjects, archivedProjects],
-  );
+  const {
+    allProjects,
+    editingProject,
+    openNewProject,
+    setEditingProjectId,
+    projectMutationPending,
+    projectMutationError,
+    projectReorderPendingId,
+    handleProjectSave,
+    handleProjectArchiveToggle,
+    handleProjectQuickUnarchive,
+    handleProjectMove,
+  } = useProjectEditorState({
+    activeProjects,
+    archivedProjects,
+    redirectToLogin,
+    refreshApp: () => router.refresh(),
+  });
   const projectOptions = useMemo(
     () => activeProjects.map((project) => ({ id: project.id, name: project.name })),
     [activeProjects],
-  );
-  const editingProject = useMemo(
-    () =>
-      editingProjectId === NEW_PROJECT_ID
-        ? {
-            id: NEW_PROJECT_ID,
-            name: "",
-            description: "",
-            taskCount: 0,
-            updatedLabel: "Will appear in active projects",
-          }
-        : allProjects.find((project) => project.id === editingProjectId) ?? null,
-    [allProjects, editingProjectId],
   );
   const selectedTask = useMemo(
     () => (initialTaskId ? getTaskByNumericId(allTasks, initialTaskId) : null),
@@ -467,164 +461,11 @@ export function TaskewrApp({
         }
       });
   };
-  const handleProjectSave = async (input: { name: string; description: string }) => {
-    if (!editingProject) {
-      return;
-    }
-
-    setProjectMutationPending(true);
-    setProjectMutationError(null);
-
-    try {
-      if (editingProject.id === NEW_PROJECT_ID) {
-        await requestJson(`/api/v1/projects`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(input),
-        });
-      } else {
-        await requestJson(`/api/v1/projects/${editingProject.id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(input),
-        });
-      }
-
-      router.refresh();
-      setEditingProjectId(null);
-    } catch (error) {
-      if (isUnauthorizedError(error)) {
-        redirectToLogin();
-        return;
-      }
-
-      setProjectMutationError(error instanceof Error ? error.message : "Could not save project.");
-    } finally {
-      setProjectMutationPending(false);
-    }
-  };
-
-  const handleProjectArchiveToggle = async () => {
-    if (!editingProject || editingProject.id === NEW_PROJECT_ID) {
-      return;
-    }
-
-    setProjectMutationPending(true);
-    setProjectMutationError(null);
-
-    try {
-      await requestJson(
-        `/api/v1/projects/${editingProject.id}/${editingProject.isArchived ? "unarchive" : "archive"}`,
-        {
-          method: "POST",
-        },
-      );
-
-      router.refresh();
-      setEditingProjectId(null);
-    } catch (error) {
-      if (isUnauthorizedError(error)) {
-        redirectToLogin();
-        return;
-      }
-
-      setProjectMutationError(
-        error instanceof Error ? error.message : "Could not update project state.",
-      );
-    } finally {
-      setProjectMutationPending(false);
-    }
-  };
-
-  const handleProjectQuickUnarchive = async (projectId: string) => {
-    setProjectMutationPending(true);
-    setProjectMutationError(null);
-
-    try {
-      await requestJson(`/api/v1/projects/${projectId}/unarchive`, {
-        method: "POST",
-      });
-      router.refresh();
-    } catch (error) {
-      if (isUnauthorizedError(error)) {
-        redirectToLogin();
-        return;
-      }
-
-      setProjectMutationError(
-        error instanceof Error ? error.message : "Could not unarchive project.",
-      );
-    } finally {
-      setProjectMutationPending(false);
-    }
-  };
-
-  const handleProjectMove = async (projectId: string, direction: "up" | "down") => {
-    setProjectReorderPendingId(projectId);
-
-    try {
-      await requestJson(`/api/v1/projects/${projectId}/move`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ direction }),
-      });
-
-      router.refresh();
-    } catch (error) {
-      if (isUnauthorizedError(error)) {
-        redirectToLogin();
-      }
-    } finally {
-      setProjectReorderPendingId(null);
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await requestJson(`/api/v1/auth/logout`, { method: "POST" });
     } finally {
       router.push("/auth/login");
-    }
-  };
-
-  const handleProfileSave = async (input: {
-    name: string;
-    email: string;
-    currentPassword: string;
-    newPassword: string;
-    avatarUrl: string | null;
-  }) => {
-    setProfileMutationPending(true);
-    setProfileMutationError(null);
-
-    try {
-      const profile = await requestJson<CurrentUserProfile>(`/api/v1/auth/me`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(input),
-      });
-
-      setCurrentUserProfile(profile);
-      setProfileModalOpen(false);
-    } catch (error) {
-      if (isUnauthorizedError(error)) {
-        redirectToLogin();
-        return;
-      }
-
-      setProfileMutationError(
-        error instanceof ApiRequestError ? error.message : "Failed to update profile.",
-      );
-    } finally {
-      setProfileMutationPending(false);
     }
   };
 
@@ -636,8 +477,7 @@ export function TaskewrApp({
 
   const openPrimaryCreateAction = () => {
     if (initialSection === "projects") {
-      setProjectMutationError(null);
-      setEditingProjectId(NEW_PROJECT_ID);
+      openNewProject();
       return;
     }
 
@@ -677,34 +517,6 @@ export function TaskewrApp({
     closeProjectMenus,
   );
 
-  useEffect(() => {
-    setProjectMutationError(null);
-  }, [editingProjectId]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadProfile = async () => {
-      try {
-        const profile = await requestJson<CurrentUserProfile>(`/api/v1/auth/me`);
-
-        if (!cancelled) {
-          setCurrentUserProfile(profile);
-        }
-      } catch (error) {
-        if (!cancelled && isUnauthorizedError(error)) {
-          redirectToLogin();
-        }
-      }
-    };
-
-    void loadProfile();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [redirectToLogin]);
-
   return (
     <main className="h-screen overflow-hidden bg-[var(--surface-base)] text-[var(--ink-strong)]">
       <div className="grid h-screen grid-cols-[auto_minmax(0,1fr)]">
@@ -718,10 +530,7 @@ export function TaskewrApp({
           onOpenSection={openSection}
           onNewTask={openPrimaryCreateAction}
           onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
-          onOpenProfile={() => {
-            setProfileMutationError(null);
-            setProfileModalOpen(true);
-          }}
+          onOpenProfile={openProfileModal}
           onLogout={() => void handleLogout()}
           avatarInitial={(currentUserProfile?.name?.trim().charAt(0) || "R").toUpperCase()}
           avatarUrl={currentUserProfile?.avatarUrl ?? null}
@@ -961,8 +770,7 @@ export function TaskewrApp({
         }
         open={profileModalOpen}
         onClose={() => {
-          setProfileMutationError(null);
-          setProfileModalOpen(false);
+          closeProfileModal();
         }}
         profile={
           currentUserProfile
