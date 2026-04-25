@@ -4,6 +4,7 @@ import type {
   TaskSortOption,
   TaskStatus,
 } from "./constants";
+import type { RepeatSettingsInput } from "./repeat-schemas";
 
 export type TaskFilters = {
   sort: TaskSortOption;
@@ -26,6 +27,9 @@ export type TaskListItem = {
   priority: string;
   priorityValue: TaskPriority;
   startDate: string | null;
+  repeatRuleId?: string | null;
+  repeatScheduledFor?: string | null;
+  repeatCarryCount?: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -36,6 +40,7 @@ export type TaskDetails = {
   parentTaskId?: string;
   parentTask: string;
   labels: string[];
+  repeat?: RepeatSettingsInput;
   startDateValue: string;
   dueDateValue: string;
   projectOptions?: { id: string; name: string }[];

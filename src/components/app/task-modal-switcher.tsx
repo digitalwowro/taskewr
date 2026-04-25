@@ -3,6 +3,7 @@
 import { TaskEditorModal } from "@/components/app/task-editor-modal";
 import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
 import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
+import type { RepeatSettingsInput } from "@/domain/tasks/repeat-schemas";
 
 type TaskSaveInput = {
   projectId: number;
@@ -14,6 +15,7 @@ type TaskSaveInput = {
   startDate: string | null;
   dueDate: string | null;
   labels: string[];
+  repeat: RepeatSettingsInput;
 };
 
 type TaskModalSwitcherProps = {

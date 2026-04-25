@@ -212,6 +212,7 @@ npm run clean:macos
 * [Implementation checklist](./docs/implementation-checklist.md)
 * [Development guide](./docs/development.md)
 * [Operator checklist](./docs/operator-checklist.md)
+* [Repeat settings](./docs/recurrence.md)
 * [Production deployment](./docs/production-deployment.md)
 * [Release readiness](./docs/release-readiness.md)
 

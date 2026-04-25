@@ -10,6 +10,7 @@ export class TasksRepository {
       include: {
         project: true,
         parentTask: true,
+        repeatRule: true,
         childTasks: true,
         taskLabels: {
           include: {
@@ -36,6 +37,7 @@ export class TasksRepository {
       include: {
         project: true,
         childTasks: true,
+        repeatRule: true,
         taskLabels: {
           include: {
             label: true,
@@ -56,6 +58,7 @@ export class TasksRepository {
       include: {
         project: true,
         parentTask: true,
+        repeatRule: true,
         taskLabels: {
           include: {
             label: true,
@@ -97,8 +100,9 @@ export class TasksRepository {
     return this.prisma.task.create({
       data,
       include: {
-        project: true,
+       project: true,
         parentTask: true,
+        repeatRule: true,
         childTasks: true,
         taskLabels: {
           include: {
@@ -116,6 +120,7 @@ export class TasksRepository {
       include: {
         project: true,
         parentTask: true,
+        repeatRule: true,
         childTasks: true,
         taskLabels: {
           include: {

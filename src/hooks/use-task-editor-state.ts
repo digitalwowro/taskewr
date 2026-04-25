@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { AppProject } from "@/app/app-data";
 import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
 import type { TaskListItem } from "@/domain/tasks/types";
+import type { RepeatSettingsInput } from "@/domain/tasks/repeat-schemas";
 import { isUnauthorizedError, requestJson } from "@/lib/api-client";
 
 export const NEW_TASK_ID = "NEW_TASK";
@@ -19,6 +20,7 @@ export type TaskMutationInput = {
   startDate: string | null;
   dueDate: string | null;
   labels: string[];
+  repeat: RepeatSettingsInput;
 };
 
 type UseTaskEditorStateInput = {
@@ -75,6 +77,9 @@ export function useTaskEditorState({
       priority: "Medium",
       priorityValue: "medium",
       startDate: null,
+      repeatRuleId: null,
+      repeatScheduledFor: null,
+      repeatCarryCount: 0,
       createdAt: "",
       updatedAt: "",
     };

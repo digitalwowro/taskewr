@@ -5,6 +5,7 @@ import { DEFAULT_TASK_FILTERS, normalizeTaskFilters } from "@/domain/common/filt
 import { filterTaskItems, sortTaskItems } from "@/domain/dashboard/queries";
 import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from "@/domain/tasks/constants";
 import { AppContextService } from "@/server/services/app-context-service";
+import { RepeatTaskService } from "@/server/services/repeat-task-service";
 import { ProjectsRepository } from "@/data/prisma/repositories/projects-repository";
 import { TasksRepository } from "@/data/prisma/repositories/tasks-repository";
 import { db } from "@/lib/db";
@@ -16,6 +17,7 @@ type AppTaskRecord = Prisma.TaskGetPayload<{
   include: {
     project: true;
     parentTask: true;
+    repeatRule: true;
     taskLabels: {
       include: {
         label: true;
@@ -82,6 +84,9 @@ function toTaskListItem(task: AppTaskRecord, timezone: string | null): TaskListI
     priority: priorityLabel,
     priorityValue: task.priority as TaskListItem["priorityValue"],
     startDate: task.startDate ? task.startDate.toISOString() : null,
+    repeatRuleId: task.repeatRuleId ? String(task.repeatRuleId) : null,
+    repeatScheduledFor: task.repeatScheduledFor ? task.repeatScheduledFor.toISOString() : null,
+    repeatCarryCount: task.repeatCarryCount,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
   };
@@ -98,6 +103,29 @@ function toTaskDetails(
     parentTaskId: task.parentTaskId ? String(task.parentTaskId) : "",
     parentTask: task.parentTask?.title ?? "",
     labels: task.taskLabels.map((item) => item.label.name),
+    repeat: task.repeatRule
+      ? {
+          enabled: task.repeatRule.isActive,
+          scheduleType: task.repeatRule.scheduleType as NonNullable<TaskDetails["repeat"]>["scheduleType"],
+          interval: task.repeatRule.interval,
+          weekdays: Array.isArray(task.repeatRule.weekdays)
+            ? task.repeatRule.weekdays.filter((item): item is number => Number.isInteger(item))
+            : [],
+          monthDay: task.repeatRule.monthDay,
+          specificDates: Array.isArray(task.repeatRule.specificDates)
+            ? task.repeatRule.specificDates.filter((item): item is string => typeof item === "string")
+            : [],
+          incompleteBehavior: task.repeatRule.incompleteBehavior as NonNullable<TaskDetails["repeat"]>["incompleteBehavior"],
+        }
+      : {
+          enabled: false,
+          scheduleType: "interval_days",
+          interval: 1,
+          weekdays: [],
+          monthDay: null,
+          specificDates: [],
+          incompleteBehavior: "carry_forward",
+        },
     startDateValue: task.startDate ? task.startDate.toISOString().slice(0, 10) : "",
     dueDateValue: task.dueDate ? task.dueDate.toISOString().slice(0, 10) : "",
     projectOptions: projects
@@ -114,10 +142,12 @@ export class AppDataService {
     private readonly projectsRepository = new ProjectsRepository(db),
     private readonly tasksRepository = new TasksRepository(db),
     private readonly contextService = new AppContextService(),
+    private readonly repeatTaskService = new RepeatTaskService(),
   ) {}
 
   private async loadBaseRecords() {
     const context = await this.contextService.getAppContext();
+    await this.repeatTaskService.syncDueTasks(context.workspaceId);
     const [projects, tasks] = await Promise.all([
       this.projectsRepository.listProjects(context.workspaceId, true),
       this.tasksRepository.listWorkspaceTasks(context.workspaceId),

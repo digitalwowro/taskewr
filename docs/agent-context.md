@@ -137,6 +137,7 @@ Use `npm run clean:macos` to remove local `.DS_Store` files outside ignored depe
 - Production startup runs migrations through `docker/entrypoint.sh`.
 - `/api/v1/health` can be used by deployment smoke checks and reverse-proxy monitoring.
 - `postcss` is pinned through npm `overrides` to avoid GHSA-qx2v-qp2m-jg93 while keeping Next on the current major. Do not run `npm audit fix --force` if npm suggests a Next downgrade.
+- Repeat settings are metadata on normal tasks, not a parallel recurring-task model. See `docs/recurrence.md`. Future notification work should add a worker that calls `RepeatTaskService.syncDueTasks` rather than duplicating repeat logic.
 - Demo seeding is intentional for local and explicit QA environments only; production must not depend on seed data.
 - The production compose file should continue to persist both Postgres data and app uploads.
 - If adding upload or file-storage behavior, keep `/app/storage/uploads` compatible with the existing production volume.

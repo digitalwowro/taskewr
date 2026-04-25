@@ -10,6 +10,7 @@ import {
   TASK_SORT_OPTIONS,
   TASK_STATUSES,
 } from "./constants";
+import { repeatSettingsSchema } from "./repeat-schemas";
 
 export const taskStatusSchema = z.enum(TASK_STATUSES);
 export const taskPrioritySchema = z.enum(TASK_PRIORITIES);
@@ -37,6 +38,15 @@ export const taskMutationSchema = z
     startDate: z.string().date().nullable().optional().default(null),
     dueDate: z.string().date().nullable().optional().default(null),
     labels: z.array(z.string()).optional().default([]),
+    repeat: repeatSettingsSchema.optional().default({
+      enabled: false,
+      scheduleType: "interval_days",
+      interval: 1,
+      weekdays: [],
+      monthDay: null,
+      specificDates: [],
+      incompleteBehavior: "carry_forward",
+    }),
   })
   .superRefine((value, ctx) => {
     if (value.startDate && value.dueDate && value.dueDate < value.startDate) {

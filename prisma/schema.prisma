@@ -46,6 +46,7 @@ model Workspace {
   projects    Project[]
   cycles      Cycle[]
   labels      Label[]
+  repeatRules TaskRepeatRule[]
   auditLogs   AuditLog[]
 
   @@map("workspaces")
@@ -82,19 +83,20 @@ model AuthAccount {
 }
 
 model Project {
-  id          Int        @id @default(autoincrement())
-  workspaceId Int?       @map("workspace_id")
-  ownerUserId Int?       @map("owner_user_id")
-  name        String     @db.VarChar(200)
+  id          Int              @id @default(autoincrement())
+  workspaceId Int?             @map("workspace_id")
+  ownerUserId Int?             @map("owner_user_id")
+  name        String           @db.VarChar(200)
   description String?
-  sortOrder   Int        @default(1) @map("sort_order")
-  archivedAt  DateTime?  @map("archived_at")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
-  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
-  owner       User?      @relation("OwnedProjects", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  sortOrder   Int              @default(1) @map("sort_order")
+  archivedAt  DateTime?        @map("archived_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  workspace   Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  owner       User?            @relation("OwnedProjects", fields: [ownerUserId], references: [id], onDelete: SetNull)
   tasks       Task[]
   cycles      Cycle[]
+  repeatRules TaskRepeatRule[]
 
   @@index([workspaceId])
   @@index([archivedAt])
@@ -103,42 +105,81 @@ model Project {
 }
 
 model Task {
-  id              Int         @id @default(autoincrement())
-  projectId       Int         @map("project_id")
-  createdByUserId Int?        @map("created_by_user_id")
-  updatedByUserId Int?        @map("updated_by_user_id")
-  assigneeUserId  Int?        @map("assignee_user_id")
-  cycleId         Int?        @map("cycle_id")
-  parentTaskId    Int?        @map("parent_task_id")
-  title           String      @db.VarChar(200)
-  description     String?
-  status          String      @db.VarChar(24)
-  priority        String      @db.VarChar(24)
-  startDate       DateTime?   @map("start_date") @db.Date
-  dueDate         DateTime?   @map("due_date") @db.Date
-  sortOrder       Int         @default(1) @map("sort_order")
-  version         Int         @default(1)
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  creator         User?       @relation("CreatedTasks", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  updater         User?       @relation("UpdatedTasks", fields: [updatedByUserId], references: [id], onDelete: SetNull)
-  assignee        User?       @relation("AssignedTasks", fields: [assigneeUserId], references: [id], onDelete: SetNull)
-  cycle           Cycle?      @relation(fields: [cycleId], references: [id], onDelete: SetNull)
-  parentTask      Task?       @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
-  childTasks      Task[]      @relation("TaskHierarchy")
-  taskLabels      TaskLabel[]
+  id                 Int             @id @default(autoincrement())
+  projectId          Int             @map("project_id")
+  createdByUserId    Int?            @map("created_by_user_id")
+  updatedByUserId    Int?            @map("updated_by_user_id")
+  assigneeUserId     Int?            @map("assignee_user_id")
+  cycleId            Int?            @map("cycle_id")
+  parentTaskId       Int?            @map("parent_task_id")
+  repeatRuleId       Int?            @map("repeat_rule_id")
+  title              String          @db.VarChar(200)
+  description        String?
+  status             String          @db.VarChar(24)
+  priority           String          @db.VarChar(24)
+  startDate          DateTime?       @map("start_date") @db.Date
+  dueDate            DateTime?       @map("due_date") @db.Date
+  repeatScheduledFor DateTime?       @map("repeat_scheduled_for") @db.Date
+  repeatPeriodStart  DateTime?       @map("repeat_period_start") @db.Date
+  repeatPeriodEnd    DateTime?       @map("repeat_period_end") @db.Date
+  repeatSequence     Int?            @map("repeat_sequence")
+  repeatCarryCount   Int             @default(0) @map("repeat_carry_count")
+  sortOrder          Int             @default(1) @map("sort_order")
+  version            Int             @default(1)
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+  project            Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator            User?           @relation("CreatedTasks", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updater            User?           @relation("UpdatedTasks", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  assignee           User?           @relation("AssignedTasks", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  cycle              Cycle?          @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  parentTask         Task?           @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  childTasks         Task[]          @relation("TaskHierarchy")
+  repeatRule         TaskRepeatRule? @relation("RepeatRuleTasks", fields: [repeatRuleId], references: [id], onDelete: SetNull)
+  sourceRepeatRule   TaskRepeatRule? @relation("RepeatRuleSourceTask")
+  taskLabels         TaskLabel[]
 
   @@index([projectId])
   @@index([assigneeUserId])
   @@index([cycleId])
   @@index([parentTaskId])
+  @@index([repeatRuleId])
+  @@index([repeatScheduledFor])
+  @@unique([repeatRuleId, repeatScheduledFor])
   @@index([status])
   @@index([priority])
   @@index([startDate])
   @@index([dueDate])
   @@index([projectId, status, sortOrder])
   @@map("tasks")
+}
+
+model TaskRepeatRule {
+  id                 Int        @id @default(autoincrement())
+  workspaceId        Int?       @map("workspace_id")
+  projectId          Int        @map("project_id")
+  sourceTaskId       Int?       @unique @map("source_task_id")
+  isActive           Boolean    @default(true) @map("is_active")
+  scheduleType       String     @map("schedule_type") @db.VarChar(40)
+  interval           Int        @default(1)
+  weekdays           Json?
+  monthDay           Int?       @map("month_day")
+  specificDates      Json?      @map("specific_dates")
+  incompleteBehavior String     @map("incomplete_behavior") @db.VarChar(40)
+  nextDueDate        DateTime?  @map("next_due_date") @db.Date
+  lastSyncedAt       DateTime?  @map("last_synced_at")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+  workspace          Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  project            Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceTask         Task?      @relation("RepeatRuleSourceTask", fields: [sourceTaskId], references: [id], onDelete: SetNull)
+  tasks              Task[]     @relation("RepeatRuleTasks")
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([isActive])
+  @@index([nextDueDate])
+  @@map("task_repeat_rules")
 }
 
 model Cycle {

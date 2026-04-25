@@ -51,6 +51,7 @@ async function main() {
     const dashboardCreateDialog = page.getByRole("dialog", { name: "Create task" });
     await dashboardCreateDialog.locator("input").first().fill(dashboardTaskTitle);
     await dashboardCreateDialog.locator("textarea").first().fill("Created from the dashboard smoke flow.");
+    await dashboardCreateDialog.getByLabel("Repeat this task").check();
     await dashboardCreateDialog.getByRole("button", { name: "Create task" }).click();
     await page.getByText(dashboardTaskTitle).first().waitFor();
 

@@ -1,4 +1,5 @@
 import { TasksRepository } from "@/data/prisma/repositories/tasks-repository";
+import { RepeatRulesRepository } from "@/data/prisma/repositories/repeat-rules-repository";
 import { assertCanAccessTask } from "@/domain/auth/policies";
 import { assertBoardMoveWithinProject, buildLaneOrderUpdates } from "@/domain/tasks/board";
 import {
@@ -15,6 +16,8 @@ import {
   type BoardMoveInput,
   type TaskMutationInput,
 } from "@/domain/tasks/schemas";
+import { getNextRepeatDueDate } from "@/domain/tasks/repeat-schedule";
+import type { RepeatSettingsInput } from "@/domain/tasks/repeat-schemas";
 import { NotFoundError, ValidationError } from "@/domain/common/errors";
 import { AppContextService } from "@/server/services/app-context-service";
 import { db } from "@/lib/db";
@@ -22,6 +25,7 @@ import { db } from "@/lib/db";
 export class TaskService {
   constructor(
     private readonly repository = new TasksRepository(db),
+    private readonly repeatRulesRepository = new RepeatRulesRepository(db),
     private readonly contextService = new AppContextService(),
   ) {}
 
@@ -114,6 +118,7 @@ export class TaskService {
     });
 
     await this.syncLabels(createdTask.id, payload.labels, context);
+    await this.syncRepeatSettings(createdTask.id, payload, context);
     return this.getTask(createdTask.id);
   }
 
@@ -152,6 +157,7 @@ export class TaskService {
     });
 
     await this.syncLabels(id, payload.labels, context);
+    await this.syncRepeatSettings(id, payload, context, currentTask.repeatRuleId);
     return this.getTask(id);
   }
 
@@ -244,4 +250,75 @@ export class TaskService {
       normalizedNames.map((name) => byName.get(name)!.id),
     );
   }
+
+  private async syncRepeatSettings(
+    taskId: number,
+    payload: TaskMutationInput,
+    context: { workspaceId: number; actorUserId: number | null },
+    existingRepeatRuleId?: number | null,
+  ) {
+    if (!payload.repeat.enabled) {
+      if (existingRepeatRuleId) {
+        await this.repeatRulesRepository.deactivateById(existingRepeatRuleId);
+      } else {
+        await this.repeatRulesRepository.deactivateForSourceTask(taskId);
+      }
+      await this.repository.updateById(taskId, {
+        repeatRuleId: null,
+        repeatScheduledFor: null,
+        repeatPeriodStart: null,
+        repeatPeriodEnd: null,
+        repeatSequence: null,
+        repeatCarryCount: 0,
+      });
+      return;
+    }
+
+    const firstDueDate = payload.dueDate ?? payload.startDate ?? new Date().toISOString().slice(0, 10);
+    const nextDueDate = getNextRepeatDueDate(
+      toRepeatSchedule(payload.repeat),
+      firstDueDate,
+      firstDueDate,
+    );
+    const ruleData = {
+      workspaceId: context.workspaceId,
+      projectId: payload.projectId,
+      isActive: true,
+      scheduleType: payload.repeat.scheduleType,
+      interval: payload.repeat.interval,
+      weekdays: payload.repeat.weekdays,
+      monthDay: payload.repeat.monthDay,
+      specificDates: payload.repeat.specificDates,
+      incompleteBehavior: payload.repeat.incompleteBehavior,
+      nextDueDate: nextDueDate ? new Date(`${nextDueDate}T00:00:00.000Z`) : null,
+    };
+    const rule = existingRepeatRuleId
+      ? await this.repeatRulesRepository.updateRule(existingRepeatRuleId, {
+          ...ruleData,
+          sourceTaskId: taskId,
+        })
+      : await this.repeatRulesRepository.upsertForSourceTask({
+          sourceTaskId: taskId,
+          data: ruleData,
+        });
+    const scheduledFor = new Date(`${firstDueDate}T00:00:00.000Z`);
+
+    await this.repository.updateById(taskId, {
+      repeatRuleId: rule.id,
+      repeatScheduledFor: scheduledFor,
+      repeatPeriodStart: scheduledFor,
+      repeatPeriodEnd: scheduledFor,
+      repeatSequence: 1,
+    });
+  }
+}
+
+function toRepeatSchedule(repeat: RepeatSettingsInput) {
+  return {
+    scheduleType: repeat.scheduleType,
+    interval: repeat.interval,
+    weekdays: repeat.weekdays,
+    monthDay: repeat.monthDay,
+    specificDates: repeat.specificDates,
+  };
 }

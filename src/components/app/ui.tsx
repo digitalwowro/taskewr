@@ -84,6 +84,18 @@ function getPriorityTone(
   }
 }
 
+function RepeatBadge({ task }: { task: Pick<TaskListItem, "repeatRuleId" | "repeatCarryCount"> }) {
+  if (!task.repeatRuleId) {
+    return null;
+  }
+
+  return (
+    <span className="inline-flex h-6 items-center rounded-full border border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--accent-strong)]">
+      {(task.repeatCarryCount ?? 0) > 0 ? "Carried" : "Repeats"}
+    </span>
+  );
+}
+
 export function CountPill({
   tone,
   children,
@@ -261,6 +273,8 @@ export function ProjectSection({
     status: string;
     priority: string;
     due: string;
+    repeatRuleId?: string | null;
+    repeatCarryCount?: number;
   }[];
   onEdit: (taskId: string) => void;
   onOpenProject: (projectName: string) => void;
@@ -312,6 +326,9 @@ export function ProjectSection({
               <StatusPill tone={statusTone}>{item.status}</StatusPill>
               <StatusPill tone={priorityTone}>{item.priority}</StatusPill>
               <span className="text-right text-xs text-[var(--ink-subtle)]">{item.due}</span>
+              <div className="col-start-2 -mt-1 flex">
+                <RepeatBadge task={item} />
+              </div>
             </div>
           );
         }) : (
@@ -548,6 +565,7 @@ export function ProjectBoardLane({
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <StatusPill tone={statusTone}>{item.status}</StatusPill>
                 <StatusPill tone={priorityTone}>{item.priority}</StatusPill>
+                <RepeatBadge task={item} />
               </div>
             </article>
           );
