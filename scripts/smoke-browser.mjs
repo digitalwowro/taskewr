@@ -56,10 +56,10 @@ async function main() {
     await dashboardCreateDialog.getByRole("button", { name: "Create task" }).click();
     await page.getByText("Recurring tasks", { exact: true }).waitFor();
     await page.getByRole("heading", { name: "Today and Unscheduled" }).first().waitFor();
-    await page.getByRole("button", { name: "Hide recurring tasks" }).click();
+    await page.getByRole("button", { name: "Collapse recurring tasks" }).click();
     await page.reload();
-    await page.getByRole("button", { name: "Show recurring tasks" }).waitFor();
-    await page.getByRole("button", { name: "Show recurring tasks" }).click();
+    await page.getByRole("button", { name: "Expand recurring tasks" }).waitFor();
+    await page.getByRole("button", { name: "Expand recurring tasks" }).click();
     await page.getByText(dashboardTaskTitle).first().waitFor();
 
     await page.getByText(dashboardTaskTitle).first().click();

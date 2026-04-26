@@ -29,9 +29,23 @@ function CollapseButton({
       type="button"
       onClick={onClick}
       aria-expanded={!collapsed}
-      className="inline-flex h-8 items-center rounded-xl border border-[var(--line-strong)] bg-white px-3 text-xs font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+      aria-label={`${collapsed ? "Expand" : "Collapse"} ${label}`}
+      title={`${collapsed ? "Expand" : "Collapse"} ${label}`}
+      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-white text-[var(--ink-subtle)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
     >
-      {collapsed ? `Show ${label}` : `Hide ${label}`}
+      <svg
+        viewBox="0 0 16 16"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      >
+        {collapsed ? (
+          <path d="m4.5 6.25 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
+        ) : (
+          <path d="m4.5 9.75 3.5-3.5 3.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
+        )}
+      </svg>
     </button>
   );
 }
