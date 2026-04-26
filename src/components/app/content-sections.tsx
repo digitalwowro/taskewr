@@ -3,6 +3,7 @@
 import type { AppProject, ProjectGroup } from "@/app/app-data";
 import type { TaskStatus } from "@/domain/tasks/constants";
 import type { TaskListItem } from "@/domain/tasks/types";
+import { usePersistedCollapsedSections } from "@/hooks/use-persisted-collapsed-sections";
 import {
   CountPill,
   FocusItem,
@@ -13,6 +14,27 @@ import {
   ProjectSection,
 } from "@/components/app/ui";
 import type { ProjectView } from "@/domain/projects/constants";
+
+function CollapseButton({
+  collapsed,
+  label,
+  onClick,
+}: {
+  collapsed: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={!collapsed}
+      className="inline-flex h-8 items-center rounded-xl border border-[var(--line-strong)] bg-white px-3 text-xs font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+    >
+      {collapsed ? `Show ${label}` : `Hide ${label}`}
+    </button>
+  );
+}
 
 export function DashboardContent({
   visibleTaskCount,
@@ -35,6 +57,17 @@ export function DashboardContent({
   onOpenProjects: () => void;
   onOpenProjectByName: (projectName: string) => void;
 }) {
+  const { isSectionCollapsed, toggleSection } = usePersistedCollapsedSections(
+    "taskewr.dashboard.collapsedSections",
+  );
+  const recurringCollapsed = isSectionCollapsed("recurring");
+  const recurringOverdueCollapsed = isSectionCollapsed("recurring.overdue");
+  const recurringTodayCollapsed = isSectionCollapsed("recurring.today");
+  const focusCollapsed = isSectionCollapsed("focus");
+  const focusOverdueCollapsed = isSectionCollapsed("focus.overdue");
+  const focusTodayCollapsed = isSectionCollapsed("focus.today");
+  const projectsCollapsed = isSectionCollapsed("projects");
+
   return (
     <div className="space-y-6">
       <section className="grid gap-2 lg:grid-cols-3">
@@ -45,7 +78,7 @@ export function DashboardContent({
 
       <section className="space-y-5 pt-2.5">
         <article className="rounded-2xl border border-[rgba(37,99,235,0.14)] bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(246,249,255,1)_100%)] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
-          <header>
+          <header className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(37,99,235)]">
                 Recurring tasks
@@ -54,70 +87,99 @@ export function DashboardContent({
                 Scheduled work window
               </h2>
             </div>
+            <CollapseButton
+              collapsed={recurringCollapsed}
+              label="recurring tasks"
+              onClick={() => toggleSection("recurring")}
+            />
           </header>
-          <div className="mt-4 space-y-4">
-            {filteredRecurringOverdueItems.length > 0 ? (
-              <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
-                <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
+          {!recurringCollapsed ? (
+            <div className="mt-4 space-y-4">
+              {filteredRecurringOverdueItems.length > 0 ? (
+                <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
+                  <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
+                        Overdue
+                      </h3>
+                      <CountPill tone="red">{filteredRecurringOverdueItems.length}</CountPill>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
+                        Needs action now
+                      </p>
+                      <CollapseButton
+                        collapsed={recurringOverdueCollapsed}
+                        label="overdue"
+                        onClick={() => toggleSection("recurring.overdue")}
+                      />
+                    </div>
+                  </div>
+                  {!recurringOverdueCollapsed ? (
+                    <>
+                      <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                        <span>Task</span>
+                        <span>Title</span>
+                        <span className="text-center">Project</span>
+                        <span className="text-center">Status</span>
+                        <span className="text-center">Priority</span>
+                        <span className="text-right">Due</span>
+                      </div>
+                      {filteredRecurringOverdueItems.map((item) => (
+                        <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
+                      ))}
+                    </>
+                  ) : null}
+                </section>
+              ) : null}
+
+              <section className="overflow-hidden rounded-xl border border-[rgba(37,99,235,0.12)] bg-white">
+                <div className="flex items-center justify-between border-b border-[rgba(37,99,235,0.12)] bg-[rgba(37,99,235,0.04)] px-4 py-2">
                   <div className="flex items-center gap-3">
                     <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-                      Overdue
+                      Today and Unscheduled
                     </h3>
-                    <CountPill tone="red">{filteredRecurringOverdueItems.length}</CountPill>
+                    <CountPill tone="blue">{filteredRecurringTodayItems.length}</CountPill>
                   </div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
-                    Needs action now
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[rgb(37,99,235)]">
+                      Scheduled focus
+                    </p>
+                    <CollapseButton
+                      collapsed={recurringTodayCollapsed}
+                      label="today and unscheduled"
+                      onClick={() => toggleSection("recurring.today")}
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                  <span>Task</span>
-                  <span>Title</span>
-                  <span className="text-center">Project</span>
-                  <span className="text-center">Status</span>
-                  <span className="text-center">Priority</span>
-                  <span className="text-right">Due</span>
-                </div>
-                {filteredRecurringOverdueItems.map((item) => (
-                  <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
-                ))}
+                {!recurringTodayCollapsed ? (
+                  <>
+                    <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                      <span>Task</span>
+                      <span>Title</span>
+                      <span className="text-center">Project</span>
+                      <span className="text-center">Status</span>
+                      <span className="text-center">Priority</span>
+                      <span className="text-right">Due</span>
+                    </div>
+                    {filteredRecurringTodayItems.length > 0 ? (
+                      filteredRecurringTodayItems.map((item) => (
+                        <FocusItem key={item.id} {...item} onEdit={onEditTask} />
+                      ))
+                    ) : (
+                      <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+                        No recurring tasks due today or unscheduled match the current filters.
+                      </div>
+                    )}
+                  </>
+                ) : null}
               </section>
-            ) : null}
-
-            <section className="overflow-hidden rounded-xl border border-[rgba(37,99,235,0.12)] bg-white">
-              <div className="flex items-center justify-between border-b border-[rgba(37,99,235,0.12)] bg-[rgba(37,99,235,0.04)] px-4 py-2">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-                    Today and Unscheduled
-                  </h3>
-                  <CountPill tone="blue">{filteredRecurringTodayItems.length}</CountPill>
-                </div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[rgb(37,99,235)]">
-                  Scheduled focus
-                </p>
-              </div>
-              <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                <span>Task</span>
-                <span>Title</span>
-                <span className="text-center">Project</span>
-                <span className="text-center">Status</span>
-                <span className="text-center">Priority</span>
-                <span className="text-right">Due</span>
-              </div>
-              {filteredRecurringTodayItems.length > 0 ? (
-                filteredRecurringTodayItems.map((item) => (
-                  <FocusItem key={item.id} {...item} onEdit={onEditTask} />
-                ))
-              ) : (
-                <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                  No recurring tasks due today or unscheduled match the current filters.
-                </div>
-              )}
-            </section>
-          </div>
+            </div>
+          ) : null}
         </article>
 
         <article className="rounded-2xl border border-[rgba(34,122,89,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(248,252,250,1)_100%)] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
-          <header>
+          <header className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
                 Focus for today
@@ -126,66 +188,95 @@ export function DashboardContent({
                 Current work window
               </h2>
             </div>
+            <CollapseButton
+              collapsed={focusCollapsed}
+              label="focus"
+              onClick={() => toggleSection("focus")}
+            />
           </header>
-          <div className="mt-4 space-y-4">
-            {filteredOverdueItems.length > 0 ? (
-              <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
-                <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
+          {!focusCollapsed ? (
+            <div className="mt-4 space-y-4">
+              {filteredOverdueItems.length > 0 ? (
+                <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
+                  <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
+                        Overdue
+                      </h3>
+                      <CountPill tone="red">{filteredOverdueItems.length}</CountPill>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
+                        Needs action now
+                      </p>
+                      <CollapseButton
+                        collapsed={focusOverdueCollapsed}
+                        label="overdue"
+                        onClick={() => toggleSection("focus.overdue")}
+                      />
+                    </div>
+                  </div>
+                  {!focusOverdueCollapsed ? (
+                    <>
+                      <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                        <span>Task</span>
+                        <span>Title</span>
+                        <span className="text-center">Project</span>
+                        <span className="text-center">Status</span>
+                        <span className="text-center">Priority</span>
+                        <span className="text-right">Due</span>
+                      </div>
+                      {filteredOverdueItems.map((item) => (
+                        <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
+                      ))}
+                    </>
+                  ) : null}
+                </section>
+              ) : null}
+
+              <section className="overflow-hidden rounded-xl border border-[rgba(34,122,89,0.12)] bg-white">
+                <div className="flex items-center justify-between border-b border-[rgba(34,122,89,0.12)] bg-[rgba(34,122,89,0.04)] px-4 py-2">
                   <div className="flex items-center gap-3">
                     <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-                      Overdue
+                      Today and Unscheduled
                     </h3>
-                    <CountPill tone="red">{filteredOverdueItems.length}</CountPill>
+                    <CountPill tone="green">{filteredTodayItems.length}</CountPill>
                   </div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
-                    Needs action now
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
+                      Active today
+                    </p>
+                    <CollapseButton
+                      collapsed={focusTodayCollapsed}
+                      label="today and unscheduled"
+                      onClick={() => toggleSection("focus.today")}
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                  <span>Task</span>
-                  <span>Title</span>
-                  <span className="text-center">Project</span>
-                  <span className="text-center">Status</span>
-                  <span className="text-center">Priority</span>
-                  <span className="text-right">Due</span>
-                </div>
-                {filteredOverdueItems.map((item) => (
-                  <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
-                ))}
+                {!focusTodayCollapsed ? (
+                  <>
+                    <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                      <span>Task</span>
+                      <span>Title</span>
+                      <span className="text-center">Project</span>
+                      <span className="text-center">Status</span>
+                      <span className="text-center">Priority</span>
+                      <span className="text-right">Due</span>
+                    </div>
+                    {filteredTodayItems.length > 0 ? (
+                      filteredTodayItems.map((item) => (
+                        <FocusItem key={item.id} {...item} onEdit={onEditTask} />
+                      ))
+                    ) : (
+                      <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+                        No tasks due today or unscheduled match the current filters.
+                      </div>
+                    )}
+                  </>
+                ) : null}
               </section>
-            ) : null}
-
-            <section className="overflow-hidden rounded-xl border border-[rgba(34,122,89,0.12)] bg-white">
-              <div className="flex items-center justify-between border-b border-[rgba(34,122,89,0.12)] bg-[rgba(34,122,89,0.04)] px-4 py-2">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-                    Today and Unscheduled
-                  </h3>
-                  <CountPill tone="green">{filteredTodayItems.length}</CountPill>
-                </div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
-                  Active today
-                </p>
-              </div>
-              <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                <span>Task</span>
-                <span>Title</span>
-                <span className="text-center">Project</span>
-                <span className="text-center">Status</span>
-                <span className="text-center">Priority</span>
-                <span className="text-right">Due</span>
-              </div>
-              {filteredTodayItems.length > 0 ? (
-                filteredTodayItems.map((item) => (
-                  <FocusItem key={item.id} {...item} onEdit={onEditTask} />
-                ))
-              ) : (
-                <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                  No tasks due today or unscheduled match the current filters.
-                </div>
-              )}
-            </section>
-          </div>
+            </div>
+          ) : null}
         </article>
       </section>
 
@@ -199,16 +290,23 @@ export function DashboardContent({
               Active tasks grouped by project
             </h2>
           </div>
-          <button
-            type="button"
-            onClick={onOpenProjects}
-            className="text-sm font-medium text-[var(--ink-subtle)] transition hover:text-[var(--ink-strong)]"
-          >
-            View all projects
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onOpenProjects}
+              className="text-sm font-medium text-[var(--ink-subtle)] transition hover:text-[var(--ink-strong)]"
+            >
+              View all projects
+            </button>
+            <CollapseButton
+              collapsed={projectsCollapsed}
+              label="project groups"
+              onClick={() => toggleSection("projects")}
+            />
+          </div>
         </div>
 
-        {filteredProjects.length > 0 ? (
+        {!projectsCollapsed && filteredProjects.length > 0 ? (
           filteredProjects.map((project) => (
             <ProjectSection
               key={project.name}
@@ -217,11 +315,11 @@ export function DashboardContent({
               onOpenProject={onOpenProjectByName}
             />
           ))
-        ) : (
+        ) : !projectsCollapsed ? (
           <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-5 py-8 text-sm text-[var(--ink-subtle)]">
             No project groups match the current filters.
           </section>
-        )}
+        ) : null}
       </section>
     </div>
   );
