@@ -56,36 +56,32 @@ export function DashboardContent({
             </div>
           </header>
           <div className="mt-4 space-y-4">
-            <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
-              <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-                    Overdue
-                  </h3>
-                  <CountPill tone="red">{filteredRecurringOverdueItems.length}</CountPill>
+            {filteredRecurringOverdueItems.length > 0 ? (
+              <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
+                <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
+                      Overdue
+                    </h3>
+                    <CountPill tone="red">{filteredRecurringOverdueItems.length}</CountPill>
+                  </div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
+                    Needs action now
+                  </p>
                 </div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
-                  Needs action now
-                </p>
-              </div>
-              <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                <span>Task</span>
-                <span>Title</span>
-                <span className="text-center">Project</span>
-                <span className="text-center">Status</span>
-                <span className="text-center">Priority</span>
-                <span className="text-right">Due</span>
-              </div>
-              {filteredRecurringOverdueItems.length > 0 ? (
-                filteredRecurringOverdueItems.map((item) => (
+                <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                  <span>Task</span>
+                  <span>Title</span>
+                  <span className="text-center">Project</span>
+                  <span className="text-center">Status</span>
+                  <span className="text-center">Priority</span>
+                  <span className="text-right">Due</span>
+                </div>
+                {filteredRecurringOverdueItems.map((item) => (
                   <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
-                ))
-              ) : (
-                <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                  No overdue recurring tasks match the current filters.
-                </div>
-              )}
-            </section>
+                ))}
+              </section>
+            ) : null}
 
             <section className="overflow-hidden rounded-xl border border-[rgba(37,99,235,0.12)] bg-white">
               <div className="flex items-center justify-between border-b border-[rgba(37,99,235,0.12)] bg-[rgba(37,99,235,0.04)] px-4 py-2">
@@ -132,36 +128,32 @@ export function DashboardContent({
             </div>
           </header>
           <div className="mt-4 space-y-4">
-            <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
-              <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-                    Overdue
-                  </h3>
-                  <CountPill tone="red">{filteredOverdueItems.length}</CountPill>
+            {filteredOverdueItems.length > 0 ? (
+              <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
+                <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
+                      Overdue
+                    </h3>
+                    <CountPill tone="red">{filteredOverdueItems.length}</CountPill>
+                  </div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
+                    Needs action now
+                  </p>
                 </div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
-                  Needs action now
-                </p>
-              </div>
-            <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                <span>Task</span>
-                <span>Title</span>
-                <span className="text-center">Project</span>
-                <span className="text-center">Status</span>
-                <span className="text-center">Priority</span>
-                <span className="text-right">Due</span>
-              </div>
-              {filteredOverdueItems.length > 0 ? (
-                filteredOverdueItems.map((item) => (
+                <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                  <span>Task</span>
+                  <span>Title</span>
+                  <span className="text-center">Project</span>
+                  <span className="text-center">Status</span>
+                  <span className="text-center">Priority</span>
+                  <span className="text-right">Due</span>
+                </div>
+                {filteredOverdueItems.map((item) => (
                   <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
-                ))
-              ) : (
-                <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                  No overdue tasks match the current filters.
-                </div>
-              )}
-            </section>
+                ))}
+              </section>
+            ) : null}
 
             <section className="overflow-hidden rounded-xl border border-[rgba(34,122,89,0.12)] bg-white">
               <div className="flex items-center justify-between border-b border-[rgba(34,122,89,0.12)] bg-[rgba(34,122,89,0.04)] px-4 py-2">

@@ -101,8 +101,10 @@ export class RepeatTaskService {
       }
     }
 
+    const nextDueDate = getNextRepeatDueDate(schedule, startDate, dueDates[dueDates.length - 1]);
+
     await this.repository.updateRule(rule.id, {
-      nextDueDate: getNextRepeatDueDate(schedule, startDate, dueDates[dueDates.length - 1]),
+      nextDueDate: nextDueDate ? fromDateOnly(nextDueDate) : null,
       lastSyncedAt: new Date(),
     });
   }
@@ -177,4 +179,3 @@ export class RepeatTaskService {
     await this.repository.replaceTaskLabels(taskId, labelIds);
   }
 }
-
