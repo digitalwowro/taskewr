@@ -9,6 +9,27 @@ import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 const NEW_TASK_ID = "NEW_TASK";
 
+type TaskEditorSaveInput = {
+  projectId: number;
+  title: string;
+  description: string;
+  parentTaskId: number | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  startDate: string | null;
+  dueDate: string | null;
+  labels: string[];
+  repeat: {
+    enabled: boolean;
+    scheduleType: RepeatScheduleType;
+    interval: number;
+    weekdays: number[];
+    monthDay: number | null;
+    specificDates: string[];
+    incompleteBehavior: RepeatIncompleteBehavior;
+  };
+};
+
 type TaskEditorFieldErrors = {
   title?: string;
   projectId?: string;
@@ -48,26 +69,7 @@ export function TaskEditorModal(props: {
   projectOptions: { id: string; name: string }[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
   onClose: () => void;
-  onSave: (input: {
-    projectId: number;
-    title: string;
-    description: string;
-    parentTaskId: number | null;
-    status: TaskStatus;
-    priority: TaskPriority;
-    startDate: string | null;
-    dueDate: string | null;
-    labels: string[];
-    repeat: {
-      enabled: boolean;
-      scheduleType: RepeatScheduleType;
-      interval: number;
-      weekdays: number[];
-      monthDay: number | null;
-      specificDates: string[];
-      incompleteBehavior: RepeatIncompleteBehavior;
-    };
-  }) => Promise<void>;
+  onSave: (input: TaskEditorSaveInput) => Promise<void>;
   isSaving: boolean;
   error: string | null;
 }) {
@@ -93,26 +95,7 @@ function TaskEditorModalContent({
   projectOptions: { id: string; name: string }[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
   onClose: () => void;
-  onSave: (input: {
-    projectId: number;
-    title: string;
-    description: string;
-    parentTaskId: number | null;
-    status: TaskStatus;
-    priority: TaskPriority;
-    startDate: string | null;
-    dueDate: string | null;
-    labels: string[];
-    repeat: {
-      enabled: boolean;
-      scheduleType: RepeatScheduleType;
-      interval: number;
-      weekdays: number[];
-      monthDay: number | null;
-      specificDates: string[];
-      incompleteBehavior: RepeatIncompleteBehavior;
-    };
-  }) => Promise<void>;
+  onSave: (input: TaskEditorSaveInput) => Promise<void>;
   isSaving: boolean;
   error: string | null;
 }) {

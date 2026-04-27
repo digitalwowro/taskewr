@@ -37,14 +37,18 @@ export class TaskService {
       throw new NotFoundError("Task not found.", "task_not_found");
     }
 
+    if (!task.project.workspaceId) {
+      throw new Error("Task is missing project workspace — data integrity issue.");
+    }
+
     assertCanAccessTask(
       {
         userId: context.actorUserId ?? 0,
         workspaceId: context.workspaceId,
-        workspaceRole: "owner",
+        workspaceRole: context.workspaceRole,
         timezone: context.timezone,
       },
-      { workspaceId: task.project.workspaceId ?? context.workspaceId },
+      { workspaceId: task.project.workspaceId },
     );
 
     return task;

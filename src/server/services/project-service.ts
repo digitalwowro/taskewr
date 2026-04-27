@@ -38,14 +38,18 @@ export class ProjectService {
       throw new NotFoundError("Project not found.", "project_not_found");
     }
 
+    if (!project.workspaceId) {
+      throw new Error("Project is missing workspace — data integrity issue.");
+    }
+
     assertCanAccessProject(
       {
         userId: context.actorUserId ?? 0,
         workspaceId: context.workspaceId,
-        workspaceRole: "owner",
+        workspaceRole: context.workspaceRole,
         timezone: context.timezone,
       },
-      { workspaceId: project.workspaceId ?? context.workspaceId },
+      { workspaceId: project.workspaceId },
     );
 
     return project;
