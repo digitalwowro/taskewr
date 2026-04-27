@@ -476,6 +476,37 @@ export function TaskewrApp({
       }),
     [selectedProjectTasks],
   );
+  const handleQuickStatusChange = (taskId: string, projectId: string, nextStatus: TaskStatus) => {
+    const taskNumericId = Number(taskId.replace("TSK-", ""));
+    void requestJson(`/api/v1/tasks/board-move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        taskId: taskNumericId,
+        projectId: Number(projectId),
+        nextStatus,
+        targetLaneTaskIds: [taskNumericId],
+      }),
+    })
+      .then(() => { router.refresh(); })
+      .catch((error) => {
+        if (isUnauthorizedError(error)) { redirectToLogin(); }
+      });
+  };
+
+  const handleQuickPriorityChange = (taskId: string, priority: TaskPriority) => {
+    const taskNumericId = Number(taskId.replace("TSK-", ""));
+    void requestJson(`/api/v1/tasks/${taskNumericId}/priority`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priority }),
+    })
+      .then(() => { router.refresh(); })
+      .catch((error) => {
+        if (isUnauthorizedError(error)) { redirectToLogin(); }
+      });
+  };
+
   const moveProjectTaskToStatus = (taskId: string, nextStatus: TaskStatus) => {
     if (!selectedProject) {
       return;
@@ -683,6 +714,8 @@ export function TaskewrApp({
                       filteredTodayItems={filteredTodayItems}
                       filteredProjects={filteredProjects}
                       onEditTask={setEditingTaskId}
+                      onChangeTaskStatus={handleQuickStatusChange}
+                      onChangeTaskPriority={handleQuickPriorityChange}
                       onOpenProjects={() => router.push("/projects")}
                       onOpenProjectByName={(projectName) => {
                         const project = activeProjects.find((item) => item.name === projectName);
@@ -782,6 +815,8 @@ export function TaskewrApp({
                     onDragTaskStart={setDraggingProjectTaskId}
                     onDragTaskEnd={() => setDraggingProjectTaskId(null)}
                     onEditTask={openTask}
+                    onChangeTaskStatus={handleQuickStatusChange}
+                    onChangeTaskPriority={handleQuickPriorityChange}
                     onMoveTask={moveProjectTaskToStatus}
                     onEditProject={() => setEditingProjectId(selectedProject.id)}
                     onBackToProjects={() => router.push("/projects")}

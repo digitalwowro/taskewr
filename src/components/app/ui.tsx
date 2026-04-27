@@ -1,7 +1,121 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { AppProject } from "@/app/app-data";
-import type { TaskStatus } from "@/domain/tasks/constants";
+import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
+import {
+  TASK_PRIORITIES,
+  TASK_PRIORITY_LABELS,
+  TASK_STATUSES,
+  TASK_STATUS_LABELS,
+} from "@/domain/tasks/constants";
 import type { TaskListItem } from "@/domain/tasks/types";
+
+function InlineDropdown<T extends string>({
+  options,
+  currentValue,
+  onSelect,
+  children,
+}: {
+  options: { value: T; label: string }[];
+  currentValue: T;
+  onSelect: (value: T) => void;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function updatePos() {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        setPos({ top: rect.bottom + 4, left: rect.left + rect.width / 2 });
+      }
+    }
+    function handleMouseDown(event: MouseEvent) {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+        triggerRef.current && !triggerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("scroll", updatePos, true);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("scroll", updatePos, true);
+    };
+  }, [open]);
+
+  function handleOpen() {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: rect.left + rect.width / 2 });
+    }
+    setOpen((v) => !v);
+  }
+
+  return (
+    <div className="flex justify-center">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleOpen}
+        className="cursor-pointer"
+      >
+        {children}
+      </button>
+      {open && pos ? createPortal(
+        <div
+          ref={dropdownRef}
+          style={{ position: "fixed", top: pos.top, left: pos.left, transform: "translateX(-50%)", zIndex: 9999 }}
+          className="min-w-[120px] overflow-hidden rounded-xl border border-[var(--line-soft)] bg-white py-1 shadow-[0_8px_24px_rgba(15,23,42,0.10)]"
+        >
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onSelect(option.value);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center px-3 py-1.5 text-left text-[13px] transition hover:bg-[var(--surface-subtle)] ${
+                option.value === currentValue
+                  ? "font-semibold text-[var(--ink-strong)]"
+                  : "text-[var(--ink-muted)]"
+              }`}
+            >
+              {option.value === currentValue ? (
+                <svg viewBox="0 0 16 16" className="mr-2 h-3.5 w-3.5 shrink-0 text-[var(--accent-strong)]" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 8l3.5 3.5 6.5-7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <span className="mr-2 w-3.5 shrink-0" />
+              )}
+              {option.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      ) : null}
+    </div>
+  );
+}
+
+const STATUS_OPTIONS = TASK_STATUSES.map((value) => ({
+  value,
+  label: TASK_STATUS_LABELS[value],
+}));
+
+const PRIORITY_OPTIONS = TASK_PRIORITIES.map((value) => ({
+  value,
+  label: TASK_PRIORITY_LABELS[value],
+}));
 
 export function StatusPill({
   tone,
@@ -182,81 +296,153 @@ export function MetricCard({
 
 export function FocusItem({
   id,
+  projectId,
   title,
   project,
   status,
-  due,
+  statusValue,
   priority,
+  priorityValue,
+  due,
   onEdit,
+  onChangeStatus,
+  onChangePriority,
 }: {
   id: string;
+  projectId?: string;
   title: string;
   project: string;
   status: string;
-  due: string;
+  statusValue: TaskStatus;
   priority: string;
+  priorityValue: TaskPriority;
+  due: string;
   onEdit: (taskId: string) => void;
+  onChangeStatus: (taskId: string, projectId: string, status: TaskStatus) => void;
+  onChangePriority: (taskId: string, priority: TaskPriority) => void;
 }) {
   const statusTone = getStatusTone(status);
   const priorityTone = getPriorityTone(priority);
+  const canComplete = statusValue !== "done" && statusValue !== "canceled";
 
   return (
-    <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
-      <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
-        {id}
-      </span>
-      <button
-        type="button"
-        onClick={() => onEdit(id)}
-        className="truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
-      >
-        {title}
-      </button>
-      <span className="truncate text-center text-xs text-[var(--ink-subtle)]">{project}</span>
-      <StatusPill tone={statusTone}>{status}</StatusPill>
-      <StatusPill tone={priorityTone}>{priority}</StatusPill>
-      <span className="text-right text-xs text-[var(--ink-subtle)]">{due}</span>
-    </div>
+    <tr className="group border-b border-[var(--line-soft)] text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
+      <td className="px-4 py-3 whitespace-nowrap">
+        {canComplete ? (
+          <button
+            type="button"
+            onClick={() => onChangeStatus(id, projectId ?? "", "done")}
+            className="relative text-left font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]"
+            aria-label="Mark as done"
+          >
+            <span className="transition-opacity group-hover:opacity-0">{id}</span>
+            <svg viewBox="0 0 20 20" className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--accent-strong)] opacity-0 transition-opacity group-hover:opacity-100" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <circle cx="10" cy="10" r="8" />
+              <path d="M6.5 10l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : (
+          <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">{id}</span>
+        )}
+      </td>
+      <td className="w-full px-4 py-3 max-w-0">
+        <button
+          type="button"
+          onClick={() => onEdit(id)}
+          className="block w-full truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+        >
+          {title}
+        </button>
+      </td>
+      <td className="px-4 py-3 text-center text-xs text-[var(--ink-subtle)] whitespace-nowrap">{project}</td>
+      <td className="px-4 py-3">
+        <InlineDropdown options={STATUS_OPTIONS} currentValue={statusValue} onSelect={(s) => onChangeStatus(id, projectId ?? "", s)}>
+          <StatusPill tone={statusTone}>{status}</StatusPill>
+        </InlineDropdown>
+      </td>
+      <td className="px-4 py-3">
+        <InlineDropdown options={PRIORITY_OPTIONS} currentValue={priorityValue} onSelect={(p) => onChangePriority(id, p)}>
+          <StatusPill tone={priorityTone}>{priority}</StatusPill>
+        </InlineDropdown>
+      </td>
+      <td className="px-4 py-3 text-right text-xs text-[var(--ink-subtle)] whitespace-nowrap">{due}</td>
+    </tr>
   );
 }
 
 export function HorizontalListRow({
   id,
+  projectId,
   title,
   project,
   due,
   status,
+  statusValue,
   priority,
+  priorityValue,
   onEdit,
+  onChangeStatus,
+  onChangePriority,
 }: {
   id: string;
+  projectId?: string;
   title: string;
   project: string;
   due: string;
   status?: string;
+  statusValue: TaskStatus;
   priority?: string;
+  priorityValue: TaskPriority;
   onEdit: (taskId: string) => void;
+  onChangeStatus: (taskId: string, projectId: string, status: TaskStatus) => void;
+  onChangePriority: (taskId: string, priority: TaskPriority) => void;
 }) {
   const statusTone = getStatusTone(status ?? "Todo");
   const priorityTone = getPriorityTone(priority ?? "Low");
+  const canComplete = statusValue !== "done" && statusValue !== "canceled";
 
   return (
-    <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
-      <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
-        {id}
-      </span>
-      <button
-        type="button"
-        onClick={() => onEdit(id)}
-        className="truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
-      >
-        {title}
-      </button>
-      <span className="truncate text-center text-xs text-[var(--ink-subtle)]">{project}</span>
-      <StatusPill tone={statusTone}>{status ?? "Todo"}</StatusPill>
-      <StatusPill tone={priorityTone}>{priority ?? "Low"}</StatusPill>
-      <span className="text-right text-xs text-[var(--ink-subtle)]">{due}</span>
-    </div>
+    <tr className="group border-b border-[var(--line-soft)] text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
+      <td className="px-4 py-3 whitespace-nowrap">
+        {canComplete ? (
+          <button
+            type="button"
+            onClick={() => onChangeStatus(id, projectId ?? "", "done")}
+            className="relative text-left font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]"
+            aria-label="Mark as done"
+          >
+            <span className="transition-opacity group-hover:opacity-0">{id}</span>
+            <svg viewBox="0 0 20 20" className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--accent-strong)] opacity-0 transition-opacity group-hover:opacity-100" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <circle cx="10" cy="10" r="8" />
+              <path d="M6.5 10l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : (
+          <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">{id}</span>
+        )}
+      </td>
+      <td className="w-full px-4 py-3 max-w-0">
+        <button
+          type="button"
+          onClick={() => onEdit(id)}
+          className="block w-full truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+        >
+          {title}
+        </button>
+      </td>
+      <td className="px-4 py-3 text-center text-xs text-[var(--ink-subtle)] whitespace-nowrap">{project}</td>
+      <td className="px-4 py-3">
+        <InlineDropdown options={STATUS_OPTIONS} currentValue={statusValue} onSelect={(s) => onChangeStatus(id, projectId ?? "", s)}>
+          <StatusPill tone={statusTone}>{status ?? "Todo"}</StatusPill>
+        </InlineDropdown>
+      </td>
+      <td className="px-4 py-3">
+        <InlineDropdown options={PRIORITY_OPTIONS} currentValue={priorityValue} onSelect={(p) => onChangePriority(id, p)}>
+          <StatusPill tone={priorityTone}>{priority ?? "Low"}</StatusPill>
+        </InlineDropdown>
+      </td>
+      <td className="px-4 py-3 text-right text-xs text-[var(--ink-subtle)] whitespace-nowrap">{due}</td>
+    </tr>
   );
 }
 
@@ -264,20 +450,27 @@ export function ProjectSection({
   name,
   items,
   onEdit,
+  onChangeStatus,
+  onChangePriority,
   onOpenProject,
 }: {
   name: string;
   items: {
     project: string;
     id: string;
+    projectId?: string;
     title: string;
     status: string;
+    statusValue: TaskStatus;
     priority: string;
+    priorityValue: TaskPriority;
     due: string;
     repeatRuleId?: string | null;
     repeatCarryCount?: number;
   }[];
   onEdit: (taskId: string) => void;
+  onChangeStatus: (taskId: string, projectId: string, status: TaskStatus) => void;
+  onChangePriority: (taskId: string, priority: TaskPriority) => void;
   onOpenProject: (projectName: string) => void;
 }) {
   return (
@@ -297,47 +490,74 @@ export function ProjectSection({
           Open project
         </button>
       </header>
-      <div>
-        <div className="grid grid-cols-[76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-          <span>Task</span>
-          <span>Title</span>
-          <span className="text-center">Status</span>
-          <span className="text-center">Priority</span>
-          <span className="text-right">Due</span>
-        </div>
-        {items.length > 0 ? items.map((item) => {
-          const statusTone = getStatusTone(item.status);
-          const priorityTone = getPriorityTone(item.priority);
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            <th className="px-5 py-2 text-left font-semibold">Task</th>
+            <th className="w-full px-5 py-2 text-left font-semibold">Title</th>
+            <th className="px-5 py-2 text-center font-semibold">Status</th>
+            <th className="px-5 py-2 text-center font-semibold">Priority</th>
+            <th className="px-5 py-2 text-right font-semibold">Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.length > 0 ? items.map((item) => {
+            const statusTone = getStatusTone(item.status);
+            const priorityTone = getPriorityTone(item.priority);
+            const canComplete = item.statusValue !== "done" && item.statusValue !== "canceled";
 
-          return (
-            <div
-              key={item.id}
-              className="grid grid-cols-[76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] px-5 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0"
-            >
-              <span className="font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]">
-                {item.id}
-              </span>
-              <button
-                type="button"
-                onClick={() => onEdit(item.id)}
-                className="truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
-              >
-                {item.title}
-              </button>
-              <StatusPill tone={statusTone}>{item.status}</StatusPill>
-              <StatusPill tone={priorityTone}>{item.priority}</StatusPill>
-              <span className="text-right text-xs text-[var(--ink-subtle)]">{item.due}</span>
-              <div className="col-start-2 -mt-1 flex">
-                <RepeatBadge task={item} />
-              </div>
-            </div>
-          );
-        }) : (
-          <div className="px-5 py-6 text-sm text-[var(--ink-subtle)]">
-            No tasks in this project match the current filters.
-          </div>
-        )}
-      </div>
+            return (
+              <tr key={item.id} className="group border-b border-[var(--line-soft)] text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
+                <td className="px-5 py-3 whitespace-nowrap">
+                  {canComplete ? (
+                    <button
+                      type="button"
+                      onClick={() => onChangeStatus(item.id, item.projectId ?? "", "done")}
+                      className="relative text-left font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]"
+                      aria-label="Mark as done"
+                    >
+                      <span className="transition-opacity group-hover:opacity-0">{item.id}</span>
+                      <svg viewBox="0 0 20 20" className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--accent-strong)] opacity-0 transition-opacity group-hover:opacity-100" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <circle cx="10" cy="10" r="8" />
+                        <path d="M6.5 10l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <span className="font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]">{item.id}</span>
+                  )}
+                </td>
+                <td className="w-full px-5 py-3 max-w-0">
+                  <button
+                    type="button"
+                    onClick={() => onEdit(item.id)}
+                    className="block w-full truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+                  >
+                    {item.title}
+                  </button>
+                  <RepeatBadge task={item} />
+                </td>
+                <td className="px-5 py-3">
+                  <InlineDropdown options={STATUS_OPTIONS} currentValue={item.statusValue} onSelect={(s) => onChangeStatus(item.id, item.projectId ?? "", s)}>
+                    <StatusPill tone={statusTone}>{item.status}</StatusPill>
+                  </InlineDropdown>
+                </td>
+                <td className="px-5 py-3">
+                  <InlineDropdown options={PRIORITY_OPTIONS} currentValue={item.priorityValue} onSelect={(p) => onChangePriority(item.id, p)}>
+                    <StatusPill tone={priorityTone}>{item.priority}</StatusPill>
+                  </InlineDropdown>
+                </td>
+                <td className="px-5 py-3 text-right text-xs text-[var(--ink-subtle)] whitespace-nowrap">{item.due}</td>
+              </tr>
+            );
+          }) : (
+            <tr>
+              <td colSpan={5} className="px-5 py-6 text-sm text-[var(--ink-subtle)]">
+                No tasks in this project match the current filters.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </section>
   );
 }

@@ -13,9 +13,11 @@ import { generateLabelColor, normalizeLabelNames } from "@/domain/tasks/labels";
 import {
   boardMoveSchema,
   taskMutationSchema,
+  taskPrioritySchema,
   type BoardMoveInput,
   type TaskMutationInput,
 } from "@/domain/tasks/schemas";
+import type { TaskPriority } from "@/domain/tasks/constants";
 import { getNextRepeatDueDate } from "@/domain/tasks/repeat-schedule";
 import type { RepeatSettingsInput } from "@/domain/tasks/repeat-schemas";
 import { NotFoundError, ValidationError } from "@/domain/common/errors";
@@ -313,6 +315,15 @@ export class TaskService {
       repeatPeriodStart: scheduledFor,
       repeatPeriodEnd: scheduledFor,
       repeatSequence: 1,
+    });
+  }
+  async setPriority(id: number, priority: TaskPriority) {
+    taskPrioritySchema.parse(priority);
+    const context = await this.contextService.getAppContext();
+    await this.getTask(id); // validates access and existence
+    await this.repository.updateById(id, {
+      priority,
+      updatedByUserId: context.actorUserId,
     });
   }
 }
