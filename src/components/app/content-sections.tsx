@@ -1,7 +1,7 @@
 "use client";
 
 import type { AppProject, ProjectGroup } from "@/app/app-data";
-import type { TaskStatus } from "@/domain/tasks/constants";
+import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
 import type { TaskListItem } from "@/domain/tasks/types";
 import { usePersistedCollapsedSections } from "@/hooks/use-persisted-collapsed-sections";
 import {
@@ -58,6 +58,8 @@ export function DashboardContent({
   filteredTodayItems,
   filteredProjects,
   onEditTask,
+  onChangeTaskStatus,
+  onChangeTaskPriority,
   onOpenProjects,
   onOpenProjectByName,
 }: {
@@ -68,6 +70,8 @@ export function DashboardContent({
   filteredTodayItems: TaskListItem[];
   filteredProjects: ProjectGroup[];
   onEditTask: (taskId: string) => void;
+  onChangeTaskStatus: (taskId: string, projectId: string, status: TaskStatus) => void;
+  onChangeTaskPriority: (taskId: string, priority: TaskPriority) => void;
   onOpenProjects: () => void;
   onOpenProjectByName: (projectName: string) => void;
 }) {
@@ -130,19 +134,23 @@ export function DashboardContent({
                     </div>
                   </div>
                   {!recurringOverdueCollapsed ? (
-                    <>
-                      <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                        <span>Task</span>
-                        <span>Title</span>
-                        <span className="text-center">Project</span>
-                        <span className="text-center">Status</span>
-                        <span className="text-center">Priority</span>
-                        <span className="text-right">Due</span>
-                      </div>
-                      {filteredRecurringOverdueItems.map((item) => (
-                        <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
-                      ))}
-                    </>
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                          <th className="px-4 py-2 text-left font-semibold">Task</th>
+                          <th className="w-full px-4 py-2 text-left font-semibold">Title</th>
+                          <th className="px-4 py-2 text-center font-semibold">Project</th>
+                          <th className="px-4 py-2 text-center font-semibold">Status</th>
+                          <th className="px-4 py-2 text-center font-semibold">Priority</th>
+                          <th className="px-4 py-2 text-right font-semibold">Due</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredRecurringOverdueItems.map((item) => (
+                          <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} onChangeStatus={onChangeTaskStatus} onChangePriority={onChangeTaskPriority} />
+                        ))}
+                      </tbody>
+                    </table>
                   ) : null}
                 </section>
               ) : null}
@@ -167,25 +175,31 @@ export function DashboardContent({
                   </div>
                 </div>
                 {!recurringTodayCollapsed ? (
-                  <>
-                    <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                      <span>Task</span>
-                      <span>Title</span>
-                      <span className="text-center">Project</span>
-                      <span className="text-center">Status</span>
-                      <span className="text-center">Priority</span>
-                      <span className="text-right">Due</span>
-                    </div>
-                    {filteredRecurringTodayItems.length > 0 ? (
-                      filteredRecurringTodayItems.map((item) => (
-                        <FocusItem key={item.id} {...item} onEdit={onEditTask} />
-                      ))
-                    ) : (
-                      <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                        No recurring tasks due today or unscheduled match the current filters.
-                      </div>
-                    )}
-                  </>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                        <th className="px-4 py-2 text-left font-semibold">Task</th>
+                        <th className="w-full px-4 py-2 text-left font-semibold">Title</th>
+                        <th className="px-4 py-2 text-center font-semibold">Project</th>
+                        <th className="px-4 py-2 text-center font-semibold">Status</th>
+                        <th className="px-4 py-2 text-center font-semibold">Priority</th>
+                        <th className="px-4 py-2 text-right font-semibold">Due</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRecurringTodayItems.length > 0 ? (
+                        filteredRecurringTodayItems.map((item) => (
+                          <FocusItem key={item.id} {...item} onEdit={onEditTask} onChangeStatus={onChangeTaskStatus} onChangePriority={onChangeTaskPriority} />
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+                            No recurring tasks due today or unscheduled match the current filters.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 ) : null}
               </section>
             </div>
@@ -231,19 +245,23 @@ export function DashboardContent({
                     </div>
                   </div>
                   {!focusOverdueCollapsed ? (
-                    <>
-                      <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                        <span>Task</span>
-                        <span>Title</span>
-                        <span className="text-center">Project</span>
-                        <span className="text-center">Status</span>
-                        <span className="text-center">Priority</span>
-                        <span className="text-right">Due</span>
-                      </div>
-                      {filteredOverdueItems.map((item) => (
-                        <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
-                      ))}
-                    </>
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                          <th className="px-4 py-2 text-left font-semibold">Task</th>
+                          <th className="w-full px-4 py-2 text-left font-semibold">Title</th>
+                          <th className="px-4 py-2 text-center font-semibold">Project</th>
+                          <th className="px-4 py-2 text-center font-semibold">Status</th>
+                          <th className="px-4 py-2 text-center font-semibold">Priority</th>
+                          <th className="px-4 py-2 text-right font-semibold">Due</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredOverdueItems.map((item) => (
+                          <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} onChangeStatus={onChangeTaskStatus} onChangePriority={onChangeTaskPriority} />
+                        ))}
+                      </tbody>
+                    </table>
                   ) : null}
                 </section>
               ) : null}
@@ -268,25 +286,31 @@ export function DashboardContent({
                   </div>
                 </div>
                 {!focusTodayCollapsed ? (
-                  <>
-                    <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                      <span>Task</span>
-                      <span>Title</span>
-                      <span className="text-center">Project</span>
-                      <span className="text-center">Status</span>
-                      <span className="text-center">Priority</span>
-                      <span className="text-right">Due</span>
-                    </div>
-                    {filteredTodayItems.length > 0 ? (
-                      filteredTodayItems.map((item) => (
-                        <FocusItem key={item.id} {...item} onEdit={onEditTask} />
-                      ))
-                    ) : (
-                      <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                        No tasks due today or unscheduled match the current filters.
-                      </div>
-                    )}
-                  </>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                        <th className="px-4 py-2 text-left font-semibold">Task</th>
+                        <th className="w-full px-4 py-2 text-left font-semibold">Title</th>
+                        <th className="px-4 py-2 text-center font-semibold">Project</th>
+                        <th className="px-4 py-2 text-center font-semibold">Status</th>
+                        <th className="px-4 py-2 text-center font-semibold">Priority</th>
+                        <th className="px-4 py-2 text-right font-semibold">Due</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTodayItems.length > 0 ? (
+                        filteredTodayItems.map((item) => (
+                          <FocusItem key={item.id} {...item} onEdit={onEditTask} onChangeStatus={onChangeTaskStatus} onChangePriority={onChangeTaskPriority} />
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+                            No tasks due today or unscheduled match the current filters.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 ) : null}
               </section>
             </div>
@@ -326,6 +350,8 @@ export function DashboardContent({
               key={project.name}
               {...project}
               onEdit={onEditTask}
+              onChangeStatus={onChangeTaskStatus}
+              onChangePriority={onChangeTaskPriority}
               onOpenProject={onOpenProjectByName}
             />
           ))
@@ -470,6 +496,8 @@ export function ProjectDetailContent({
   onDragTaskStart,
   onDragTaskEnd,
   onEditTask,
+  onChangeTaskStatus,
+  onChangeTaskPriority,
   onMoveTask,
   onEditProject,
   onBackToProjects,
@@ -487,6 +515,8 @@ export function ProjectDetailContent({
   onDragTaskStart: (taskId: string) => void;
   onDragTaskEnd: () => void;
   onEditTask: (taskId: string) => void;
+  onChangeTaskStatus: (taskId: string, projectId: string, status: TaskStatus) => void;
+  onChangeTaskPriority: (taskId: string, priority: TaskPriority) => void;
   onMoveTask: (taskId: string, nextStatus: TaskStatus) => void;
   onEditProject: () => void;
   onBackToProjects: () => void;
@@ -537,23 +567,31 @@ export function ProjectDetailContent({
                 Needs action now
               </p>
             </div>
-            <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-              <span>Task</span>
-              <span>Title</span>
-              <span className="text-center">Project</span>
-              <span className="text-center">Status</span>
-              <span className="text-center">Priority</span>
-              <span className="text-right">Due</span>
-            </div>
-            {selectedProjectOverdueTasks.length > 0 ? (
-              selectedProjectOverdueTasks.map((item) => (
-                <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
-              ))
-            ) : (
-              <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                No overdue tasks in this project.
-              </div>
-            )}
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                  <th className="px-4 py-2 text-left font-semibold">Task</th>
+                  <th className="w-full px-4 py-2 text-left font-semibold">Title</th>
+                  <th className="px-4 py-2 text-center font-semibold">Project</th>
+                  <th className="px-4 py-2 text-center font-semibold">Status</th>
+                  <th className="px-4 py-2 text-center font-semibold">Priority</th>
+                  <th className="px-4 py-2 text-right font-semibold">Due</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedProjectOverdueTasks.length > 0 ? (
+                  selectedProjectOverdueTasks.map((item) => (
+                    <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} onChangeStatus={onChangeTaskStatus} onChangePriority={onChangeTaskPriority} />
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+                      No overdue tasks in this project.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </section>
 
           {projectView === "board" ? (
@@ -591,23 +629,31 @@ export function ProjectDetailContent({
             </div>
           ) : (
             <section className="overflow-hidden rounded-xl border border-[var(--line-soft)] bg-white">
-              <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                <span>Task</span>
-                <span>Title</span>
-                <span className="text-center">Project</span>
-                <span className="text-center">Status</span>
-                <span className="text-center">Priority</span>
-                <span className="text-right">Due</span>
-              </div>
-              {selectedProjectTasks.length > 0 ? (
-                selectedProjectTasks.map((item) => (
-                  <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
-                ))
-              ) : (
-                <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                  No tasks match the current view and filters for this project.
-                </div>
-              )}
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <th className="px-4 py-2 text-left font-semibold">Task</th>
+                    <th className="w-full px-4 py-2 text-left font-semibold">Title</th>
+                    <th className="px-4 py-2 text-center font-semibold">Project</th>
+                    <th className="px-4 py-2 text-center font-semibold">Status</th>
+                    <th className="px-4 py-2 text-center font-semibold">Priority</th>
+                    <th className="px-4 py-2 text-right font-semibold">Due</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedProjectTasks.length > 0 ? (
+                    selectedProjectTasks.map((item) => (
+                      <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} onChangeStatus={onChangeTaskStatus} onChangePriority={onChangeTaskPriority} />
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+                        No tasks match the current view and filters for this project.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </section>
           )}
         </div>
