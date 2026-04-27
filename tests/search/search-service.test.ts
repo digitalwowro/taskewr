@@ -7,7 +7,7 @@ test("SearchService applies default task search filters", async () => {
   let capturedInput: unknown = null;
 
   const service = new SearchService({
-    searchTasks(input) {
+    searchTasks(input: unknown) {
       capturedInput = input;
       return Promise.resolve([]);
     },
@@ -39,7 +39,7 @@ test("SearchService preserves explicit all-status and priority filters", async (
   let capturedInput: unknown = null;
 
   const service = new SearchService({
-    searchTasks(input) {
+    searchTasks(input: unknown) {
       capturedInput = input;
       return Promise.resolve([]);
     },

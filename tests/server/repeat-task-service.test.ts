@@ -30,7 +30,7 @@ function buildRule(incompleteBehavior: "carry_forward" | "create_separate") {
     monthDay: null,
     specificDates: [],
     incompleteBehavior,
-    nextDueDate: new Date("2026-04-01T00:00:00.000Z"),
+    nextDueDate: new Date("2026-04-01T00:00:00.000Z") as Date | null,
     lastSyncedAt: null,
     createdAt: new Date("2026-04-01T00:00:00.000Z"),
     updatedAt: new Date("2026-04-01T00:00:00.000Z"),

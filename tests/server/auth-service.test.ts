@@ -33,7 +33,7 @@ test("getAuthenticatedActor rejects stale sessions without a backing user", asyn
     {
       user: {
         findUnique: async () => null,
-      },
+      } as never,
     },
     buildSession(),
   );
@@ -49,7 +49,7 @@ test("getAuthenticatedActor rejects stale sessions without workspace membership"
           timezone: "Europe/Bucharest",
           memberships: [],
         }),
-      },
+      } as never,
     },
     buildSession(),
   );
@@ -70,7 +70,7 @@ test("getAuthenticatedActor returns current user and membership data", async () 
             },
           ],
         }),
-      },
+      } as never,
     },
     buildSession({ timezone: "Europe/Bucharest" }),
   );

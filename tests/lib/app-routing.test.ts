@@ -11,8 +11,10 @@ import {
 const baseFilters = {
   sort: "priority" as const,
   direction: "desc" as const,
-  selectedStatuses: ["todo", "in_progress"] as const,
-  selectedPriorities: [] as const,
+  selectedStatuses: ["todo", "in_progress"] as ("todo" | "in_progress")[],
+  selectedPriorities: [] as never[],
+  startDate: null,
+  endDate: null,
   projectView: "board" as const,
 };
 
@@ -55,6 +57,8 @@ test("buildPathQuery returns the bare pathname only when query state is empty", 
       direction: "desc",
       selectedStatuses: [],
       selectedPriorities: [],
+      startDate: null,
+      endDate: null,
       projectView: "list",
     }),
     "/projects/1?sort=priority&direction=desc&status=all",
