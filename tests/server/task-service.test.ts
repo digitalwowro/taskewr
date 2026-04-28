@@ -86,6 +86,36 @@ test("updateTask rejects moving a task into a project outside the actor workspac
   );
 });
 
+test("getTask rejects tasks whose project has no workspace ownership", async () => {
+  const service = buildTaskService({
+    findById: async () => buildTask({
+      project: {
+        workspaceId: null,
+      },
+    }),
+  });
+
+  await assert.rejects(
+    () => service.getTask(10),
+    (error) => error instanceof AuthorizationError && error.code === "workspace_access_denied",
+  );
+});
+
+test("createTask rejects target projects without workspace ownership", async () => {
+  const service = buildTaskService({
+    findProjectById: async () => ({
+      id: 2,
+      workspaceId: null,
+      archivedAt: null,
+    }),
+  });
+
+  await assert.rejects(
+    () => service.createTask(validTaskInput as never),
+    (error) => error instanceof AuthorizationError && error.code === "workspace_access_denied",
+  );
+});
+
 test("createTask rejects archived target projects", async () => {
   const service = buildTaskService({
     findProjectById: async () => ({

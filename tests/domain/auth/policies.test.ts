@@ -6,6 +6,7 @@ import {
   assertCanAccessProject,
   assertCanAccessTask,
   assertCanAccessWorkspace,
+  requireWorkspaceOwnership,
 } from "@/domain/auth/policies";
 import type { AuthenticatedActor } from "@/types/auth";
 
@@ -39,4 +40,16 @@ test("project and task policies are currently workspace-scoped", () => {
   assert.doesNotThrow(() => assertCanAccessTask(actor, { workspaceId: 3 }));
   assert.throws(() => assertCanAccessProject(actor, { workspaceId: 4 }), AuthorizationError);
   assert.throws(() => assertCanAccessTask(actor, { workspaceId: 4 }), AuthorizationError);
+});
+
+test("workspace ownership helper rejects records without a workspace", () => {
+  assert.equal(requireWorkspaceOwnership(3), 3);
+  assert.throws(
+    () => requireWorkspaceOwnership(null),
+    (error) => error instanceof AuthorizationError && error.code === "workspace_access_denied",
+  );
+  assert.throws(
+    () => requireWorkspaceOwnership(undefined),
+    (error) => error instanceof AuthorizationError && error.code === "workspace_access_denied",
+  );
 });

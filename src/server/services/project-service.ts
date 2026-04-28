@@ -1,5 +1,5 @@
 import { ProjectsRepository } from "@/data/prisma/repositories/projects-repository";
-import { assertCanAccessProject } from "@/domain/auth/policies";
+import { assertCanAccessProject, requireWorkspaceOwnership } from "@/domain/auth/policies";
 import {
   assertProjectCanArchive,
   assertProjectCanUnarchive,
@@ -45,7 +45,7 @@ export class ProjectService {
         workspaceRole: context.workspaceRole,
         timezone: context.timezone,
       },
-      { workspaceId: project.workspaceId ?? -1 },
+      { workspaceId: requireWorkspaceOwnership(project.workspaceId) },
     );
 
     return project;
@@ -130,7 +130,7 @@ export class ProjectService {
     }
 
     const targetProject = await this.repository.findAdjacentActiveProject(
-      project.workspaceId ?? 0,
+      requireWorkspaceOwnership(project.workspaceId),
       project.sortOrder,
       payload.direction,
     );

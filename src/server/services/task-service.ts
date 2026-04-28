@@ -1,6 +1,10 @@
 import { TasksRepository } from "@/data/prisma/repositories/tasks-repository";
 import { RepeatRulesRepository } from "@/data/prisma/repositories/repeat-rules-repository";
-import { assertCanAccessProject, assertCanAccessTask } from "@/domain/auth/policies";
+import {
+  assertCanAccessProject,
+  assertCanAccessTask,
+  requireWorkspaceOwnership,
+} from "@/domain/auth/policies";
 import { assertBoardMoveWithinProject, buildLaneOrderUpdates } from "@/domain/tasks/board";
 import {
   assertCanMarkTaskDone,
@@ -45,7 +49,7 @@ export class TaskService {
         workspaceRole: context.workspaceRole,
         timezone: context.timezone,
       },
-      { workspaceId: task.project.workspaceId ?? -1 },
+      { workspaceId: requireWorkspaceOwnership(task.project.workspaceId) },
     );
 
     return task;
@@ -94,7 +98,7 @@ export class TaskService {
     }
 
     assertCanAccessProject(this.toActor(context), {
-      workspaceId: project.workspaceId ?? -1,
+      workspaceId: requireWorkspaceOwnership(project.workspaceId),
     });
 
     if (project.archivedAt !== null) {
