@@ -1,20 +1,15 @@
 import { AuthService } from "@/server/services/auth-service";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonOk } from "@/server/api/responders";
-import { AuthenticationError, ValidationError } from "@/domain/common/errors";
+import { AuthenticationError } from "@/domain/common/errors";
 import { getClientIp, loginRateLimiter } from "@/server/security/login-rate-limit";
+import { parseJsonBody } from "@/server/api/json";
 
 const authService = new AuthService();
 
 export async function POST(request: Request) {
   try {
-    let body: { email?: string; password?: string };
-
-    try {
-      body = (await request.json()) as { email?: string; password?: string };
-    } catch {
-      throw new ValidationError("Invalid JSON body.", "invalid_json_body");
-    }
+    const body = await parseJsonBody<{ email?: string; password?: string }>(request);
 
     const loginInput = {
       email: body.email ?? "",

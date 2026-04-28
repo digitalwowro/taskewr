@@ -3,6 +3,8 @@ import { assertValidCsrfToken } from "@/server/api/csrf";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonOk } from "@/server/api/responders";
 import { assertMutationRateLimit } from "@/server/security/mutation-rate-limit";
+import { parseJsonBody } from "@/server/api/json";
+import type { TaskMutationInput } from "@/domain/tasks/schemas";
 
 const service = new TaskService();
 
@@ -27,7 +29,7 @@ export async function PATCH(
     assertValidCsrfToken(request);
     await assertMutationRateLimit(request, "tasks:update");
     const { id } = await params;
-    const body = await request.json();
+    const body = await parseJsonBody<TaskMutationInput>(request);
     const task = await service.updateTask(Number(id), body);
     return jsonOk(task);
   } catch (error) {

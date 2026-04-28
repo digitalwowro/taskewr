@@ -3,6 +3,8 @@ import { assertValidCsrfToken } from "@/server/api/csrf";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonOk } from "@/server/api/responders";
 import { assertMutationRateLimit } from "@/server/security/mutation-rate-limit";
+import { parseJsonBody } from "@/server/api/json";
+import type { ProjectMutationInput } from "@/domain/projects/schemas";
 
 const service = new ProjectService();
 
@@ -27,7 +29,7 @@ export async function PATCH(
     assertValidCsrfToken(request);
     await assertMutationRateLimit(request, "projects:update");
     const { id } = await params;
-    const body = await request.json();
+    const body = await parseJsonBody<ProjectMutationInput>(request);
     const project = await service.updateProject(Number(id), body);
     return jsonOk(project);
   } catch (error) {

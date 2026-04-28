@@ -21,6 +21,17 @@ export class TasksRepository {
     });
   }
 
+  findProjectById(id: number) {
+    return this.prisma.project.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        workspaceId: true,
+        archivedAt: true,
+      },
+    });
+  }
+
   listProjectTasks(projectId: number, includeArchivedProject = false) {
     return this.prisma.task.findMany({
       where: {
@@ -87,6 +98,21 @@ export class TasksRepository {
         id: true,
         projectId: true,
         parentTaskId: true,
+        status: true,
+      },
+    });
+  }
+
+  listTasksByIds(ids: number[]) {
+    return this.prisma.task.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+      select: {
+        id: true,
+        projectId: true,
         status: true,
       },
     });

@@ -3,6 +3,7 @@ import { assertValidCsrfToken } from "@/server/api/csrf";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonError, jsonOk } from "@/server/api/responders";
 import { assertMutationRateLimit } from "@/server/security/mutation-rate-limit";
+import { parseJsonBody } from "@/server/api/json";
 
 const authService = new AuthService();
 
@@ -31,13 +32,13 @@ export async function PATCH(request: Request) {
   try {
     assertValidCsrfToken(request);
     await assertMutationRateLimit(request, "profile:update", authService);
-    const payload = (await request.json()) as {
+    const payload = await parseJsonBody<{
       name: string;
       email: string;
       currentPassword?: string;
       newPassword?: string;
       avatarUrl?: string | null;
-    };
+    }>(request);
 
     const profile = await authService.updateCurrentUserProfile(payload);
 

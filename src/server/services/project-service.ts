@@ -45,7 +45,7 @@ export class ProjectService {
         workspaceRole: context.workspaceRole,
         timezone: context.timezone,
       },
-      { workspaceId: project.workspaceId ?? context.workspaceId },
+      { workspaceId: project.workspaceId ?? -1 },
     );
 
     return project;

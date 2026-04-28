@@ -1,6 +1,6 @@
 import { TasksRepository } from "@/data/prisma/repositories/tasks-repository";
 import { RepeatRulesRepository } from "@/data/prisma/repositories/repeat-rules-repository";
-import { assertCanAccessTask } from "@/domain/auth/policies";
+import { assertCanAccessProject, assertCanAccessTask } from "@/domain/auth/policies";
 import { assertBoardMoveWithinProject, buildLaneOrderUpdates } from "@/domain/tasks/board";
 import {
   assertCanMarkTaskDone,
@@ -21,6 +21,7 @@ import type { RepeatSettingsInput } from "@/domain/tasks/repeat-schemas";
 import { NotFoundError, ValidationError } from "@/domain/common/errors";
 import { AppContextService } from "@/server/services/app-context-service";
 import { db } from "@/lib/db";
+import type { AuthenticatedActor } from "@/types/auth";
 
 export class TaskService {
   constructor(
@@ -44,7 +45,7 @@ export class TaskService {
         workspaceRole: context.workspaceRole,
         timezone: context.timezone,
       },
-      { workspaceId: task.project.workspaceId ?? context.workspaceId },
+      { workspaceId: task.project.workspaceId ?? -1 },
     );
 
     return task;
@@ -76,6 +77,34 @@ export class TaskService {
     }
   }
 
+  private toActor(context: Awaited<ReturnType<AppContextService["getAppContext"]>>): AuthenticatedActor {
+    return {
+      userId: context.actorUserId ?? 0,
+      workspaceId: context.workspaceId,
+      workspaceRole: context.workspaceRole,
+      timezone: context.timezone,
+    };
+  }
+
+  private async assertCanUseProject(projectId: number, context: Awaited<ReturnType<AppContextService["getAppContext"]>>) {
+    const project = await this.repository.findProjectById(projectId);
+
+    if (!project) {
+      throw new NotFoundError("Project not found.", "project_not_found");
+    }
+
+    assertCanAccessProject(this.toActor(context), {
+      workspaceId: project.workspaceId ?? -1,
+    });
+
+    if (project.archivedAt !== null) {
+      throw new ValidationError(
+        "Archived projects cannot accept task changes.",
+        "task_project_archived",
+      );
+    }
+  }
+
   async planBoardMove(input: {
     taskId: number;
     projectId: number;
@@ -85,6 +114,7 @@ export class TaskService {
     const task = await this.getTask(input.taskId);
 
     assertBoardMoveWithinProject(task.projectId, input.projectId);
+    await this.assertLaneMoveIsScopedToProject(input);
 
     return {
       taskId: input.taskId,
@@ -93,9 +123,59 @@ export class TaskService {
     };
   }
 
+  private async assertLaneMoveIsScopedToProject(input: {
+    taskId: number;
+    projectId: number;
+    nextStatus: string;
+    targetLaneTaskIds: number[];
+  }) {
+    const uniqueTaskIds = [...new Set(input.targetLaneTaskIds)];
+
+    if (uniqueTaskIds.length !== input.targetLaneTaskIds.length) {
+      throw new ValidationError(
+        "Board move contains duplicate lane tasks.",
+        "task_board_duplicate_lane_task",
+      );
+    }
+
+    if (!uniqueTaskIds.includes(input.taskId)) {
+      throw new ValidationError(
+        "Board move must include the moved task in the target lane.",
+        "task_board_missing_moved_task",
+      );
+    }
+
+    const laneTasks = await this.repository.listTasksByIds(uniqueTaskIds);
+
+    if (laneTasks.length !== uniqueTaskIds.length) {
+      throw new ValidationError(
+        "Board move contains unknown lane tasks.",
+        "task_board_unknown_lane_task",
+      );
+    }
+
+    for (const laneTask of laneTasks) {
+      if (laneTask.projectId !== input.projectId) {
+        throw new ValidationError(
+          "Board moves must stay within the same project.",
+          "task_board_cross_project",
+        );
+      }
+
+      if (laneTask.id !== input.taskId && laneTask.status !== input.nextStatus) {
+        throw new ValidationError(
+          "Board move lane tasks must match the target status.",
+          "task_board_invalid_lane_status",
+        );
+      }
+    }
+  }
+
   async createTask(input: TaskMutationInput) {
     const payload = taskMutationSchema.parse(input);
     const context = await this.contextService.getAppContext();
+
+    await this.assertCanUseProject(payload.projectId, context);
 
     await this.validateParentAssignment({
       taskId: null,
@@ -126,6 +206,8 @@ export class TaskService {
     const payload = taskMutationSchema.parse(input);
     const context = await this.contextService.getAppContext();
     const currentTask = await this.getTask(id);
+
+    await this.assertCanUseProject(payload.projectId, context);
 
     assertTaskProjectChangeAllowed({
       currentProjectId: currentTask.projectId,
