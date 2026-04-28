@@ -4,6 +4,7 @@ import { AuthService } from "@/server/services/auth-service";
 export type AppContext = {
   workspaceId: number;
   actorUserId: number | null;
+  workspaceRole: string;
   timezone: string | null;
 };
 
@@ -20,6 +21,7 @@ export class AppContextService {
     return {
       workspaceId: actor.workspaceId,
       actorUserId: actor.userId,
+      workspaceRole: actor.workspaceRole,
       timezone: actor.timezone,
     };
   }

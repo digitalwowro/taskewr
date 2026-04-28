@@ -41,7 +41,7 @@ export class TaskService {
       {
         userId: context.actorUserId ?? 0,
         workspaceId: context.workspaceId,
-        workspaceRole: "owner",
+        workspaceRole: context.workspaceRole,
         timezone: context.timezone,
       },
       { workspaceId: task.project.workspaceId ?? context.workspaceId },

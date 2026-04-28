@@ -107,6 +107,13 @@ Generate `SESSION_SECRET` with:
 openssl rand -base64 48
 ```
 
+Before exposing a deployment publicly, confirm:
+
+- HTTPS terminates before traffic reaches the app.
+- `SESSION_SECRET` is strong and private.
+- `/api/v1/auth/login` rate limiting is enabled with appropriate production settings.
+- `APP_URL` matches the public origin.
+
 ## Production Update
 
 On the production server:

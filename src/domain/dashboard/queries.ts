@@ -1,5 +1,5 @@
 import type { TaskFilters, TaskListItem } from "@/domain/tasks/types";
-import { TASK_PRIORITY_RANK } from "@/domain/tasks/constants";
+import { TASK_PRIORITY_RANK, TASK_STATUS_RANK } from "@/domain/tasks/constants";
 
 function getDateRank(value: string | null) {
   if (!value) {
@@ -14,6 +14,8 @@ export function sortTaskItems(items: TaskListItem[], filters: TaskFilters): Task
 
   return [...items].sort((a, b) => {
     switch (filters.sort) {
+      case "status":
+        return (TASK_STATUS_RANK[a.statusValue] - TASK_STATUS_RANK[b.statusValue]) * modifier;
       case "created_at":
         return (getDateRank(a.createdAt) - getDateRank(b.createdAt)) * modifier;
       case "updated_at":
@@ -27,6 +29,10 @@ export function sortTaskItems(items: TaskListItem[], filters: TaskFilters): Task
         return (TASK_PRIORITY_RANK[a.priorityValue] - TASK_PRIORITY_RANK[b.priorityValue]) * modifier;
     }
   });
+}
+
+export function sortAndFilterTaskItems(items: TaskListItem[], filters: TaskFilters): TaskListItem[] {
+  return sortTaskItems(filterTaskItems(items, filters), filters);
 }
 
 export function filterTaskItems(items: TaskListItem[], filters: TaskFilters): TaskListItem[] {

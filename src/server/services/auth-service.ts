@@ -30,7 +30,7 @@ export class AuthService {
           include: {
             workspace: true,
           },
-          take: 1,
+          take: 2,
         },
       },
     });
@@ -43,6 +43,13 @@ export class AuthService {
 
     if (!membership) {
       throw new NotFoundError("Workspace membership not found.", "workspace_membership_not_found");
+    }
+
+    if (user.memberships.length > 1) {
+      throw new ValidationError(
+        "Multiple workspaces are not supported for this account yet.",
+        "multiple_workspaces_not_supported",
+      );
     }
 
     return {

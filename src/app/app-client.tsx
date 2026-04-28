@@ -32,15 +32,11 @@ import { NEW_TASK_ID, useTaskEditorState } from "@/hooks/use-task-editor-state";
 import { useTaskFilterToolbarState } from "@/hooks/use-task-filter-toolbar-state";
 import { isUnauthorizedError, requestJson } from "@/lib/api-client";
 import type { ProjectView } from "@/domain/projects/constants";
+import { sortAndFilterTaskItems } from "@/domain/dashboard/queries";
 import {
   PRIORITY_OPTIONS,
   SORT_OPTIONS,
   STATUS_OPTIONS,
-  TASK_PRIORITY_RANK,
-  TASK_STATUS_RANK,
-  type TaskPriority,
-  type TaskSortDirection,
-  type TaskSortOption,
   type TaskStatus,
 } from "@/domain/tasks/constants";
 import type { TaskFilters, TaskListItem } from "@/domain/tasks/types";
@@ -52,65 +48,6 @@ type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail";
 
 function getTaskByNumericId(tasks: TaskListItem[], id: string) {
   return tasks.find((task) => task.id.replace("TSK-", "") === id) ?? null;
-}
-
-function getDateRank(value: string | null) {
-  if (!value) {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  return new Date(value).getTime();
-}
-
-function compareTasks(
-  a: TaskListItem,
-  b: TaskListItem,
-  sort: TaskSortOption,
-  direction: TaskSortDirection,
-) {
-  const modifier = direction === "asc" ? 1 : -1;
-
-  switch (sort) {
-    case "status":
-      return (TASK_STATUS_RANK[a.statusValue] - TASK_STATUS_RANK[b.statusValue]) * modifier;
-    case "created_at":
-      return (getDateRank(a.createdAt) - getDateRank(b.createdAt)) * modifier;
-    case "updated_at":
-      return (getDateRank(a.updatedAt) - getDateRank(b.updatedAt)) * modifier;
-    case "start_date":
-      return (getDateRank(a.startDate) - getDateRank(b.startDate)) * modifier;
-    case "due_date":
-      return (getDateRank(a.dueDate) - getDateRank(b.dueDate)) * modifier;
-    case "priority":
-    default:
-      return (TASK_PRIORITY_RANK[a.priorityValue] - TASK_PRIORITY_RANK[b.priorityValue]) * modifier;
-  }
-}
-
-function sortAndFilterTasks(
-  tasks: TaskListItem[],
-  sort: TaskSortOption,
-  direction: TaskSortDirection,
-  selectedStatuses: TaskStatus[],
-  selectedPriorities: TaskPriority[],
-  startDate: string | null,
-  endDate: string | null,
-) {
-  return [...tasks]
-    .filter((task) => {
-      const statusMatch =
-        selectedStatuses.length === 0 || selectedStatuses.includes(task.statusValue);
-      const priorityMatch =
-        selectedPriorities.length === 0 || selectedPriorities.includes(task.priorityValue);
-      const taskDueDate = task.dueDate ? task.dueDate.slice(0, 10) : null;
-      const startDateMatch =
-        !startDate || (taskDueDate !== null && taskDueDate >= startDate);
-      const endDateMatch =
-        !endDate || (taskDueDate !== null && taskDueDate <= endDate);
-
-      return statusMatch && priorityMatch && startDateMatch && endDateMatch;
-    })
-    .sort((a, b) => compareTasks(a, b, sort, direction));
 }
 
 export function TaskewrApp({
@@ -180,92 +117,43 @@ export function TaskewrApp({
   const archivedProjects = data.archivedProjects;
   const projectTasksByProjectId = data.projectTasksByProjectId;
   const taskDetails = data.taskDetails;
+  const currentTaskFilters = useMemo<TaskFilters>(
+    () => ({
+      sort,
+      direction,
+      status: selectedStatuses,
+      priority: selectedPriorities,
+      startDate,
+      endDate,
+    }),
+    [direction, endDate, selectedPriorities, selectedStatuses, sort, startDate],
+  );
 
   const filteredTodayItems = useMemo(
-    () =>
-      sortAndFilterTasks(
-        todayItems,
-        sort,
-        direction,
-        selectedStatuses,
-        selectedPriorities,
-        startDate,
-        endDate,
-      ),
-    [direction, endDate, selectedPriorities, selectedStatuses, sort, startDate, todayItems],
+    () => sortAndFilterTaskItems(todayItems, currentTaskFilters),
+    [currentTaskFilters, todayItems],
   );
   const filteredRecurringOverdueItems = useMemo(
-    () =>
-      sortAndFilterTasks(
-        recurringOverdueItems,
-        sort,
-        direction,
-        selectedStatuses,
-        selectedPriorities,
-        startDate,
-        endDate,
-      ),
-    [
-      direction,
-      endDate,
-      recurringOverdueItems,
-      selectedPriorities,
-      selectedStatuses,
-      sort,
-      startDate,
-    ],
+    () => sortAndFilterTaskItems(recurringOverdueItems, currentTaskFilters),
+    [currentTaskFilters, recurringOverdueItems],
   );
   const filteredRecurringTodayItems = useMemo(
-    () =>
-      sortAndFilterTasks(
-        recurringTodayItems,
-        sort,
-        direction,
-        selectedStatuses,
-        selectedPriorities,
-        startDate,
-        endDate,
-      ),
-    [
-      direction,
-      endDate,
-      recurringTodayItems,
-      selectedPriorities,
-      selectedStatuses,
-      sort,
-      startDate,
-    ],
+    () => sortAndFilterTaskItems(recurringTodayItems, currentTaskFilters),
+    [currentTaskFilters, recurringTodayItems],
   );
   const filteredOverdueItems = useMemo(
-    () =>
-      sortAndFilterTasks(
-        overdueItems,
-        sort,
-        direction,
-        selectedStatuses,
-        selectedPriorities,
-        startDate,
-        endDate,
-      ),
-    [direction, endDate, overdueItems, selectedPriorities, selectedStatuses, sort, startDate],
+    () => sortAndFilterTaskItems(overdueItems, currentTaskFilters),
+    [currentTaskFilters, overdueItems],
   );
   const filteredProjects = useMemo(
     () =>
       groupedProjects
         .map((project) => ({
           ...project,
-          items: sortAndFilterTasks(
-            project.items,
-            sort,
-            direction,
-            selectedStatuses,
-            selectedPriorities,
-            startDate,
-            endDate,
-          ),
+          items: sortAndFilterTaskItems(project.items, currentTaskFilters),
         }))
         .filter((project) => project.items.length > 0),
-    [direction, endDate, groupedProjects, selectedPriorities, selectedStatuses, sort, startDate],
+    [currentTaskFilters, groupedProjects],
   );
 
   const visibleTaskCount = useMemo(
@@ -436,25 +324,15 @@ export function TaskewrApp({
         return [];
       }
 
-      return sortAndFilterTasks(
+      return sortAndFilterTaskItems(
         projectTasksByProjectId[selectedProject.id] ?? [],
-        sort,
-        direction,
-        selectedStatuses,
-        selectedPriorities,
-        startDate,
-        endDate,
+        currentTaskFilters,
       );
     },
     [
-      direction,
-      endDate,
+      currentTaskFilters,
       projectTasksByProjectId,
-      selectedPriorities,
       selectedProject,
-      selectedStatuses,
-      sort,
-      startDate,
     ],
   );
   const projectBoardGroups = useMemo(

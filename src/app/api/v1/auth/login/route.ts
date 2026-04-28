@@ -1,7 +1,8 @@
 import { AuthService } from "@/server/services/auth-service";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonOk } from "@/server/api/responders";
-import { ValidationError } from "@/domain/common/errors";
+import { AuthenticationError, ValidationError } from "@/domain/common/errors";
+import { getClientIp, loginRateLimiter } from "@/server/security/login-rate-limit";
 
 const authService = new AuthService();
 
@@ -15,10 +16,30 @@ export async function POST(request: Request) {
       throw new ValidationError("Invalid JSON body.", "invalid_json_body");
     }
 
-    const session = await authService.loginWithPassword({
+    const loginInput = {
       email: body.email ?? "",
       password: body.password ?? "",
-    });
+    };
+    const rateLimitInput = {
+      email: loginInput.email,
+      ip: getClientIp(request.headers),
+    };
+
+    loginRateLimiter.assertAllowed(rateLimitInput);
+
+    let session;
+
+    try {
+      session = await authService.loginWithPassword(loginInput);
+    } catch (error) {
+      if (error instanceof AuthenticationError && error.code === "auth_invalid_credentials") {
+        loginRateLimiter.recordFailure(rateLimitInput);
+      }
+
+      throw error;
+    }
+
+    loginRateLimiter.recordSuccess(rateLimitInput);
 
     await authService.setSessionCookie(session);
 

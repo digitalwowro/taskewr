@@ -129,6 +129,8 @@ Prepared now for future:
 
 Taskewr is private by default.
 
+The current product supports a single workspace membership per login account. Multi-workspace accounts should not silently select a workspace; login rejects them until workspace switching is designed and implemented.
+
 Future collaboration must be explicit:
 
 - private by default
@@ -173,6 +175,8 @@ The codebase must remain ready for:
 - attachments
 - background jobs
 - webhooks and integrations
+
+The `Cycle` model is reserved schema for future cycle/sprint-style planning. It should not be treated as an active product surface until API and UI flows exist.
 
 ## Operational Readiness
 

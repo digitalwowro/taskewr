@@ -32,3 +32,10 @@ export class AuthorizationError extends DomainError {
     this.name = "AuthorizationError";
   }
 }
+
+export class RateLimitError extends DomainError {
+  constructor(message: string, code = "rate_limited") {
+    super(message, code);
+    this.name = "RateLimitError";
+  }
+}

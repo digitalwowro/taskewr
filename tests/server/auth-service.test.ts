@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { AuthService } from "@/server/services/auth-service";
+import { ValidationError } from "@/domain/common/errors";
+import { hashPassword } from "@/lib/auth";
 import type { SessionPayload } from "@/types/auth";
 
 class TestAuthService extends AuthService {
@@ -27,6 +29,69 @@ function buildSession(overrides: Partial<SessionPayload> = {}): SessionPayload {
     ...overrides,
   };
 }
+
+test("loginWithPassword returns the single workspace membership", async () => {
+  const authService = new AuthService({
+    user: {
+      findUnique: async () => ({
+        id: 7,
+        passwordHash: hashPassword("taskewr"),
+        timezone: "Europe/Bucharest",
+        memberships: [
+          {
+            workspaceId: 3,
+            role: "owner",
+            workspace: {
+              id: 3,
+            },
+          },
+        ],
+      }),
+    },
+  });
+
+  const session = await authService.loginWithPassword({
+    email: "account@taskewr.com",
+    password: "taskewr",
+  });
+
+  assert.equal(session.userId, 7);
+  assert.equal(session.workspaceId, 3);
+  assert.equal(session.workspaceRole, "owner");
+});
+
+test("loginWithPassword rejects accounts with multiple workspace memberships", async () => {
+  const authService = new AuthService({
+    user: {
+      findUnique: async () => ({
+        id: 7,
+        passwordHash: hashPassword("taskewr"),
+        timezone: "Europe/Bucharest",
+        memberships: [
+          {
+            workspaceId: 3,
+            role: "owner",
+            workspace: {
+              id: 3,
+            },
+          },
+          {
+            workspaceId: 4,
+            role: "owner",
+            workspace: {
+              id: 4,
+            },
+          },
+        ],
+      }),
+    },
+  });
+
+  await assert.rejects(
+    () => authService.loginWithPassword({ email: "account@taskewr.com", password: "taskewr" }),
+    (error) => error instanceof ValidationError && error.code === "multiple_workspaces_not_supported",
+  );
+});
 
 test("getAuthenticatedActor rejects stale sessions without a backing user", async () => {
   const authService = new TestAuthService(

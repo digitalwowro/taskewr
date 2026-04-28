@@ -42,7 +42,7 @@ export class ProjectService {
       {
         userId: context.actorUserId ?? 0,
         workspaceId: context.workspaceId,
-        workspaceRole: "owner",
+        workspaceRole: context.workspaceRole,
         timezone: context.timezone,
       },
       { workspaceId: project.workspaceId ?? context.workspaceId },

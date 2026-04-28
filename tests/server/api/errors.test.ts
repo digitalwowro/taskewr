@@ -6,6 +6,7 @@ import {
   AuthorizationError,
   DomainError,
   NotFoundError,
+  RateLimitError,
   ValidationError,
 } from "@/domain/common/errors";
 import { toErrorResponse } from "@/server/api/errors";
@@ -61,5 +62,15 @@ test("toErrorResponse maps other domain failures to 422", async () => {
   assert.deepEqual(await readJson(response), {
     error: "Conflict",
     code: "domain_conflict",
+  });
+});
+
+test("toErrorResponse maps rate limit failures to 429", async () => {
+  const response = toErrorResponse(new RateLimitError("Too many attempts", "login_rate_limited"));
+
+  assert.equal(response.status, 429);
+  assert.deepEqual(await readJson(response), {
+    error: "Too many attempts",
+    code: "login_rate_limited",
   });
 });

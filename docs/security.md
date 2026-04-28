@@ -18,13 +18,22 @@ Session cookies must remain:
 
 ## Current Access Model
 
-Current access checks are workspace-scoped and owner-oriented. The schema is prepared for broader memberships and future sharing, but role-based authorization is not complete yet.
+Current access checks are workspace-scoped. The authenticated actor's workspace role is preserved through the app context, but role-based authorization is not complete yet.
 
 Before adding team roles or external sharing:
 
-- replace owner-oriented assumptions with real role checks
+- add explicit role checks to the existing policy layer
 - use the existing policy layer consistently
 - add tests for allowed and denied access paths
+
+Taskewr currently supports one workspace membership per login account. Login rejects accounts with multiple workspace memberships until workspace switching exists.
+
+The `AuditLog` schema is reserved for future audit logging. Sensitive operations that should eventually write audit records include:
+
+- task create/update/delete
+- board moves
+- project archive/unarchive
+- future sharing and ACL changes
 
 ## Input Normalization
 
@@ -43,7 +52,6 @@ Before adding team roles or external sharing:
 
 ## Future Security Work
 
-- Login rate limiting before public internet exposure.
 - Rate limits for mutation endpoints.
 - API token strategy for mobile and external clients.
 - Explicit share and ACL audit events.
