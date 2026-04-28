@@ -58,6 +58,8 @@ export function DashboardContent({
   filteredTodayItems,
   filteredProjects,
   onEditTask,
+  onCompleteTask,
+  completingTaskId,
   onOpenProjects,
   onOpenProjectByName,
 }: {
@@ -68,6 +70,8 @@ export function DashboardContent({
   filteredTodayItems: TaskListItem[];
   filteredProjects: ProjectGroup[];
   onEditTask: (taskId: string) => void;
+  onCompleteTask: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  completingTaskId: string | null;
   onOpenProjects: () => void;
   onOpenProjectByName: (projectName: string) => void;
 }) {
@@ -131,7 +135,8 @@ export function DashboardContent({
                   </div>
                   {!recurringOverdueCollapsed ? (
                     <>
-                      <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                      <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                        <span />
                         <span>Task</span>
                         <span>Title</span>
                         <span className="text-center">Project</span>
@@ -140,7 +145,13 @@ export function DashboardContent({
                         <span className="text-right">Due</span>
                       </div>
                       {filteredRecurringOverdueItems.map((item) => (
-                        <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
+                        <HorizontalListRow
+                          key={item.id}
+                          {...item}
+                          onEdit={onEditTask}
+                          onComplete={onCompleteTask}
+                          isCompleting={completingTaskId === item.id}
+                        />
                       ))}
                     </>
                   ) : null}
@@ -168,7 +179,8 @@ export function DashboardContent({
                 </div>
                 {!recurringTodayCollapsed ? (
                   <>
-                    <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <div className="grid grid-cols-[28px_84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                      <span />
                       <span>Task</span>
                       <span>Title</span>
                       <span className="text-center">Project</span>
@@ -178,7 +190,13 @@ export function DashboardContent({
                     </div>
                     {filteredRecurringTodayItems.length > 0 ? (
                       filteredRecurringTodayItems.map((item) => (
-                        <FocusItem key={item.id} {...item} onEdit={onEditTask} />
+                        <FocusItem
+                          key={item.id}
+                          {...item}
+                          onEdit={onEditTask}
+                          onComplete={onCompleteTask}
+                          isCompleting={completingTaskId === item.id}
+                        />
                       ))
                     ) : (
                       <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
@@ -232,7 +250,8 @@ export function DashboardContent({
                   </div>
                   {!focusOverdueCollapsed ? (
                     <>
-                      <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                      <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                        <span />
                         <span>Task</span>
                         <span>Title</span>
                         <span className="text-center">Project</span>
@@ -241,7 +260,13 @@ export function DashboardContent({
                         <span className="text-right">Due</span>
                       </div>
                       {filteredOverdueItems.map((item) => (
-                        <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
+                        <HorizontalListRow
+                          key={item.id}
+                          {...item}
+                          onEdit={onEditTask}
+                          onComplete={onCompleteTask}
+                          isCompleting={completingTaskId === item.id}
+                        />
                       ))}
                     </>
                   ) : null}
@@ -269,7 +294,8 @@ export function DashboardContent({
                 </div>
                 {!focusTodayCollapsed ? (
                   <>
-                    <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <div className="grid grid-cols-[28px_84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                      <span />
                       <span>Task</span>
                       <span>Title</span>
                       <span className="text-center">Project</span>
@@ -279,7 +305,13 @@ export function DashboardContent({
                     </div>
                     {filteredTodayItems.length > 0 ? (
                       filteredTodayItems.map((item) => (
-                        <FocusItem key={item.id} {...item} onEdit={onEditTask} />
+                        <FocusItem
+                          key={item.id}
+                          {...item}
+                          onEdit={onEditTask}
+                          onComplete={onCompleteTask}
+                          isCompleting={completingTaskId === item.id}
+                        />
                       ))
                     ) : (
                       <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
@@ -326,6 +358,8 @@ export function DashboardContent({
               key={project.name}
               {...project}
               onEdit={onEditTask}
+              onComplete={onCompleteTask}
+              completingTaskId={completingTaskId}
               onOpenProject={onOpenProjectByName}
             />
           ))
@@ -470,6 +504,8 @@ export function ProjectDetailContent({
   onDragTaskStart,
   onDragTaskEnd,
   onEditTask,
+  onCompleteTask,
+  completingTaskId,
   onMoveTask,
   onEditProject,
   onBackToProjects,
@@ -487,6 +523,8 @@ export function ProjectDetailContent({
   onDragTaskStart: (taskId: string) => void;
   onDragTaskEnd: () => void;
   onEditTask: (taskId: string) => void;
+  onCompleteTask: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  completingTaskId: string | null;
   onMoveTask: (taskId: string, nextStatus: TaskStatus) => void;
   onEditProject: () => void;
   onBackToProjects: () => void;
@@ -537,7 +575,8 @@ export function ProjectDetailContent({
                 Needs action now
               </p>
             </div>
-            <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+              <span />
               <span>Task</span>
               <span>Title</span>
               <span className="text-center">Project</span>
@@ -547,7 +586,13 @@ export function ProjectDetailContent({
             </div>
             {selectedProjectOverdueTasks.length > 0 ? (
               selectedProjectOverdueTasks.map((item) => (
-                <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
+                <HorizontalListRow
+                  key={item.id}
+                  {...item}
+                  onEdit={onEditTask}
+                  onComplete={onCompleteTask}
+                  isCompleting={completingTaskId === item.id}
+                />
               ))
             ) : (
               <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
@@ -563,6 +608,8 @@ export function ProjectDetailContent({
                 laneStatus="todo"
                 items={projectBoardGroups.todo}
                 onEdit={onEditTask}
+                onComplete={onCompleteTask}
+                completingTaskId={completingTaskId}
                 onMoveTask={onMoveTask}
                 draggingTaskId={draggingProjectTaskId}
                 onDragTaskStart={onDragTaskStart}
@@ -573,6 +620,8 @@ export function ProjectDetailContent({
                 laneStatus="in_progress"
                 items={projectBoardGroups.inProgress}
                 onEdit={onEditTask}
+                onComplete={onCompleteTask}
+                completingTaskId={completingTaskId}
                 onMoveTask={onMoveTask}
                 draggingTaskId={draggingProjectTaskId}
                 onDragTaskStart={onDragTaskStart}
@@ -583,6 +632,8 @@ export function ProjectDetailContent({
                 laneStatus="done"
                 items={projectBoardGroups.completed}
                 onEdit={onEditTask}
+                onComplete={onCompleteTask}
+                completingTaskId={completingTaskId}
                 onMoveTask={onMoveTask}
                 draggingTaskId={draggingProjectTaskId}
                 onDragTaskStart={onDragTaskStart}
@@ -591,7 +642,8 @@ export function ProjectDetailContent({
             </div>
           ) : (
             <section className="overflow-hidden rounded-xl border border-[var(--line-soft)] bg-white">
-              <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+              <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                <span />
                 <span>Task</span>
                 <span>Title</span>
                 <span className="text-center">Project</span>
@@ -601,7 +653,13 @@ export function ProjectDetailContent({
               </div>
               {selectedProjectTasks.length > 0 ? (
                 selectedProjectTasks.map((item) => (
-                  <HorizontalListRow key={item.id} {...item} onEdit={onEditTask} />
+                  <HorizontalListRow
+                    key={item.id}
+                    {...item}
+                    onEdit={onEditTask}
+                    onComplete={onCompleteTask}
+                    isCompleting={completingTaskId === item.id}
+                  />
                 ))
               ) : (
                 <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">

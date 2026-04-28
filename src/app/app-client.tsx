@@ -31,6 +31,7 @@ import { useProfileState } from "@/hooks/use-profile-state";
 import { useProjectDetailState } from "@/hooks/use-project-detail-state";
 import { useProjectEditorState } from "@/hooks/use-project-editor-state";
 import { useProjectBoardMove } from "@/hooks/use-project-board-move";
+import { useTaskCompletion } from "@/hooks/use-task-completion";
 import { NEW_TASK_ID, useTaskEditorState } from "@/hooks/use-task-editor-state";
 import { useTaskFilterToolbarState } from "@/hooks/use-task-filter-toolbar-state";
 import { requestJson } from "@/lib/api-client";
@@ -167,6 +168,13 @@ export function TaskewrApp({
   const redirectToLogin = useCallback(() => {
     router.push(`/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
   }, [router]);
+  const {
+    completeTask,
+    completingTaskId,
+  } = useTaskCompletion({
+    redirectToLogin,
+    refreshApp: () => router.refresh(),
+  });
   const {
     profileModalOpen,
     currentUserProfile,
@@ -473,6 +481,8 @@ export function TaskewrApp({
                       filteredTodayItems={filteredTodayItems}
                       filteredProjects={filteredProjects}
                       onEditTask={setEditingTaskId}
+                      onCompleteTask={completeTask}
+                      completingTaskId={completingTaskId}
                       onOpenProjects={() => router.push("/projects")}
                       onOpenProjectByName={(projectName) => {
                         const project = activeProjects.find((item) => item.name === projectName);
@@ -572,6 +582,8 @@ export function TaskewrApp({
                     onDragTaskStart={setDraggingProjectTaskId}
                     onDragTaskEnd={() => setDraggingProjectTaskId(null)}
                     onEditTask={openTask}
+                    onCompleteTask={completeTask}
+                    completingTaskId={completingTaskId}
                     onMoveTask={moveProjectTaskToStatus}
                     onEditProject={() => setEditingProjectId(selectedProject.id)}
                     onBackToProjects={() => router.push("/projects")}

@@ -96,6 +96,50 @@ function RepeatBadge({ task }: { task: Pick<TaskListItem, "repeatRuleId" | "repe
   );
 }
 
+function TaskCompleteButton({
+  task,
+  isCompleting,
+  onComplete,
+}: {
+  task: Pick<TaskListItem, "id" | "statusValue">;
+  isCompleting?: boolean;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+}) {
+  const isDone = task.statusValue === "done";
+
+  return (
+    <button
+      type="button"
+      disabled={isDone || isCompleting || !onComplete}
+      onClick={(event) => {
+        event.stopPropagation();
+        onComplete?.(task);
+      }}
+      aria-label={isDone ? "Task completed" : "Mark task complete"}
+      title={isDone ? "Task completed" : "Mark task complete"}
+      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition ${
+        isDone
+          ? "border-[rgba(34,122,89,0.22)] bg-[var(--accent-strong)] text-white"
+          : "border-[var(--line-strong)] bg-white text-transparent hover:border-[rgba(34,122,89,0.24)] hover:bg-[rgba(34,122,89,0.08)] hover:text-[var(--accent-strong)] focus-visible:border-[rgba(34,122,89,0.24)] focus-visible:text-[var(--accent-strong)]"
+      } ${isCompleting ? "cursor-wait opacity-70" : ""}`}
+    >
+      {isCompleting && !isDone ? (
+        <span className="h-3 w-3 animate-spin rounded-full border-2 border-[rgba(34,122,89,0.24)] border-t-[var(--accent-strong)]" />
+      ) : (
+        <svg
+          viewBox="0 0 16 16"
+          className="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="m3.75 8.25 2.75 2.75 5.75-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 export function CountPill({
   tone,
   children,
@@ -185,23 +229,34 @@ export function FocusItem({
   title,
   project,
   status,
+  statusValue,
   due,
   priority,
   onEdit,
+  onComplete,
+  isCompleting,
 }: {
   id: string;
   title: string;
   project: string;
   status: string;
+  statusValue: TaskListItem["statusValue"];
   due: string;
   priority: string;
   onEdit: (taskId: string) => void;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  isCompleting?: boolean;
 }) {
   const statusTone = getStatusTone(status);
   const priorityTone = getPriorityTone(priority);
 
   return (
-    <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
+    <div className="grid grid-cols-[28px_84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
+      <TaskCompleteButton
+        task={{ id, statusValue }}
+        isCompleting={isCompleting}
+        onComplete={onComplete}
+      />
       <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
         {id}
       </span>
@@ -226,22 +281,33 @@ export function HorizontalListRow({
   project,
   due,
   status,
+  statusValue = "todo",
   priority,
   onEdit,
+  onComplete,
+  isCompleting,
 }: {
   id: string;
   title: string;
   project: string;
   due: string;
   status?: string;
+  statusValue?: TaskListItem["statusValue"];
   priority?: string;
   onEdit: (taskId: string) => void;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  isCompleting?: boolean;
 }) {
   const statusTone = getStatusTone(status ?? "Todo");
   const priorityTone = getPriorityTone(priority ?? "Low");
 
   return (
-    <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
+    <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
+      <TaskCompleteButton
+        task={{ id, statusValue }}
+        isCompleting={isCompleting}
+        onComplete={onComplete}
+      />
       <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
         {id}
       </span>
@@ -264,6 +330,8 @@ export function ProjectSection({
   name,
   items,
   onEdit,
+  onComplete,
+  completingTaskId,
   onOpenProject,
 }: {
   name: string;
@@ -274,10 +342,13 @@ export function ProjectSection({
     status: string;
     priority: string;
     due: string;
+    statusValue: TaskListItem["statusValue"];
     repeatRuleId?: string | null;
     repeatCarryCount?: number;
   }[];
   onEdit: (taskId: string) => void;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  completingTaskId?: string | null;
   onOpenProject: (projectName: string) => void;
 }) {
   return (
@@ -298,7 +369,8 @@ export function ProjectSection({
         </button>
       </header>
       <div>
-        <div className="grid grid-cols-[76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+        <div className="grid grid-cols-[28px_76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+          <span />
           <span>Task</span>
           <span>Title</span>
           <span className="text-center">Status</span>
@@ -312,8 +384,13 @@ export function ProjectSection({
           return (
             <div
               key={item.id}
-              className="grid grid-cols-[76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] px-5 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0"
+              className="grid grid-cols-[28px_76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] px-5 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0"
             >
+              <TaskCompleteButton
+                task={item}
+                isCompleting={completingTaskId === item.id}
+                onComplete={onComplete}
+              />
               <span className="font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]">
                 {item.id}
               </span>
@@ -327,7 +404,7 @@ export function ProjectSection({
               <StatusPill tone={statusTone}>{item.status}</StatusPill>
               <StatusPill tone={priorityTone}>{item.priority}</StatusPill>
               <span className="text-right text-xs text-[var(--ink-subtle)]">{item.due}</span>
-              <div className="col-start-2 -mt-1 flex">
+              <div className="col-start-3 -mt-1 flex">
                 <RepeatBadge task={item} />
               </div>
             </div>
@@ -487,6 +564,8 @@ export function ProjectBoardLane({
   laneStatus,
   items,
   onEdit,
+  onComplete,
+  completingTaskId,
   onMoveTask,
   draggingTaskId,
   onDragTaskStart,
@@ -496,6 +575,8 @@ export function ProjectBoardLane({
   laneStatus: TaskStatus;
   items: TaskListItem[];
   onEdit: (taskId: string) => void;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  completingTaskId?: string | null;
   onMoveTask: (taskId: string, nextStatus: TaskStatus) => void;
   draggingTaskId: string | null;
   onDragTaskStart: (taskId: string) => void;
@@ -551,9 +632,16 @@ export function ProjectBoardLane({
               }`}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
-                  {item.id}
-                </span>
+                <div className="flex items-center gap-2">
+                  <TaskCompleteButton
+                    task={item}
+                    isCompleting={completingTaskId === item.id}
+                    onComplete={onComplete}
+                  />
+                  <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
+                    {item.id}
+                  </span>
+                </div>
                 <span className="text-[11px] text-[var(--ink-subtle)]">{item.due}</span>
               </div>
               <button
