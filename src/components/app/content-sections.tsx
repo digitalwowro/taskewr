@@ -12,6 +12,7 @@ import {
   ProjectBoardLane,
   ProjectRow,
   ProjectSection,
+  TaskTableHeader,
 } from "@/components/app/ui";
 import type { ProjectView } from "@/domain/projects/constants";
 
@@ -134,26 +135,22 @@ export function DashboardContent({
                     </div>
                   </div>
                   {!recurringOverdueCollapsed ? (
-                    <>
-                      <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                        <span />
-                        <span>Task</span>
-                        <span>Title</span>
-                        <span className="text-center">Project</span>
-                        <span className="text-center">Status</span>
-                        <span className="text-center">Priority</span>
-                        <span className="text-right">Due</span>
-                      </div>
-                      {filteredRecurringOverdueItems.map((item) => (
-                        <HorizontalListRow
-                          key={item.id}
-                          {...item}
-                          onEdit={onEditTask}
-                          onComplete={onCompleteTask}
-                          isCompleting={completingTaskId === item.id}
-                        />
-                      ))}
-                    </>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full table-auto border-collapse">
+                        <TaskTableHeader />
+                        <tbody>
+                          {filteredRecurringOverdueItems.map((item) => (
+                            <HorizontalListRow
+                              key={item.id}
+                              {...item}
+                              onEdit={onEditTask}
+                              onComplete={onCompleteTask}
+                              isCompleting={completingTaskId === item.id}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : null}
                 </section>
               ) : null}
@@ -179,25 +176,23 @@ export function DashboardContent({
                 </div>
                 {!recurringTodayCollapsed ? (
                   <>
-                    <div className="grid grid-cols-[28px_84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                      <span />
-                      <span>Task</span>
-                      <span>Title</span>
-                      <span className="text-center">Project</span>
-                      <span className="text-center">Status</span>
-                      <span className="text-center">Priority</span>
-                      <span className="text-right">Due</span>
-                    </div>
                     {filteredRecurringTodayItems.length > 0 ? (
-                      filteredRecurringTodayItems.map((item) => (
-                        <FocusItem
-                          key={item.id}
-                          {...item}
-                          onEdit={onEditTask}
-                          onComplete={onCompleteTask}
-                          isCompleting={completingTaskId === item.id}
-                        />
-                      ))
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full table-auto border-collapse">
+                          <TaskTableHeader />
+                          <tbody>
+                            {filteredRecurringTodayItems.map((item) => (
+                              <FocusItem
+                                key={item.id}
+                                {...item}
+                                onEdit={onEditTask}
+                                onComplete={onCompleteTask}
+                                isCompleting={completingTaskId === item.id}
+                              />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     ) : (
                       <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
                         No recurring tasks due today or unscheduled match the current filters.
@@ -249,26 +244,22 @@ export function DashboardContent({
                     </div>
                   </div>
                   {!focusOverdueCollapsed ? (
-                    <>
-                      <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                        <span />
-                        <span>Task</span>
-                        <span>Title</span>
-                        <span className="text-center">Project</span>
-                        <span className="text-center">Status</span>
-                        <span className="text-center">Priority</span>
-                        <span className="text-right">Due</span>
-                      </div>
-                      {filteredOverdueItems.map((item) => (
-                        <HorizontalListRow
-                          key={item.id}
-                          {...item}
-                          onEdit={onEditTask}
-                          onComplete={onCompleteTask}
-                          isCompleting={completingTaskId === item.id}
-                        />
-                      ))}
-                    </>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full table-auto border-collapse">
+                        <TaskTableHeader />
+                        <tbody>
+                          {filteredOverdueItems.map((item) => (
+                            <HorizontalListRow
+                              key={item.id}
+                              {...item}
+                              onEdit={onEditTask}
+                              onComplete={onCompleteTask}
+                              isCompleting={completingTaskId === item.id}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : null}
                 </section>
               ) : null}
@@ -294,25 +285,23 @@ export function DashboardContent({
                 </div>
                 {!focusTodayCollapsed ? (
                   <>
-                    <div className="grid grid-cols-[28px_84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                      <span />
-                      <span>Task</span>
-                      <span>Title</span>
-                      <span className="text-center">Project</span>
-                      <span className="text-center">Status</span>
-                      <span className="text-center">Priority</span>
-                      <span className="text-right">Due</span>
-                    </div>
                     {filteredTodayItems.length > 0 ? (
-                      filteredTodayItems.map((item) => (
-                        <FocusItem
-                          key={item.id}
-                          {...item}
-                          onEdit={onEditTask}
-                          onComplete={onCompleteTask}
-                          isCompleting={completingTaskId === item.id}
-                        />
-                      ))
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full table-auto border-collapse">
+                          <TaskTableHeader />
+                          <tbody>
+                            {filteredTodayItems.map((item) => (
+                              <FocusItem
+                                key={item.id}
+                                {...item}
+                                onEdit={onEditTask}
+                                onComplete={onCompleteTask}
+                                isCompleting={completingTaskId === item.id}
+                              />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     ) : (
                       <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
                         No tasks due today or unscheduled match the current filters.
@@ -497,6 +486,8 @@ export function ProjectsContent({
 export function ProjectDetailContent({
   selectedProject,
   selectedProjectOverdueTasks,
+  selectedProjectActiveTasks,
+  selectedProjectCompletedTasks,
   projectView,
   projectBoardGroups,
   selectedProjectTasks,
@@ -512,6 +503,8 @@ export function ProjectDetailContent({
 }: {
   selectedProject: AppProject;
   selectedProjectOverdueTasks: TaskListItem[];
+  selectedProjectActiveTasks: TaskListItem[];
+  selectedProjectCompletedTasks: TaskListItem[];
   projectView: ProjectView;
   projectBoardGroups: {
     todo: TaskListItem[];
@@ -529,6 +522,13 @@ export function ProjectDetailContent({
   onEditProject: () => void;
   onBackToProjects: () => void;
 }) {
+  const { isSectionCollapsed, toggleSection } = usePersistedCollapsedSections(
+    `taskewr.project.${selectedProject.id}.collapsedSections`,
+  );
+  const projectOverdueCollapsed = isSectionCollapsed("overdue");
+  const projectActiveCollapsed = isSectionCollapsed("active");
+  const projectCompletedCollapsed = isSectionCollapsed("completed");
+
   return (
     <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-5 py-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -563,43 +563,47 @@ export function ProjectDetailContent({
 
       <div className="mt-5">
         <div className="space-y-4">
-          <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
-            <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
-              <div className="flex items-center gap-3">
-                <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-                  Overdue
-                </h3>
-                <CountPill tone="red">{selectedProjectOverdueTasks.length}</CountPill>
+          {selectedProjectOverdueTasks.length > 0 ? (
+            <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
+              <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
+                    Overdue
+                  </h3>
+                  <CountPill tone="red">{selectedProjectOverdueTasks.length}</CountPill>
+                </div>
+                <div className="flex items-center gap-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
+                    Needs action now
+                  </p>
+                  <CollapseButton
+                    collapsed={projectOverdueCollapsed}
+                    label="overdue"
+                    onClick={() => toggleSection("overdue")}
+                  />
+                </div>
               </div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
-                Needs action now
-              </p>
-            </div>
-            <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-              <span />
-              <span>Task</span>
-              <span>Title</span>
-              <span className="text-center">Project</span>
-              <span className="text-center">Status</span>
-              <span className="text-center">Priority</span>
-              <span className="text-right">Due</span>
-            </div>
-            {selectedProjectOverdueTasks.length > 0 ? (
-              selectedProjectOverdueTasks.map((item) => (
-                <HorizontalListRow
-                  key={item.id}
-                  {...item}
-                  onEdit={onEditTask}
-                  onComplete={onCompleteTask}
-                  isCompleting={completingTaskId === item.id}
-                />
-              ))
-            ) : (
-              <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
-                No overdue tasks in this project.
-              </div>
-            )}
-          </section>
+              {!projectOverdueCollapsed ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full table-auto border-collapse">
+                    <TaskTableHeader showProject={false} />
+                    <tbody>
+                      {selectedProjectOverdueTasks.map((item) => (
+                        <HorizontalListRow
+                          key={item.id}
+                          {...item}
+                          onEdit={onEditTask}
+                          onComplete={onCompleteTask}
+                          isCompleting={completingTaskId === item.id}
+                          showProject={false}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
           {projectView === "board" ? (
             <div className="grid gap-4 xl:grid-cols-3">
@@ -641,32 +645,97 @@ export function ProjectDetailContent({
               />
             </div>
           ) : (
-            <section className="overflow-hidden rounded-xl border border-[var(--line-soft)] bg-white">
-              <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                <span />
-                <span>Task</span>
-                <span>Title</span>
-                <span className="text-center">Project</span>
-                <span className="text-center">Status</span>
-                <span className="text-center">Priority</span>
-                <span className="text-right">Due</span>
-              </div>
-              {selectedProjectTasks.length > 0 ? (
-                selectedProjectTasks.map((item) => (
-                  <HorizontalListRow
-                    key={item.id}
-                    {...item}
-                    onEdit={onEditTask}
-                    onComplete={onCompleteTask}
-                    isCompleting={completingTaskId === item.id}
-                  />
-                ))
-              ) : (
-                <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+            <>
+              {selectedProjectActiveTasks.length > 0 ? (
+                <section className="overflow-hidden rounded-xl border border-[var(--line-soft)] bg-white">
+                  <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
+                        Active
+                      </h3>
+                      <CountPill tone="green">{selectedProjectActiveTasks.length}</CountPill>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
+                        Current work
+                      </p>
+                      <CollapseButton
+                        collapsed={projectActiveCollapsed}
+                        label="active"
+                        onClick={() => toggleSection("active")}
+                      />
+                    </div>
+                  </div>
+                  {!projectActiveCollapsed ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full table-auto border-collapse">
+                        <TaskTableHeader showProject={false} />
+                        <tbody>
+                          {selectedProjectActiveTasks.map((item) => (
+                            <HorizontalListRow
+                              key={item.id}
+                              {...item}
+                              onEdit={onEditTask}
+                              onComplete={onCompleteTask}
+                              isCompleting={completingTaskId === item.id}
+                              showProject={false}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {selectedProjectCompletedTasks.length > 0 ? (
+                <section className="overflow-hidden rounded-xl border border-[var(--line-soft)] bg-white">
+                  <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
+                        Completed
+                      </h3>
+                      <CountPill tone="green">{selectedProjectCompletedTasks.length}</CountPill>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                        Finished work
+                      </p>
+                      <CollapseButton
+                        collapsed={projectCompletedCollapsed}
+                        label="completed"
+                        onClick={() => toggleSection("completed")}
+                      />
+                    </div>
+                  </div>
+                  {!projectCompletedCollapsed ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full table-auto border-collapse">
+                        <TaskTableHeader showProject={false} />
+                        <tbody>
+                          {selectedProjectCompletedTasks.map((item) => (
+                            <HorizontalListRow
+                              key={item.id}
+                              {...item}
+                              onEdit={onEditTask}
+                              onComplete={onCompleteTask}
+                              isCompleting={completingTaskId === item.id}
+                              showProject={false}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {selectedProjectTasks.length === 0 ? (
+                <section className="rounded-xl border border-[var(--line-soft)] bg-white px-4 py-6 text-sm text-[var(--ink-subtle)]">
                   No tasks match the current view and filters for this project.
-                </div>
-              )}
-            </section>
+                </section>
+              ) : null}
+            </>
           )}
         </div>
       </div>

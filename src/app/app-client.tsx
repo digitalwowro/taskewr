@@ -300,6 +300,8 @@ export function TaskewrApp({
   });
   const {
     projectBoardGroups,
+    selectedProjectActiveTasks,
+    selectedProjectCompletedTasks,
     selectedProjectOverdueTasks,
     selectedProjectTasks,
   } = useProjectDetailState({
@@ -370,8 +372,8 @@ export function TaskewrApp({
   );
 
   return (
-    <main className="h-screen overflow-hidden bg-[var(--surface-base)] text-[var(--ink-strong)]">
-      <div className="grid h-screen grid-cols-[auto_minmax(0,1fr)]">
+    <main className="fixed inset-0 overflow-hidden bg-[var(--surface-base)] text-[var(--ink-strong)]">
+      <div className="grid h-full grid-cols-[auto_minmax(0,1fr)]">
         <AppSidebar
           sidebarExpanded={sidebarExpanded}
           onToggleSidebar={() => setSidebarExpanded((current) => !current)}
@@ -575,6 +577,8 @@ export function TaskewrApp({
                   <ProjectDetailContent
                     selectedProject={selectedProject}
                     selectedProjectOverdueTasks={selectedProjectOverdueTasks}
+                    selectedProjectActiveTasks={selectedProjectActiveTasks}
+                    selectedProjectCompletedTasks={selectedProjectCompletedTasks}
                     projectView={projectView}
                     projectBoardGroups={projectBoardGroups}
                     selectedProjectTasks={selectedProjectTasks}

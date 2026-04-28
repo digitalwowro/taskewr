@@ -18,19 +18,20 @@ export function useTaskCompletion({
 
   const completeTask = useCallback(
     (task: Pick<TaskListItem, "id" | "statusValue">) => {
-      if (task.statusValue === "done" || completingTaskId !== null) {
+      if (completingTaskId !== null) {
         return;
       }
 
       setCompletingTaskId(task.id);
+      const isReopening = task.statusValue === "done";
 
       void requestJson(`/api/v1/tasks/${task.id.replace("TSK-", "")}/complete`, {
-        method: "POST",
+        method: isReopening ? "DELETE" : "POST",
       })
         .then(
           () =>
             new Promise<void>((resolve) => {
-              window.setTimeout(resolve, TASK_COMPLETION_FADE_MS);
+              window.setTimeout(resolve, isReopening ? 0 : TASK_COMPLETION_FADE_MS);
             }),
         )
         .then(() => {

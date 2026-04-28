@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 
 import { sortAndFilterTaskItems } from "@/domain/dashboard/queries";
+import { splitProjectTaskSections } from "@/domain/projects/task-sections";
 import type { TaskFilters, TaskListItem } from "@/domain/tasks/types";
-import { isOverdueDate } from "@/lib/time/dashboard-dates";
 
 export function useProjectDetailState({
   projectId,
@@ -30,17 +30,16 @@ export function useProjectDetailState({
     }),
     [selectedProjectTasks],
   );
-  const selectedProjectOverdueTasks = useMemo(
-    () =>
-      selectedProjectTasks.filter((task) => (
-        isOverdueDate(task.dueDate ? new Date(task.dueDate) : null)
-      )),
+  const selectedProjectTaskSections = useMemo(
+    () => splitProjectTaskSections(selectedProjectTasks),
     [selectedProjectTasks],
   );
 
   return {
     projectBoardGroups,
-    selectedProjectOverdueTasks,
+    selectedProjectActiveTasks: selectedProjectTaskSections.active,
+    selectedProjectCompletedTasks: selectedProjectTaskSections.completed,
+    selectedProjectOverdueTasks: selectedProjectTaskSections.overdue,
     selectedProjectTasks,
   };
 }

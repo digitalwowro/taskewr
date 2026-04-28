@@ -20,3 +20,18 @@ export async function POST(
     return toErrorResponse(error);
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    assertValidCsrfToken(request);
+    await assertMutationRateLimit(request, "tasks:reopen");
+    const { id } = await params;
+    const task = await service.reopenTask(Number(id));
+    return jsonOk(task);
+  } catch (error) {
+    return toErrorResponse(error);
+  }
+}

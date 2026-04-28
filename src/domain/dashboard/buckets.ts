@@ -17,6 +17,10 @@ function getTaskDayOffset(task: { dueDate: string | null }, referenceDate: Date,
   );
 }
 
+function isCompletedTask(task: Pick<TaskListItem, "statusValue">) {
+  return task.statusValue === "done";
+}
+
 export function isDashboardRelevantTask(
   task: { dueDate: string | null },
   referenceDate = new Date(),
@@ -57,6 +61,11 @@ export function bucketDashboardTasks(
 
     const offset = getTaskDayOffset(task, referenceDate, timezone);
     const isRecurring = Boolean(task.repeatRuleId);
+    const isCompleted = isCompletedTask(task);
+
+    if (isCompleted) {
+      continue;
+    }
 
     if (isRecurring && offset !== null && offset < 0) {
       buckets.recurringOverdueItems.push(task);
@@ -78,4 +87,3 @@ export function bucketDashboardTasks(
 
   return buckets;
 }
-

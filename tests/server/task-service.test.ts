@@ -224,3 +224,37 @@ test("completeTask leaves already completed tasks unchanged", async () => {
   assert.equal(task.status, "done");
   assert.equal(updateCount, 0);
 });
+
+test("reopenTask marks a completed task todo", async () => {
+  let status = "done";
+  let updatedByUserId: number | null = null;
+  const service = buildTaskService({
+    findById: async () => buildTask({ status }),
+    updateById: async (_id: number, data: { status: string; updatedByUserId: number | null }) => {
+      status = data.status;
+      updatedByUserId = data.updatedByUserId;
+      return buildTask({ status });
+    },
+  });
+
+  const task = await service.reopenTask(10);
+
+  assert.equal(task.status, "todo");
+  assert.equal(updatedByUserId, 7);
+});
+
+test("reopenTask leaves active tasks unchanged", async () => {
+  let updateCount = 0;
+  const service = buildTaskService({
+    findById: async () => buildTask({ status: "in_progress" }),
+    updateById: async () => {
+      updateCount += 1;
+      return buildTask({ status: "todo" });
+    },
+  });
+
+  const task = await service.reopenTask(10);
+
+  assert.equal(task.status, "in_progress");
+  assert.equal(updateCount, 0);
+});

@@ -65,3 +65,43 @@ test("sortAndFilterTaskItems supports status sorting", () => {
 
   assert.deepEqual(items.map((item) => item.id), ["todo", "in-progress", "done"]);
 });
+
+test("sortAndFilterTaskItems keeps completed tasks at the bottom", () => {
+  const items = sortAndFilterTaskItems(
+    [
+      task({ id: "done-urgent", statusValue: "done", priorityValue: "urgent" }),
+      task({ id: "todo-low", statusValue: "todo", priorityValue: "low" }),
+      task({ id: "in-progress-medium", statusValue: "in_progress", priorityValue: "medium" }),
+      task({ id: "done-high", statusValue: "done", priorityValue: "high" }),
+    ],
+    filters({
+      sort: "priority",
+      direction: "desc",
+      status: ["todo", "in_progress", "done"],
+    }),
+  );
+
+  assert.deepEqual(items.map((item) => item.id), [
+    "in-progress-medium",
+    "todo-low",
+    "done-urgent",
+    "done-high",
+  ]);
+});
+
+test("sortAndFilterTaskItems keeps completed tasks at the bottom when sorting status descending", () => {
+  const items = sortAndFilterTaskItems(
+    [
+      task({ id: "done", statusValue: "done" }),
+      task({ id: "todo", statusValue: "todo" }),
+      task({ id: "in-progress", statusValue: "in_progress" }),
+    ],
+    filters({
+      sort: "status",
+      direction: "desc",
+      status: ["todo", "in_progress", "done"],
+    }),
+  );
+
+  assert.deepEqual(items.map((item) => item.id), ["in-progress", "todo", "done"]);
+});
