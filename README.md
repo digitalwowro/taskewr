@@ -208,12 +208,7 @@ npm run clean:macos
 
 ## 📚 Documentation
 
-* [Architecture](./docs/architecture.md)
-* [Development guide](./docs/development.md)
-* [Operations](./docs/operations.md)
-* [Repeat settings](./docs/recurrence.md)
-* [Security](./docs/security.md)
-* [Seed and demo data](./docs/seed-demo-strategy.md)
+Project documentation lives in [`docs/`](./docs/).
 
 ---
 
