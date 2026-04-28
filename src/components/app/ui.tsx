@@ -96,6 +96,10 @@ function RepeatBadge({ task }: { task: Pick<TaskListItem, "repeatRuleId" | "repe
   );
 }
 
+function getTaskCompletionClass(isCompleting?: boolean) {
+  return isCompleting ? "pointer-events-none translate-y-1 opacity-0" : "";
+}
+
 function TaskCompleteButton({
   task,
   isCompleting,
@@ -117,18 +121,18 @@ function TaskCompleteButton({
       }}
       aria-label={isDone ? "Task completed" : "Mark task complete"}
       title={isDone ? "Task completed" : "Mark task complete"}
-      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition ${
+      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${
         isDone
           ? "border-[rgba(34,122,89,0.22)] bg-[var(--accent-strong)] text-white"
           : "border-[var(--line-strong)] bg-white text-transparent hover:border-[rgba(34,122,89,0.24)] hover:bg-[rgba(34,122,89,0.08)] hover:text-[var(--accent-strong)] focus-visible:border-[rgba(34,122,89,0.24)] focus-visible:text-[var(--accent-strong)]"
       } ${isCompleting ? "cursor-wait opacity-70" : ""}`}
     >
       {isCompleting && !isDone ? (
-        <span className="h-3 w-3 animate-spin rounded-full border-2 border-[rgba(34,122,89,0.24)] border-t-[var(--accent-strong)]" />
+        <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-[rgba(34,122,89,0.24)] border-t-[var(--accent-strong)]" />
       ) : (
         <svg
           viewBox="0 0 16 16"
-          className="h-4 w-4"
+          className="h-3.5 w-3.5"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
@@ -251,7 +255,9 @@ export function FocusItem({
   const priorityTone = getPriorityTone(priority);
 
   return (
-    <div className="grid grid-cols-[28px_84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
+    <div
+      className={`grid grid-cols-[28px_84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] last:border-b-0 ${getTaskCompletionClass(isCompleting)}`}
+    >
       <TaskCompleteButton
         task={{ id, statusValue }}
         isCompleting={isCompleting}
@@ -302,7 +308,9 @@ export function HorizontalListRow({
   const priorityTone = getPriorityTone(priority ?? "Low");
 
   return (
-    <div className="grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
+    <div
+      className={`grid grid-cols-[28px_78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] last:border-b-0 ${getTaskCompletionClass(isCompleting)}`}
+    >
       <TaskCompleteButton
         task={{ id, statusValue }}
         isCompleting={isCompleting}
@@ -384,7 +392,7 @@ export function ProjectSection({
           return (
             <div
               key={item.id}
-              className="grid grid-cols-[28px_76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] px-5 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0"
+              className={`grid grid-cols-[28px_76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] px-5 py-3 text-sm transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] last:border-b-0 ${getTaskCompletionClass(completingTaskId === item.id)}`}
             >
               <TaskCompleteButton
                 task={item}
@@ -627,9 +635,9 @@ export function ProjectBoardLane({
                 onDragTaskStart(item.id);
               }}
               onDragEnd={onDragTaskEnd}
-              className={`rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card)] p-3 transition hover:bg-[var(--surface-subtle)] ${
+              className={`rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card)] p-3 transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] ${
                 draggingTaskId === item.id ? "opacity-60" : ""
-              }`}
+              } ${getTaskCompletionClass(completingTaskId === item.id)}`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">

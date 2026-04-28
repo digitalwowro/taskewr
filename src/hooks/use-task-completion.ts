@@ -5,6 +5,8 @@ import { useCallback, useState } from "react";
 import type { TaskListItem } from "@/domain/tasks/types";
 import { isUnauthorizedError, requestJson } from "@/lib/api-client";
 
+const TASK_COMPLETION_FADE_MS = 500;
+
 export function useTaskCompletion({
   redirectToLogin,
   refreshApp,
@@ -25,6 +27,12 @@ export function useTaskCompletion({
       void requestJson(`/api/v1/tasks/${task.id.replace("TSK-", "")}/complete`, {
         method: "POST",
       })
+        .then(
+          () =>
+            new Promise<void>((resolve) => {
+              window.setTimeout(resolve, TASK_COMPLETION_FADE_MS);
+            }),
+        )
         .then(() => {
           refreshApp();
         })
