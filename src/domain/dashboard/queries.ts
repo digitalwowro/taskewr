@@ -9,10 +9,20 @@ function getDateRank(value: string | null) {
   return new Date(value).getTime();
 }
 
+function getCompletedRank(item: Pick<TaskListItem, "statusValue">) {
+  return item.statusValue === "done" ? 1 : 0;
+}
+
 export function sortTaskItems(items: TaskListItem[], filters: TaskFilters): TaskListItem[] {
   const modifier = filters.direction === "asc" ? 1 : -1;
 
   return [...items].sort((a, b) => {
+    const completedDiff = getCompletedRank(a) - getCompletedRank(b);
+
+    if (completedDiff !== 0) {
+      return completedDiff;
+    }
+
     switch (filters.sort) {
       case "status":
         return (TASK_STATUS_RANK[a.statusValue] - TASK_STATUS_RANK[b.statusValue]) * modifier;

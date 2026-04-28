@@ -7,6 +7,10 @@ function priorityRank(priority: string) {
   return TASK_PRIORITY_RANK[priority as TaskPriority] ?? 0;
 }
 
+function completedRank(status: string) {
+  return status === "done" ? 1 : 0;
+}
+
 export class SearchRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -85,6 +89,12 @@ export class SearchRepository {
 
     if (input.sort === "priority") {
       results.sort((left, right) => {
+        const completedDiff = completedRank(left.status) - completedRank(right.status);
+
+        if (completedDiff !== 0) {
+          return completedDiff;
+        }
+
         const diff = priorityRank(left.priority) - priorityRank(right.priority);
         return input.direction === "asc" ? diff : -diff;
       });

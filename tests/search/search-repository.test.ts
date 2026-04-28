@@ -126,6 +126,49 @@ test("SearchRepository sorts priority results in descending rank order", async (
   );
 });
 
+test("SearchRepository keeps completed priority results at the bottom", async () => {
+  const repository = createRepository(async () => [
+    {
+      id: 111,
+      title: "Completed urgent task",
+      status: "done",
+      priority: "urgent",
+      dueDate: null,
+      project: { id: 1, name: "Channel Sales" },
+    },
+    {
+      id: 145,
+      title: "Active low task",
+      status: "todo",
+      priority: "low",
+      dueDate: null,
+      project: { id: 4, name: "Service Management" },
+    },
+    {
+      id: 214,
+      title: "Active medium task",
+      status: "in_progress",
+      priority: "medium",
+      dueDate: null,
+      project: { id: 1, name: "Channel Sales" },
+    },
+  ]);
+
+  const results = await repository.searchTasks({
+    ...baseInput,
+    status: ["todo", "in_progress", "done"],
+  });
+
+  assert.deepEqual(
+    results.map((task) => ({ id: task.id, status: task.status, priority: task.priority })),
+    [
+      { id: 214, status: "in_progress", priority: "medium" },
+      { id: 145, status: "todo", priority: "low" },
+      { id: 111, status: "done", priority: "urgent" },
+    ],
+  );
+});
+
 test("SearchRepository respects explicit non-priority sorts and archived inclusion", async () => {
   let capturedArgs: unknown = null;
 

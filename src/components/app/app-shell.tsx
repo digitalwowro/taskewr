@@ -74,7 +74,7 @@ export function AppSidebar({
 
   return (
     <aside
-      className={`h-screen border-r border-[var(--line-soft)] bg-white transition-[width] duration-200 ${
+      className={`h-full border-r border-[var(--line-soft)] bg-white transition-[width] duration-200 ${
         sidebarExpanded ? "w-[352px]" : "w-[72px]"
       }`}
     >

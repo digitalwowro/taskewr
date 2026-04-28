@@ -247,6 +247,47 @@ export class TaskService {
     return this.getTask(id);
   }
 
+  async completeTask(id: number) {
+    const context = await this.contextService.getAppContext();
+    const currentTask = await this.getTask(id);
+
+    if (currentTask.status === "done") {
+      return currentTask;
+    }
+
+    const hierarchyTasks = await this.repository.listTasksForHierarchy(currentTask.projectId);
+    assertCanMarkTaskDone(id, hierarchyTasks);
+
+    await this.repository.updateById(id, {
+      updatedByUserId: context.actorUserId,
+      status: "done",
+      version: {
+        increment: 1,
+      },
+    });
+
+    return this.getTask(id);
+  }
+
+  async reopenTask(id: number) {
+    const context = await this.contextService.getAppContext();
+    const currentTask = await this.getTask(id);
+
+    if (currentTask.status !== "done") {
+      return currentTask;
+    }
+
+    await this.repository.updateById(id, {
+      updatedByUserId: context.actorUserId,
+      status: "todo",
+      version: {
+        increment: 1,
+      },
+    });
+
+    return this.getTask(id);
+  }
+
   async moveTaskOnBoard(input: BoardMoveInput) {
     const payload = boardMoveSchema.parse(input);
     const plan = await this.planBoardMove(payload);

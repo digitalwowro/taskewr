@@ -96,6 +96,90 @@ function RepeatBadge({ task }: { task: Pick<TaskListItem, "repeatRuleId" | "repe
   );
 }
 
+function getTaskCompletionClass(isCompleting?: boolean) {
+  return isCompleting ? "pointer-events-none translate-y-1 opacity-0" : "";
+}
+
+const taskTableHeaderClass =
+  "border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]";
+const taskTableCellClass = "border-b border-[var(--line-soft)] px-4 py-3 align-middle";
+
+export function TaskTableHeader({ showProject = true }: { showProject?: boolean }) {
+  return (
+    <thead>
+      <tr>
+        <th scope="col" className={`${taskTableHeaderClass} w-px text-left`}>
+          <span className="sr-only">Complete</span>
+        </th>
+        <th scope="col" className={`${taskTableHeaderClass} w-px text-left`}>
+          Task
+        </th>
+        <th scope="col" className={`${taskTableHeaderClass} text-left`}>
+          Title
+        </th>
+        {showProject ? (
+          <th scope="col" className={`${taskTableHeaderClass} w-px text-center`}>
+            Project
+          </th>
+        ) : null}
+        <th scope="col" className={`${taskTableHeaderClass} w-px text-center`}>
+          Status
+        </th>
+        <th scope="col" className={`${taskTableHeaderClass} w-px text-center`}>
+          Priority
+        </th>
+        <th scope="col" className={`${taskTableHeaderClass} w-px text-right`}>
+          Due
+        </th>
+      </tr>
+    </thead>
+  );
+}
+
+function TaskCompleteButton({
+  task,
+  isCompleting,
+  onComplete,
+}: {
+  task: Pick<TaskListItem, "id" | "statusValue">;
+  isCompleting?: boolean;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+}) {
+  const isDone = task.statusValue === "done";
+
+  return (
+    <button
+      type="button"
+      disabled={isCompleting || !onComplete}
+      onClick={(event) => {
+        event.stopPropagation();
+        onComplete?.(task);
+      }}
+      aria-label={isDone ? "Mark task incomplete" : "Mark task complete"}
+      title={isDone ? "Mark task incomplete" : "Mark task complete"}
+      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${
+        isDone
+          ? "border-[rgba(34,122,89,0.22)] bg-[var(--accent-strong)] text-white hover:bg-[rgb(43,107,79)] focus-visible:bg-[rgb(43,107,79)]"
+          : "border-[var(--line-strong)] bg-white text-transparent hover:border-[rgba(34,122,89,0.24)] hover:bg-[rgba(34,122,89,0.08)] hover:text-[var(--accent-strong)] focus-visible:border-[rgba(34,122,89,0.24)] focus-visible:text-[var(--accent-strong)]"
+      } ${isCompleting ? "cursor-wait opacity-70" : ""}`}
+    >
+      {isCompleting ? (
+        <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-[rgba(34,122,89,0.24)] border-t-[var(--accent-strong)]" />
+      ) : (
+        <svg
+          viewBox="0 0 16 16"
+          className="h-3.5 w-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="m3.75 8.25 2.75 2.75 5.75-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 export function CountPill({
   tone,
   children,
@@ -185,38 +269,80 @@ export function FocusItem({
   title,
   project,
   status,
+  statusValue,
   due,
   priority,
   onEdit,
+  onComplete,
+  isCompleting,
+  repeatRuleId,
+  repeatCarryCount,
+  showProject = true,
 }: {
   id: string;
   title: string;
   project: string;
   status: string;
+  statusValue: TaskListItem["statusValue"];
   due: string;
   priority: string;
   onEdit: (taskId: string) => void;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  isCompleting?: boolean;
+  repeatRuleId?: string | null;
+  repeatCarryCount?: number;
+  showProject?: boolean;
 }) {
   const statusTone = getStatusTone(status);
   const priorityTone = getPriorityTone(priority);
 
   return (
-    <div className="grid grid-cols-[84px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
-      <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
-        {id}
-      </span>
-      <button
-        type="button"
-        onClick={() => onEdit(id)}
-        className="truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+    <tr
+      className={`text-sm transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] ${getTaskCompletionClass(isCompleting)}`}
+    >
+      <td className={`${taskTableCellClass} w-px`}>
+        <TaskCompleteButton
+          task={{ id, statusValue }}
+          isCompleting={isCompleting}
+          onComplete={onComplete}
+        />
+      </td>
+      <td
+        className={`${taskTableCellClass} w-px whitespace-nowrap font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]`}
       >
-        {title}
-      </button>
-      <span className="truncate text-center text-xs text-[var(--ink-subtle)]">{project}</span>
-      <StatusPill tone={statusTone}>{status}</StatusPill>
-      <StatusPill tone={priorityTone}>{priority}</StatusPill>
-      <span className="text-right text-xs text-[var(--ink-subtle)]">{due}</span>
-    </div>
+        {id}
+      </td>
+      <td className={`${taskTableCellClass} min-w-0`}>
+        <span className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(id)}
+            className="min-w-0 truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+          >
+            {title}
+          </button>
+          <RepeatBadge task={{ repeatRuleId, repeatCarryCount }} />
+        </span>
+      </td>
+      {showProject ? (
+        <td
+          className={`${taskTableCellClass} w-px text-center text-xs whitespace-nowrap text-[var(--ink-subtle)]`}
+        >
+          {project}
+        </td>
+      ) : null}
+      <td className={`${taskTableCellClass} w-px text-center whitespace-nowrap`}>
+        <StatusPill tone={statusTone}>{status}</StatusPill>
+      </td>
+      <td className={`${taskTableCellClass} w-px text-center whitespace-nowrap`}>
+        <StatusPill tone={priorityTone}>{priority}</StatusPill>
+      </td>
+      <td
+        className={`${taskTableCellClass} w-px text-right text-xs whitespace-nowrap text-[var(--ink-subtle)]`}
+      >
+        {due}
+      </td>
+    </tr>
   );
 }
 
@@ -226,37 +352,79 @@ export function HorizontalListRow({
   project,
   due,
   status,
+  statusValue = "todo",
   priority,
   onEdit,
+  onComplete,
+  isCompleting,
+  repeatRuleId,
+  repeatCarryCount,
+  showProject = true,
 }: {
   id: string;
   title: string;
   project: string;
   due: string;
   status?: string;
+  statusValue?: TaskListItem["statusValue"];
   priority?: string;
   onEdit: (taskId: string) => void;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  isCompleting?: boolean;
+  repeatRuleId?: string | null;
+  repeatCarryCount?: number;
+  showProject?: boolean;
 }) {
   const statusTone = getStatusTone(status ?? "Todo");
   const priorityTone = getPriorityTone(priority ?? "Low");
 
   return (
-    <div className="grid grid-cols-[78px_minmax(0,1fr)_144px_96px_96px_110px] items-center gap-4 border-b border-[var(--line-soft)] px-4 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0">
-      <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
-        {id}
-      </span>
-      <button
-        type="button"
-        onClick={() => onEdit(id)}
-        className="truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+    <tr
+      className={`text-sm transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] ${getTaskCompletionClass(isCompleting)}`}
+    >
+      <td className={`${taskTableCellClass} w-px`}>
+        <TaskCompleteButton
+          task={{ id, statusValue }}
+          isCompleting={isCompleting}
+          onComplete={onComplete}
+        />
+      </td>
+      <td
+        className={`${taskTableCellClass} w-px whitespace-nowrap font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]`}
       >
-        {title}
-      </button>
-      <span className="truncate text-center text-xs text-[var(--ink-subtle)]">{project}</span>
-      <StatusPill tone={statusTone}>{status ?? "Todo"}</StatusPill>
-      <StatusPill tone={priorityTone}>{priority ?? "Low"}</StatusPill>
-      <span className="text-right text-xs text-[var(--ink-subtle)]">{due}</span>
-    </div>
+        {id}
+      </td>
+      <td className={`${taskTableCellClass} min-w-0`}>
+        <span className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(id)}
+            className="min-w-0 truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+          >
+            {title}
+          </button>
+          <RepeatBadge task={{ repeatRuleId, repeatCarryCount }} />
+        </span>
+      </td>
+      {showProject ? (
+        <td
+          className={`${taskTableCellClass} w-px text-center text-xs whitespace-nowrap text-[var(--ink-subtle)]`}
+        >
+          {project}
+        </td>
+      ) : null}
+      <td className={`${taskTableCellClass} w-px text-center whitespace-nowrap`}>
+        <StatusPill tone={statusTone}>{status ?? "Todo"}</StatusPill>
+      </td>
+      <td className={`${taskTableCellClass} w-px text-center whitespace-nowrap`}>
+        <StatusPill tone={priorityTone}>{priority ?? "Low"}</StatusPill>
+      </td>
+      <td
+        className={`${taskTableCellClass} w-px text-right text-xs whitespace-nowrap text-[var(--ink-subtle)]`}
+      >
+        {due}
+      </td>
+    </tr>
   );
 }
 
@@ -264,6 +432,8 @@ export function ProjectSection({
   name,
   items,
   onEdit,
+  onComplete,
+  completingTaskId,
   onOpenProject,
 }: {
   name: string;
@@ -274,10 +444,13 @@ export function ProjectSection({
     status: string;
     priority: string;
     due: string;
+    statusValue: TaskListItem["statusValue"];
     repeatRuleId?: string | null;
     repeatCarryCount?: number;
   }[];
   onEdit: (taskId: string) => void;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  completingTaskId?: string | null;
   onOpenProject: (projectName: string) => void;
 }) {
   return (
@@ -297,42 +470,61 @@ export function ProjectSection({
           Open project
         </button>
       </header>
-      <div>
-        <div className="grid grid-cols-[76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-          <span>Task</span>
-          <span>Title</span>
-          <span className="text-center">Status</span>
-          <span className="text-center">Priority</span>
-          <span className="text-right">Due</span>
-        </div>
-        {items.length > 0 ? items.map((item) => {
-          const statusTone = getStatusTone(item.status);
-          const priorityTone = getPriorityTone(item.priority);
+      <div className="overflow-x-auto">
+        {items.length > 0 ? (
+          <table className="min-w-full table-auto border-collapse">
+            <TaskTableHeader showProject={false} />
+            <tbody>
+              {items.map((item) => {
+                const statusTone = getStatusTone(item.status);
+                const priorityTone = getPriorityTone(item.priority);
 
-          return (
-            <div
-              key={item.id}
-              className="grid grid-cols-[76px_minmax(0,1fr)_96px_96px_84px] items-center gap-4 border-b border-[var(--line-soft)] px-5 py-3 text-sm transition hover:bg-[var(--surface-subtle)] last:border-b-0"
-            >
-              <span className="font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]">
-                {item.id}
-              </span>
-              <button
-                type="button"
-                onClick={() => onEdit(item.id)}
-                className="truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
-              >
-                {item.title}
-              </button>
-              <StatusPill tone={statusTone}>{item.status}</StatusPill>
-              <StatusPill tone={priorityTone}>{item.priority}</StatusPill>
-              <span className="text-right text-xs text-[var(--ink-subtle)]">{item.due}</span>
-              <div className="col-start-2 -mt-1 flex">
-                <RepeatBadge task={item} />
-              </div>
-            </div>
-          );
-        }) : (
+                return (
+                  <tr
+                    key={item.id}
+                    className={`text-sm transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] ${getTaskCompletionClass(completingTaskId === item.id)}`}
+                  >
+                    <td className={`${taskTableCellClass} w-px pl-5`}>
+                      <TaskCompleteButton
+                        task={item}
+                        isCompleting={completingTaskId === item.id}
+                        onComplete={onComplete}
+                      />
+                    </td>
+                    <td
+                      className={`${taskTableCellClass} w-px whitespace-nowrap font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]`}
+                    >
+                      {item.id}
+                    </td>
+                    <td className={`${taskTableCellClass} min-w-0`}>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(item.id)}
+                          className="min-w-0 truncate text-left font-medium text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+                        >
+                          {item.title}
+                        </button>
+                        <RepeatBadge task={item} />
+                      </span>
+                    </td>
+                    <td className={`${taskTableCellClass} w-px text-center whitespace-nowrap`}>
+                      <StatusPill tone={statusTone}>{item.status}</StatusPill>
+                    </td>
+                    <td className={`${taskTableCellClass} w-px text-center whitespace-nowrap`}>
+                      <StatusPill tone={priorityTone}>{item.priority}</StatusPill>
+                    </td>
+                    <td
+                      className={`${taskTableCellClass} w-px pr-5 text-right text-xs whitespace-nowrap text-[var(--ink-subtle)]`}
+                    >
+                      {item.due}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
           <div className="px-5 py-6 text-sm text-[var(--ink-subtle)]">
             No tasks in this project match the current filters.
           </div>
@@ -487,6 +679,8 @@ export function ProjectBoardLane({
   laneStatus,
   items,
   onEdit,
+  onComplete,
+  completingTaskId,
   onMoveTask,
   draggingTaskId,
   onDragTaskStart,
@@ -496,6 +690,8 @@ export function ProjectBoardLane({
   laneStatus: TaskStatus;
   items: TaskListItem[];
   onEdit: (taskId: string) => void;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  completingTaskId?: string | null;
   onMoveTask: (taskId: string, nextStatus: TaskStatus) => void;
   draggingTaskId: string | null;
   onDragTaskStart: (taskId: string) => void;
@@ -546,14 +742,21 @@ export function ProjectBoardLane({
                 onDragTaskStart(item.id);
               }}
               onDragEnd={onDragTaskEnd}
-              className={`rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card)] p-3 transition hover:bg-[var(--surface-subtle)] ${
+              className={`rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card)] p-3 transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] ${
                 draggingTaskId === item.id ? "opacity-60" : ""
-              }`}
+              } ${getTaskCompletionClass(completingTaskId === item.id)}`}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
-                  {item.id}
-                </span>
+                <div className="flex items-center gap-2">
+                  <TaskCompleteButton
+                    task={item}
+                    isCompleting={completingTaskId === item.id}
+                    onComplete={onComplete}
+                  />
+                  <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
+                    {item.id}
+                  </span>
+                </div>
                 <span className="text-[11px] text-[var(--ink-subtle)]">{item.due}</span>
               </div>
               <button

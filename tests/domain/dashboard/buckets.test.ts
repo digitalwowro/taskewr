@@ -25,9 +25,16 @@ test("dashboard buckets separate recurring and focus tasks", () => {
     [
       task({ id: "future", dueDate: "2026-04-03T00:00:00.000Z" }),
       task({ id: "focus-overdue", dueDate: "2026-04-01T00:00:00.000Z" }),
+      task({ id: "done-overdue", dueDate: "2026-04-01T00:00:00.000Z", statusValue: "done" }),
       task({ id: "focus-today", dueDate: "2026-04-02T00:00:00.000Z" }),
       task({ id: "focus-unscheduled", dueDate: null }),
       task({ id: "repeat-overdue", dueDate: "2026-04-01T00:00:00.000Z", repeatRuleId: "1" }),
+      task({
+        id: "done-repeat-overdue",
+        dueDate: "2026-04-01T00:00:00.000Z",
+        repeatRuleId: "1",
+        statusValue: "done",
+      }),
       task({ id: "repeat-today", dueDate: "2026-04-02T00:00:00.000Z", repeatRuleId: "1" }),
       task({ id: "repeat-unscheduled", dueDate: null, repeatRuleId: "1" }),
     ],
@@ -47,11 +54,12 @@ test("dashboard buckets separate recurring and focus tasks", () => {
   ]);
   assert.deepEqual(buckets.projectItems.map((item) => item.id), [
     "focus-overdue",
+    "done-overdue",
     "focus-today",
     "focus-unscheduled",
     "repeat-overdue",
+    "done-repeat-overdue",
     "repeat-today",
     "repeat-unscheduled",
   ]);
 });
-
