@@ -6,7 +6,7 @@
 - Keep automated tests isolated from demo data concerns.
 
 ## Seed Layers
-- **Runtime demo seed**: populated by [prisma/seed.ts](D:/Code/taskewr/prisma/seed.ts)
+- **Runtime demo seed**: populated by [prisma/seed.ts](../prisma/seed.ts)
   - one workspace
   - one owner user
   - realistic active and archived projects

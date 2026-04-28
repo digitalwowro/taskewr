@@ -9,6 +9,8 @@ const containerName =
   process.env.TASKEWR_CONTAINER_NAME || `taskewr-container-smoke-${randomBytes(4).toString("hex")}`;
 const port = process.env.TASKEWR_CONTAINER_PORT || "3010";
 const baseUrl = process.env.TASKEWR_CONTAINER_BASE_URL || `http://127.0.0.1:${port}`;
+const healthAttempts = Number.parseInt(process.env.TASKEWR_CONTAINER_HEALTH_ATTEMPTS || "80", 10);
+const healthIntervalMs = Number.parseInt(process.env.TASKEWR_CONTAINER_HEALTH_INTERVAL_MS || "1500", 10);
 const dockerArgs = (process.env.TASKEWR_CONTAINER_DOCKER_ARGS || "")
   .split(/\s+/)
   .map((value) => value.trim())
@@ -62,8 +64,10 @@ async function cleanup() {
 
 async function waitForHealth() {
   let lastError = null;
+  const attempts = Number.isFinite(healthAttempts) && healthAttempts > 0 ? healthAttempts : 80;
+  const intervalMs = Number.isFinite(healthIntervalMs) && healthIntervalMs > 0 ? healthIntervalMs : 1500;
 
-  for (let attempt = 1; attempt <= 40; attempt += 1) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       const response = await fetch(`${baseUrl}/api/v1/health`);
 
@@ -77,10 +81,12 @@ async function waitForHealth() {
       lastError = error;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    if (attempt < attempts) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
   }
 
-  throw lastError ?? new Error("container health check timed out");
+  throw lastError ?? new Error(`container health check timed out after ${attempts} attempts`);
 }
 
 async function main() {

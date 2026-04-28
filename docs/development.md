@@ -1,6 +1,6 @@
-## Development Workflow
+# Development Workflow
 
-### Local app loop
+## Local App Loop
 
 In development, Postgres runs in Docker and the app runs locally with Node.
 
@@ -46,7 +46,7 @@ http://localhost:3000
 account@taskewr.com / taskewr
 ```
 
-### Verification commands
+## Verification Commands
 
 Run the current baseline checks locally:
 
@@ -65,29 +65,8 @@ npm run dev:reset
 
 After a reset, log out or clear cookies for `localhost` if the browser was already signed in.
 
-### Deployment flow
+## More
 
-The production image is published to:
+For production deployment and release checks, see [Operations](./operations.md).
 
-```text
-ghcr.io/digitalwowro/taskewr:latest
-```
-
-The remote Linux server updates with:
-
-```bash
-docker compose pull
-docker compose up -d
-```
-
-### Current architecture expectations
-
-- UI routes compose data from server services
-- domain rules live outside React components
-- project/task access is private by default
-- task hierarchy is always project-scoped
-- default filters are:
-  - sort: `priority`
-  - direction: `desc`
-  - statuses: `todo`, `in_progress`
-  - priorities: all priorities
+For architecture and domain boundaries, see [Architecture](./architecture.md).

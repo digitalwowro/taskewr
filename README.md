@@ -209,12 +209,11 @@ npm run clean:macos
 ## 📚 Documentation
 
 * [Architecture](./docs/architecture.md)
-* [Implementation checklist](./docs/implementation-checklist.md)
 * [Development guide](./docs/development.md)
-* [Operator checklist](./docs/operator-checklist.md)
+* [Operations](./docs/operations.md)
 * [Repeat settings](./docs/recurrence.md)
-* [Production deployment](./docs/production-deployment.md)
-* [Release readiness](./docs/release-readiness.md)
+* [Security](./docs/security.md)
+* [Seed and demo data](./docs/seed-demo-strategy.md)
 
 ---
 
