@@ -2,6 +2,7 @@ import { AuthService } from "@/server/services/auth-service";
 import { assertValidCsrfToken } from "@/server/api/csrf";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonError, jsonOk } from "@/server/api/responders";
+import { assertMutationRateLimit } from "@/server/security/mutation-rate-limit";
 
 const authService = new AuthService();
 
@@ -29,6 +30,7 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     assertValidCsrfToken(request);
+    await assertMutationRateLimit(request, "profile:update", authService);
     const payload = (await request.json()) as {
       name: string;
       email: string;

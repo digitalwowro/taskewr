@@ -25,19 +25,20 @@ import { ProfileModal } from "@/components/app/profile-modal";
 import { ProjectEditorModal } from "@/components/app/project-editor-modal";
 import { TaskModalSwitcher } from "@/components/app/task-modal-switcher";
 import { useClickOutside } from "@/hooks/use-click-outside";
+import { useDashboardTaskGroups } from "@/hooks/use-dashboard-task-groups";
 import { usePersistedSidebarState } from "@/hooks/use-persisted-sidebar-state";
 import { useProfileState } from "@/hooks/use-profile-state";
+import { useProjectDetailState } from "@/hooks/use-project-detail-state";
 import { useProjectEditorState } from "@/hooks/use-project-editor-state";
+import { useProjectBoardMove } from "@/hooks/use-project-board-move";
 import { NEW_TASK_ID, useTaskEditorState } from "@/hooks/use-task-editor-state";
 import { useTaskFilterToolbarState } from "@/hooks/use-task-filter-toolbar-state";
-import { isUnauthorizedError, requestJson } from "@/lib/api-client";
+import { requestJson } from "@/lib/api-client";
 import type { ProjectView } from "@/domain/projects/constants";
-import { sortAndFilterTaskItems } from "@/domain/dashboard/queries";
 import {
   PRIORITY_OPTIONS,
   SORT_OPTIONS,
   STATUS_OPTIONS,
-  type TaskStatus,
 } from "@/domain/tasks/constants";
 import type { TaskFilters, TaskListItem } from "@/domain/tasks/types";
 import {
@@ -129,50 +130,21 @@ export function TaskewrApp({
     [direction, endDate, selectedPriorities, selectedStatuses, sort, startDate],
   );
 
-  const filteredTodayItems = useMemo(
-    () => sortAndFilterTaskItems(todayItems, currentTaskFilters),
-    [currentTaskFilters, todayItems],
-  );
-  const filteredRecurringOverdueItems = useMemo(
-    () => sortAndFilterTaskItems(recurringOverdueItems, currentTaskFilters),
-    [currentTaskFilters, recurringOverdueItems],
-  );
-  const filteredRecurringTodayItems = useMemo(
-    () => sortAndFilterTaskItems(recurringTodayItems, currentTaskFilters),
-    [currentTaskFilters, recurringTodayItems],
-  );
-  const filteredOverdueItems = useMemo(
-    () => sortAndFilterTaskItems(overdueItems, currentTaskFilters),
-    [currentTaskFilters, overdueItems],
-  );
-  const filteredProjects = useMemo(
-    () =>
-      groupedProjects
-        .map((project) => ({
-          ...project,
-          items: sortAndFilterTaskItems(project.items, currentTaskFilters),
-        }))
-        .filter((project) => project.items.length > 0),
-    [currentTaskFilters, groupedProjects],
-  );
-
-  const visibleTaskCount = useMemo(
-    () =>
-      new Set([
-        ...filteredRecurringOverdueItems.map((task) => task.id),
-        ...filteredRecurringTodayItems.map((task) => task.id),
-        ...filteredTodayItems.map((task) => task.id),
-        ...filteredOverdueItems.map((task) => task.id),
-        ...filteredProjects.flatMap((project) => project.items.map((task) => task.id)),
-      ]).size,
-    [
-      filteredOverdueItems,
-      filteredProjects,
-      filteredRecurringOverdueItems,
-      filteredRecurringTodayItems,
-      filteredTodayItems,
-    ],
-  );
+  const {
+    filteredOverdueItems,
+    filteredProjects,
+    filteredRecurringOverdueItems,
+    filteredRecurringTodayItems,
+    filteredTodayItems,
+    visibleTaskCount,
+  } = useDashboardTaskGroups({
+    groupedProjects,
+    overdueItems,
+    recurringOverdueItems,
+    recurringTodayItems,
+    taskFilters: currentTaskFilters,
+    todayItems,
+  });
   const visibleProjectTaskCount = useMemo(
     () => activeProjects.reduce((sum, project) => sum + project.taskCount, 0),
     [activeProjects],
@@ -318,81 +290,21 @@ export function TaskewrApp({
     redirectToLogin,
     refreshApp: () => router.refresh(),
   });
-  const selectedProjectTasks = useMemo(
-    () => {
-      if (!selectedProject) {
-        return [];
-      }
-
-      return sortAndFilterTaskItems(
-        projectTasksByProjectId[selectedProject.id] ?? [],
-        currentTaskFilters,
-      );
-    },
-    [
-      currentTaskFilters,
-      projectTasksByProjectId,
-      selectedProject,
-    ],
-  );
-  const projectBoardGroups = useMemo(
-    () => ({
-      todo: selectedProjectTasks.filter((task) => task.statusValue === "todo"),
-      inProgress: selectedProjectTasks.filter((task) => task.statusValue === "in_progress"),
-      completed: selectedProjectTasks.filter((task) => task.statusValue === "done"),
-    }),
-    [selectedProjectTasks],
-  );
-  const selectedProjectOverdueTasks = useMemo(
-    () =>
-      selectedProjectTasks.filter((task) => {
-        if (!task.dueDate) {
-          return false;
-        }
-
-        return new Date(task.dueDate).getTime() < new Date("2026-04-01T00:00:00").getTime();
-      }),
-    [selectedProjectTasks],
-  );
-  const moveProjectTaskToStatus = (taskId: string, nextStatus: TaskStatus) => {
-    if (!selectedProject) {
-      return;
-    }
-
-    const task = selectedProjectTasks.find((item) => item.id === taskId);
-
-    if (!task) {
-      return;
-    }
-
-    const targetLaneTaskIds = [
-      ...selectedProjectTasks
-        .filter((item) => item.statusValue === nextStatus && item.id !== taskId)
-        .map((item) => Number(item.id.replace("TSK-", ""))),
-      Number(taskId.replace("TSK-", "")),
-    ];
-
-    void requestJson(`/api/v1/tasks/board-move`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        taskId: Number(taskId.replace("TSK-", "")),
-        projectId: Number(selectedProject.id),
-        nextStatus,
-        targetLaneTaskIds,
-      }),
-    })
-      .then(() => {
-        router.refresh();
-      })
-      .catch((error) => {
-        if (isUnauthorizedError(error)) {
-          redirectToLogin();
-        }
-      });
-  };
+  const {
+    projectBoardGroups,
+    selectedProjectOverdueTasks,
+    selectedProjectTasks,
+  } = useProjectDetailState({
+    projectId: selectedProject?.id ?? null,
+    projectTasksByProjectId,
+    taskFilters: currentTaskFilters,
+  });
+  const moveProjectTaskToStatus = useProjectBoardMove({
+    projectId: selectedProject?.id ?? null,
+    redirectToLogin,
+    refreshApp: () => router.refresh(),
+    selectedProjectTasks,
+  });
   const handleLogout = async () => {
     try {
       await requestJson(`/api/v1/auth/logout`, { method: "POST" });

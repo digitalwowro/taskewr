@@ -2,6 +2,7 @@ import { ProjectService } from "@/server/services/project-service";
 import { assertValidCsrfToken } from "@/server/api/csrf";
 import { toErrorResponse } from "@/server/api/errors";
 import { jsonCreated, jsonOk } from "@/server/api/responders";
+import { assertMutationRateLimit } from "@/server/security/mutation-rate-limit";
 
 const service = new ProjectService();
 
@@ -17,6 +18,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     assertValidCsrfToken(request);
+    await assertMutationRateLimit(request, "projects:create");
     const body = await request.json();
     const project = await service.createProject(body);
     return jsonCreated(project);

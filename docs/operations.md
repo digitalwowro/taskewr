@@ -112,7 +112,17 @@ Before exposing a deployment publicly, confirm:
 - HTTPS terminates before traffic reaches the app.
 - `SESSION_SECRET` is strong and private.
 - `/api/v1/auth/login` rate limiting is enabled with appropriate production settings.
+- Mutation rate limiting is enabled with appropriate production settings.
 - `APP_URL` matches the public origin.
+
+Optional production rate-limit tuning:
+
+```env
+LOGIN_RATE_LIMIT_MAX_ATTEMPTS=5
+LOGIN_RATE_LIMIT_WINDOW_MS=900000
+MUTATION_RATE_LIMIT_MAX_REQUESTS=300
+MUTATION_RATE_LIMIT_WINDOW_MS=300000
+```
 
 ## Production Update
 

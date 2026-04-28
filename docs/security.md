@@ -28,6 +28,21 @@ Before adding team roles or external sharing:
 
 Taskewr currently supports one workspace membership per login account. Login rejects accounts with multiple workspace memberships until workspace switching exists.
 
+## Rate Limiting
+
+Login attempts are rate limited by client IP and normalized email address.
+
+Authenticated create/update/move/profile mutations are rate limited by user and workspace. If a mutation reaches the limiter without a valid session, it falls back to client IP. Current limits are intentionally simple fixed-window in-memory guards for single-process deployments.
+
+Production can tune:
+
+- `LOGIN_RATE_LIMIT_MAX_ATTEMPTS`
+- `LOGIN_RATE_LIMIT_WINDOW_MS`
+- `MUTATION_RATE_LIMIT_MAX_REQUESTS`
+- `MUTATION_RATE_LIMIT_WINDOW_MS`
+
+Before running multiple app instances, move rate-limit state to a shared store such as Redis or another production cache.
+
 The `AuditLog` schema is reserved for future audit logging. Sensitive operations that should eventually write audit records include:
 
 - task create/update/delete
@@ -52,7 +67,7 @@ The `AuditLog` schema is reserved for future audit logging. Sensitive operations
 
 ## Future Security Work
 
-- Rate limits for mutation endpoints.
+- Shared-store rate limiting for multi-instance deployments.
 - API token strategy for mobile and external clients.
 - Explicit share and ACL audit events.
 - Secret rotation guidance for session and external auth providers.
