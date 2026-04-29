@@ -10,6 +10,7 @@ export type CurrentUserProfile = {
   avatarUrl: string | null;
   workspaceId: number;
   workspaceRole: string;
+  appRole: string;
   timezone: string | null;
 };
 

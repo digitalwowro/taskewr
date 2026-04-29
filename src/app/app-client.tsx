@@ -24,6 +24,10 @@ import {
 import { ProfileModal } from "@/components/app/profile-modal";
 import { ProjectEditorModal } from "@/components/app/project-editor-modal";
 import { TaskModalSwitcher } from "@/components/app/task-modal-switcher";
+import { UserDeactivateModal } from "@/components/app/user-deactivate-modal";
+import { UserEditorModal } from "@/components/app/user-editor-modal";
+import { UserPasswordModal } from "@/components/app/user-password-modal";
+import { UsersContent } from "@/components/app/users-content";
 import { useClickOutside } from "@/hooks/use-click-outside";
 import { useDashboardTaskGroups } from "@/hooks/use-dashboard-task-groups";
 import { usePersistedSidebarState } from "@/hooks/use-persisted-sidebar-state";
@@ -34,6 +38,7 @@ import { useProjectBoardMove } from "@/hooks/use-project-board-move";
 import { useTaskCompletion } from "@/hooks/use-task-completion";
 import { NEW_TASK_ID, useTaskEditorState } from "@/hooks/use-task-editor-state";
 import { useTaskFilterToolbarState } from "@/hooks/use-task-filter-toolbar-state";
+import { useUserAdminState } from "@/hooks/use-user-admin-state";
 import { requestJson } from "@/lib/api-client";
 import type { ProjectView } from "@/domain/projects/constants";
 import {
@@ -46,10 +51,22 @@ import {
   NAV_ITEMS,
 } from "@/app/app-fallback-data";
 
-type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail";
+type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail" | "users";
 
 function getTaskByNumericId(tasks: TaskListItem[], id: string) {
   return tasks.find((task) => task.id.replace("TSK-", "") === id) ?? null;
+}
+
+function getPrimaryActionLabel(section: AppSection) {
+  if (section === "users") {
+    return "New User";
+  }
+
+  if (section === "projects") {
+    return "New Project";
+  }
+
+  return "New Task";
 }
 
 export function TaskewrApp({
@@ -185,6 +202,42 @@ export function TaskewrApp({
     closeProfileModal,
     handleProfileSave,
   } = useProfileState({ redirectToLogin });
+  const canManageUsers =
+    data.currentUser.appRole === "admin" || currentUserProfile?.appRole === "admin";
+  const {
+    users,
+    activeUserCount,
+    query: userQuery,
+    includeInactive: includeInactiveUsers,
+    loading: usersLoading,
+    loadError: usersLoadError,
+    editingUser,
+    passwordUser,
+    deactivatingUser,
+    mutationPending: userMutationPending,
+    mutationError: userMutationError,
+    setQuery: setUserQuery,
+    setIncludeInactive: setIncludeInactiveUsers,
+    openNewUser,
+    openEditUser,
+    closeUserEditor,
+    openPasswordReset,
+    closePasswordReset,
+    openDeactivateUser,
+    closeDeactivateUser,
+    saveUser,
+    resetPassword,
+    deactivateUser,
+    reactivateUser,
+  } = useUserAdminState({
+    enabled: canManageUsers && initialSection === "users",
+    redirectToLogin,
+  });
+  const navItems = useMemo(
+    () => NAV_ITEMS.filter((item) => item.id !== "users" || canManageUsers),
+    [canManageUsers],
+  );
+  const primaryActionLabel = getPrimaryActionLabel(initialSection);
 
   const allTasks = useMemo(() => {
     const dedupedTasks = new Map<string, TaskListItem>();
@@ -263,6 +316,7 @@ export function TaskewrApp({
     projectReorderPendingId,
     handleProjectSave,
     handleProjectArchiveToggle,
+    handleProjectQuickArchive,
     handleProjectQuickUnarchive,
     handleProjectMove,
   } = useProjectEditorState({
@@ -335,12 +389,17 @@ export function TaskewrApp({
   };
 
   const openSection = (sectionId: string) => {
-    if (sectionId === "dashboard" || sectionId === "projects") {
-      router.push(sectionId === "dashboard" ? "/" : "/projects");
+    if (sectionId === "dashboard" || sectionId === "projects" || sectionId === "users") {
+      router.push(sectionId === "dashboard" ? "/" : `/${sectionId}`);
     }
   };
 
   const openPrimaryCreateAction = () => {
+    if (initialSection === "users") {
+      openNewUser();
+      return;
+    }
+
     if (initialSection === "projects") {
       openNewProject();
       return;
@@ -388,12 +447,14 @@ export function TaskewrApp({
         <AppSidebar
           sidebarExpanded={sidebarExpanded}
           onToggleSidebar={() => setSidebarExpanded((current) => !current)}
-          navItems={NAV_ITEMS}
+          navItems={navItems}
           initialSection={initialSection}
           activeProjects={activeProjects}
           selectedProjectId={selectedProject?.id}
           onOpenSection={openSection}
           onNewTask={openPrimaryCreateAction}
+          primaryActionLabel={primaryActionLabel}
+          showPrimaryAction={initialSection !== "users" || canManageUsers}
           onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
           onOpenProfile={openProfileModal}
           onLogout={() => void handleLogout()}
@@ -406,9 +467,11 @@ export function TaskewrApp({
             initialSection={initialSection}
             visibleTaskCount={visibleTaskCount}
             activeProjectCount={activeProjects.length}
+            userCount={activeUserCount}
             selectedProjectName={selectedProject?.name ?? "Project"}
             selectedProjectTaskCount={selectedProjectTasks.length}
             searchHrefBase=""
+            showPrimaryAction={initialSection !== "users" || canManageUsers}
             onOpenTask={openTask}
             onPrimaryAction={openPrimaryCreateAction}
           />
@@ -511,9 +574,27 @@ export function TaskewrApp({
                   onToggleArchived={() => setShowArchivedProjects((current) => !current)}
                   onEditProject={setEditingProjectId}
                   onMoveProject={handleProjectMove}
+                  onQuickArchive={handleProjectQuickArchive}
                   onQuickUnarchive={handleProjectQuickUnarchive}
                   projectReorderPendingId={projectReorderPendingId}
                   onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
+                />
+              ) : initialSection === "users" ? (
+                <UsersContent
+                  users={users}
+                  query={userQuery}
+                  includeInactive={includeInactiveUsers}
+                  loading={usersLoading}
+                  loadError={usersLoadError}
+                  mutationError={userMutationError}
+                  mutationPending={userMutationPending}
+                  canManageUsers={canManageUsers}
+                  onSearch={setUserQuery}
+                  onToggleInactive={setIncludeInactiveUsers}
+                  onEditUser={openEditUser}
+                  onResetPassword={openPasswordReset}
+                  onDeactivateUser={openDeactivateUser}
+                  onReactivateUser={reactivateUser}
                 />
               ) : (initialSection === "project_detail" || initialSection === "task_detail") && selectedProject ? (
                 <div className="space-y-5">
@@ -617,6 +698,30 @@ export function TaskewrApp({
         onToggleArchive={handleProjectArchiveToggle}
         isSaving={projectMutationPending}
         error={projectMutationError}
+      />
+      <UserEditorModal
+        key={editingUser ? `user-editor-${editingUser.id}-${editingUser.email}` : "user-editor-empty"}
+        user={editingUser}
+        onClose={closeUserEditor}
+        onSave={saveUser}
+        isSaving={userMutationPending}
+        error={userMutationError}
+      />
+      <UserPasswordModal
+        key={passwordUser ? `user-password-${passwordUser.id}` : "user-password-empty"}
+        user={passwordUser}
+        onClose={closePasswordReset}
+        onSave={resetPassword}
+        isSaving={userMutationPending}
+        error={userMutationError}
+      />
+      <UserDeactivateModal
+        key={deactivatingUser ? `user-deactivate-${deactivatingUser.id}` : "user-deactivate-empty"}
+        user={deactivatingUser}
+        onClose={closeDeactivateUser}
+        onConfirm={deactivateUser}
+        isSaving={userMutationPending}
+        error={userMutationError}
       />
       <TaskModalSwitcher
         initialSection={initialSection}

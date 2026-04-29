@@ -22,7 +22,7 @@ type SearchResult = {
   dueDate: string | null;
 };
 
-type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail";
+type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail" | "users";
 
 type NavItem = {
   id: string;
@@ -39,6 +39,8 @@ type AppSidebarProps = {
   selectedProjectId?: string;
   onOpenSection: (sectionId: string) => void;
   onNewTask: () => void;
+  primaryActionLabel?: string;
+  showPrimaryAction?: boolean;
   onOpenProject: (projectId: string) => void;
   onOpenProfile?: () => void;
   onLogout?: () => void;
@@ -55,6 +57,8 @@ export function AppSidebar({
   selectedProjectId,
   onOpenSection,
   onNewTask,
+  primaryActionLabel = "New Task",
+  showPrimaryAction = true,
   onOpenProject,
   onOpenProfile,
   onLogout,
@@ -67,6 +71,7 @@ export function AppSidebar({
     initialSection === "projects" ||
     initialSection === "project_detail" ||
     initialSection === "task_detail";
+  const isUsersActive = initialSection === "users";
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -113,13 +118,15 @@ export function AppSidebar({
                   title={item.label}
                   aria-current={
                     (isDashboardActive && item.id === "dashboard") ||
-                    (isProjectsActive && item.id === "projects")
+                    (isProjectsActive && item.id === "projects") ||
+                    (isUsersActive && item.id === "users")
                       ? "page"
                       : undefined
                   }
                   className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
                     (isDashboardActive && item.id === "dashboard") ||
-                    (isProjectsActive && item.id === "projects")
+                    (isProjectsActive && item.id === "projects") ||
+                    (isUsersActive && item.id === "users")
                       ? "border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
                       : "border-transparent text-[var(--ink-subtle)] hover:border-[var(--line-soft)] hover:bg-white"
                   }`}
@@ -182,15 +189,17 @@ export function AppSidebar({
           <div className="min-w-0 flex-1 px-5 py-5">
             <div className="flex h-full min-h-0 flex-col">
               <div className="space-y-5">
-                <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={onNewTask}
-                    className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-[var(--accent-strong)] px-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
-                  >
-                    + New Task
-                  </button>
-                </div>
+                {showPrimaryAction ? (
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={onNewTask}
+                      className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-[var(--accent-strong)] px-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
+                    >
+                      {primaryActionLabel}
+                    </button>
+                  </div>
+                ) : null}
 
                 <nav className="space-y-1.5 text-sm">
                   {visibleNavItems.map((item) => (
@@ -200,13 +209,15 @@ export function AppSidebar({
                       onClick={() => onOpenSection(item.id)}
                       aria-current={
                         (isDashboardActive && item.id === "dashboard") ||
-                        (isProjectsActive && item.id === "projects")
+                        (isProjectsActive && item.id === "projects") ||
+                        (isUsersActive && item.id === "users")
                           ? "page"
                           : undefined
                       }
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
                         (isDashboardActive && item.id === "dashboard") ||
-                        (isProjectsActive && item.id === "projects")
+                        (isProjectsActive && item.id === "projects") ||
+                        (isUsersActive && item.id === "users")
                           ? "bg-[var(--surface-subtle)] font-medium text-[var(--ink-strong)]"
                           : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
                       }`}
@@ -267,9 +278,11 @@ type AppHeaderProps = {
   initialSection: AppSection;
   visibleTaskCount: number;
   activeProjectCount: number;
+  userCount: number;
   selectedProjectName: string;
   selectedProjectTaskCount: number;
   searchHrefBase: string;
+  showPrimaryAction?: boolean;
   onOpenTask: (taskId: string) => void;
   onPrimaryAction: () => void;
 };
@@ -481,9 +494,11 @@ export function AppHeader({
   initialSection,
   visibleTaskCount,
   activeProjectCount,
+  userCount,
   selectedProjectName,
   selectedProjectTaskCount,
   searchHrefBase,
+  showPrimaryAction = true,
   onOpenTask,
   onPrimaryAction,
 }: AppHeaderProps) {
@@ -495,6 +510,7 @@ export function AppHeader({
         : initialSection === "project_detail" || initialSection === "task_detail"
           ? `Search in ${selectedProjectName}`
           : "Search tasks";
+  const showTaskSearch = initialSection !== "users";
 
   return (
     <header className="border-b border-[var(--line-soft)] bg-white px-6 py-4">
@@ -506,6 +522,8 @@ export function AppHeader({
                 ? "Dashboard"
                 : initialSection === "projects"
                   ? "Projects"
+                  : initialSection === "users"
+                    ? "Users"
                   : initialSection === "project_detail" || initialSection === "task_detail"
                     ? selectedProjectName
                     : "Task"}
@@ -515,6 +533,8 @@ export function AppHeader({
                 ? `${visibleTaskCount} active`
                 : initialSection === "projects"
                   ? `${activeProjectCount} active`
+                  : initialSection === "users"
+                    ? `${userCount} active`
                   : initialSection === "project_detail" || initialSection === "task_detail"
                     ? `${selectedProjectTaskCount} tasks`
                     : "Task"}
@@ -523,18 +543,26 @@ export function AppHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <HeaderSearch
-            placeholder={searchPlaceholder}
-            searchHrefBase={searchHrefBase}
-            onOpenTask={onOpenTask}
-          />
-          <button
-            type="button"
-            onClick={onPrimaryAction}
-            className="inline-flex h-10 items-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
-          >
-            {initialSection === "projects" ? "New Project" : "+ New Task"}
-          </button>
+          {showTaskSearch ? (
+            <HeaderSearch
+              placeholder={searchPlaceholder}
+              searchHrefBase={searchHrefBase}
+              onOpenTask={onOpenTask}
+            />
+          ) : null}
+          {showPrimaryAction ? (
+            <button
+              type="button"
+              onClick={onPrimaryAction}
+              className="inline-flex h-10 items-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
+            >
+              {initialSection === "projects"
+                ? "New Project"
+                : initialSection === "users"
+                  ? "New User"
+                  : "New Task"}
+            </button>
+          ) : null}
         </div>
       </div>
     </header>

@@ -14,6 +14,7 @@ test("session tokens round-trip valid payloads", () => {
     userId: 7,
     workspaceId: 3,
     workspaceRole: "owner",
+    appRole: "admin",
     timezone: "Europe/Bucharest",
     issuedAt: Date.now(),
   };
@@ -28,6 +29,7 @@ test("session token parsing rejects tampered payloads", () => {
     userId: 7,
     workspaceId: 3,
     workspaceRole: "owner",
+    appRole: "admin",
     timezone: "Europe/Bucharest",
     issuedAt: Date.now(),
   };
@@ -52,6 +54,7 @@ test("session token parsing rejects expired and far-future tokens", () => {
     userId: 7,
     workspaceId: 3,
     workspaceRole: "owner",
+    appRole: "admin",
     timezone: "Europe/Bucharest",
     issuedAt: Date.now(),
   };

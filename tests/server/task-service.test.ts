@@ -8,6 +8,7 @@ const appContext = {
   workspaceId: 1,
   actorUserId: 7,
   workspaceRole: "owner",
+  appRole: "admin",
   workspaces: [
     {
       id: 1,

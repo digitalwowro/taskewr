@@ -7,6 +7,7 @@ export type AppContext = {
   workspaceId: number;
   actorUserId: number;
   workspaceRole: string;
+  appRole: string;
   workspaces: {
     id: number;
     name: string;
@@ -47,6 +48,7 @@ export class AppContextService {
       workspaceId: actor.workspaceId,
       actorUserId: actor.userId,
       workspaceRole: actor.workspaceRole,
+      appRole: actor.appRole,
       workspaces: actor.workspaceMemberships.map((membership) => ({
         id: membership.workspaceId,
         name: membership.workspaceName,

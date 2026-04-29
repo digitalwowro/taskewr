@@ -9,6 +9,7 @@ const contextService = {
     workspaceId: 1,
     actorUserId: 7,
     workspaceRole: "owner",
+    appRole: "admin",
     timezone: "UTC",
   }),
 };

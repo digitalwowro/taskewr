@@ -25,6 +25,8 @@ type LoginUserRecord = {
   id: number;
   passwordHash: string | null;
   timezone: string | null;
+  appRole: string;
+  deactivatedAt: Date | null;
   memberships: {
     workspaceId: number;
     role: string;
@@ -33,6 +35,8 @@ type LoginUserRecord = {
 
 type ActorUserRecord = {
   timezone: string | null;
+  appRole: string;
+  deactivatedAt: Date | null;
   memberships: {
     workspaceId: number;
     role: string;
@@ -49,6 +53,7 @@ type ProfileUserRecord = {
   email: string;
   avatarUrl: string | null;
   timezone: string | null;
+  appRole?: string;
   passwordHash?: string | null;
 };
 
@@ -70,7 +75,7 @@ export class AuthService {
       },
     })) as LoginUserRecord | null;
 
-    if (!user || !verifyPassword(payload.password, user.passwordHash)) {
+    if (!user || user.deactivatedAt || !verifyPassword(payload.password, user.passwordHash)) {
       throw new AuthenticationError("Invalid email or password.", "auth_invalid_credentials");
     }
 
@@ -84,6 +89,7 @@ export class AuthService {
       userId: user.id,
       workspaceId: membership.workspaceId,
       workspaceRole: membership.role,
+      appRole: user.appRole,
       timezone: user.timezone,
       issuedAt: Date.now(),
     };
@@ -127,6 +133,8 @@ export class AuthService {
       where: { id: session.userId },
       select: {
         timezone: true,
+        appRole: true,
+        deactivatedAt: true,
         memberships: {
           select: {
             workspaceId: true,
@@ -144,7 +152,7 @@ export class AuthService {
     })) as ActorUserRecord | null;
     const membership = user?.memberships.find((item) => item.workspaceId === session.workspaceId);
 
-    if (!user || !membership) {
+    if (!user || user.deactivatedAt || !membership) {
       return null;
     }
 
@@ -152,6 +160,7 @@ export class AuthService {
       userId: session.userId,
       workspaceId: membership.workspaceId,
       workspaceRole: membership.role,
+      appRole: user.appRole,
       workspaceMemberships: user.memberships.map((item) => ({
         workspaceId: item.workspaceId,
         workspaceName: item.workspace.name,
@@ -178,6 +187,7 @@ export class AuthService {
         email: true,
         avatarUrl: true,
         timezone: true,
+        appRole: true,
       },
     })) as ProfileUserRecord | null;
 
@@ -189,6 +199,7 @@ export class AuthService {
       ...user,
       workspaceId: actor.workspaceId,
       workspaceRole: actor.workspaceRole,
+      appRole: actor.appRole,
     };
   }
 
@@ -253,6 +264,7 @@ export class AuthService {
         email: true,
         avatarUrl: true,
         timezone: true,
+        appRole: true,
       },
     })) as ProfileUserRecord | undefined;
 
@@ -264,6 +276,7 @@ export class AuthService {
       ...updatedUser,
       workspaceId: actor.workspaceId,
       workspaceRole: actor.workspaceRole,
+      appRole: actor.appRole,
     };
   }
 }

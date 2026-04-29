@@ -7,6 +7,11 @@ export type AppWorkspace = {
   role: string;
 };
 
+export type AppCurrentUser = {
+  id: number;
+  appRole: string;
+};
+
 export type ProjectGroup = {
   id: string;
   name: string;
@@ -28,6 +33,7 @@ export type AppProject = {
 };
 
 export type AppData = {
+  currentUser: AppCurrentUser;
   workspaces: AppWorkspace[];
   recurringOverdueItems: TaskListItem[];
   recurringTodayItems: TaskListItem[];

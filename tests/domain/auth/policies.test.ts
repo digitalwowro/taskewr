@@ -6,15 +6,17 @@ import {
   assertCanAccessProject,
   assertCanAccessTask,
   assertCanAccessWorkspace,
+  assertCanManageUsers,
   requireWorkspaceOwnership,
 } from "@/domain/auth/policies";
 import type { AuthenticatedActor } from "@/types/auth";
 
 function buildActor(overrides: Partial<AuthenticatedActor> = {}): AuthenticatedActor {
-  return {
+  const actor: AuthenticatedActor = {
     userId: 7,
     workspaceId: 3,
     workspaceRole: "member",
+    appRole: "user",
     workspaceMemberships: [
       {
         workspaceId: 3,
@@ -25,8 +27,9 @@ function buildActor(overrides: Partial<AuthenticatedActor> = {}): AuthenticatedA
     ],
     accessibleWorkspaceIds: [3],
     timezone: "UTC",
-    ...overrides,
   };
+
+  return { ...actor, ...overrides };
 }
 
 test("workspace policy allows access inside the actor workspace", () => {
@@ -50,6 +53,14 @@ test("project and task policies require explicit project access", () => {
   assert.doesNotThrow(() => assertCanAccessTask(actor, { projectId: 10 }));
   assert.throws(() => assertCanAccessProject(actor, { projectId: 11 }), AuthorizationError);
   assert.throws(() => assertCanAccessTask(actor, { projectId: 11 }), AuthorizationError);
+});
+
+test("user management policy requires app admin role", () => {
+  assert.doesNotThrow(() => assertCanManageUsers(buildActor({ appRole: "admin" })));
+  assert.throws(
+    () => assertCanManageUsers(buildActor({ appRole: "user" })),
+    (error) => error instanceof AuthorizationError && error.code === "user_management_denied",
+  );
 });
 
 test("workspace ownership helper rejects records without a workspace", () => {

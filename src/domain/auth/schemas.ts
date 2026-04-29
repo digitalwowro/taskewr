@@ -1,7 +1,12 @@
 import { z } from "zod";
 
+const normalizedEmailSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim().toLowerCase() : value),
+  z.email(),
+);
+
 export const loginSchema = z.object({
-  email: z.email().transform((value) => value.trim().toLowerCase()),
+  email: normalizedEmailSchema,
   password: z.string().min(1).max(200),
 });
 
@@ -10,7 +15,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const profileUpdateSchema = z
   .object({
     name: z.string().trim().min(1).max(120),
-    email: z.email().transform((value) => value.trim().toLowerCase()),
+    email: normalizedEmailSchema,
     currentPassword: z.string().max(200).optional().or(z.literal("")),
     newPassword: z.string().min(7).max(200).optional().or(z.literal("")),
     avatarUrl: z.string().max(2_000_000).nullable().optional(),

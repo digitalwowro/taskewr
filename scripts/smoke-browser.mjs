@@ -40,13 +40,13 @@ async function main() {
     await page.getByRole("dialog").waitFor();
     await page.getByRole("button", { name: "Cancel" }).click();
     await page.waitForURL(/\/projects\/\d+/);
-    await page.getByRole("button", { name: "+ New Task" }).waitFor();
+    await page.getByRole("button", { name: "New Task" }).waitFor();
 
     await page.goto(`${BASE_URL}/projects/${SMOKE_PROJECT_ID}?status=todo&priority=urgent`);
-    await page.getByRole("button", { name: "+ New Task" }).waitFor();
+    await page.getByRole("button", { name: "New Task" }).waitFor();
 
     await page.goto(`${BASE_URL}/`);
-    await page.getByRole("button", { name: "+ New Task" }).click();
+    await page.getByRole("button", { name: "New Task" }).click();
 
     const dashboardCreateDialog = page.getByRole("dialog", { name: "Create task" });
     await dashboardCreateDialog.locator("input").first().fill(dashboardTaskTitle);
@@ -69,7 +69,7 @@ async function main() {
     await page.getByText(editedDashboardTaskTitle).first().waitFor();
 
     await page.goto(`${BASE_URL}/projects/${SMOKE_PROJECT_ID}?view=board`);
-    await page.getByRole("button", { name: "+ New Task" }).click();
+    await page.getByRole("button", { name: "New Task" }).click();
 
     const createDialog = page.getByRole("dialog", { name: "Create task" });
     await createDialog.locator("input").first().fill(projectTaskTitle);

@@ -34,7 +34,16 @@ export class AppDataService {
       this.tasksRepository.listTasksForProjects(context.accessibleProjectIds),
     ]);
 
-    return { projects, tasks, timezone: context.timezone, workspaces: context.workspaces };
+    return {
+      currentUser: {
+        id: context.actorUserId,
+        appRole: context.appRole,
+      },
+      projects,
+      tasks,
+      timezone: context.timezone,
+      workspaces: context.workspaces,
+    };
   }
 
   private buildData(
@@ -42,6 +51,7 @@ export class AppDataService {
     tasks: Awaited<ReturnType<AppDataService["loadBaseRecords"]>>["tasks"],
     timezone: string | null,
     workspaces: Awaited<ReturnType<AppDataService["loadBaseRecords"]>>["workspaces"],
+    currentUser: Awaited<ReturnType<AppDataService["loadBaseRecords"]>>["currentUser"],
     filtersInput?: Partial<TaskFilters>,
   ): AppData {
     const filters = normalizeTaskFilters(filtersInput ?? DEFAULT_TASK_FILTERS);
@@ -125,6 +135,7 @@ export class AppDataService {
     });
 
     return {
+      currentUser,
       workspaces: workspaces.map((workspace) => ({
         id: String(workspace.id),
         name: workspace.name,
@@ -144,31 +155,36 @@ export class AppDataService {
   }
 
   async getData(filtersInput?: Partial<TaskFilters>): Promise<AppData> {
-    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
-    return this.buildData(projects, tasks, timezone, workspaces, filtersInput);
+    const { projects, tasks, timezone, workspaces, currentUser } = await this.loadBaseRecords();
+    return this.buildData(projects, tasks, timezone, workspaces, currentUser, filtersInput);
   }
 
   async getDashboardData(filtersInput?: Partial<TaskFilters>) {
-    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
-    return this.buildData(projects, tasks, timezone, workspaces, filtersInput);
+    const { projects, tasks, timezone, workspaces, currentUser } = await this.loadBaseRecords();
+    return this.buildData(projects, tasks, timezone, workspaces, currentUser, filtersInput);
   }
 
   async getProjectsPageData() {
-    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
-    return this.buildData(projects, tasks, timezone, workspaces, DEFAULT_TASK_FILTERS);
+    const { projects, tasks, timezone, workspaces, currentUser } = await this.loadBaseRecords();
+    return this.buildData(projects, tasks, timezone, workspaces, currentUser, DEFAULT_TASK_FILTERS);
+  }
+
+  async getUsersPageData() {
+    const { projects, tasks, timezone, workspaces, currentUser } = await this.loadBaseRecords();
+    return this.buildData(projects, tasks, timezone, workspaces, currentUser, DEFAULT_TASK_FILTERS);
   }
 
   async getDataForProject(projectId: string, filtersInput?: Partial<TaskFilters>) {
-    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
+    const { projects, tasks, timezone, workspaces, currentUser } = await this.loadBaseRecords();
     const projectExists = projects.some((project) => String(project.id) === projectId);
 
-    return projectExists ? this.buildData(projects, tasks, timezone, workspaces, filtersInput) : null;
+    return projectExists ? this.buildData(projects, tasks, timezone, workspaces, currentUser, filtersInput) : null;
   }
 
   async getDataForTask(taskId: string, filtersInput?: Partial<TaskFilters>) {
-    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
+    const { projects, tasks, timezone, workspaces, currentUser } = await this.loadBaseRecords();
     const taskExists = tasks.some((task) => String(task.id) === taskId);
 
-    return taskExists ? this.buildData(projects, tasks, timezone, workspaces, filtersInput) : null;
+    return taskExists ? this.buildData(projects, tasks, timezone, workspaces, currentUser, filtersInput) : null;
   }
 }

@@ -19,7 +19,7 @@ type TaskSaveInput = {
 };
 
 type TaskModalSwitcherProps = {
-  initialSection: "dashboard" | "projects" | "project_detail" | "task_detail";
+  initialSection: "dashboard" | "projects" | "project_detail" | "task_detail" | "users";
   selectedTask: TaskListItem | null;
   taskEditorTask: TaskListItem | null;
   taskDetails: Record<string, TaskDetails>;

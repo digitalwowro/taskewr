@@ -145,6 +145,29 @@ export function useProjectEditorState({
     }
   };
 
+  const handleProjectQuickArchive = async (projectId: string) => {
+    setProjectMutationPending(true);
+    setProjectMutationError(null);
+
+    try {
+      await requestJson(`/api/v1/projects/${projectId}/archive`, {
+        method: "POST",
+      });
+      refreshApp();
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      setProjectMutationError(
+        error instanceof Error ? error.message : "Could not archive project.",
+      );
+    } finally {
+      setProjectMutationPending(false);
+    }
+  };
+
   const handleProjectMove = async (projectId: string, direction: "up" | "down") => {
     setProjectReorderPendingId(projectId);
 
@@ -181,6 +204,7 @@ export function useProjectEditorState({
     projectReorderPendingId,
     handleProjectSave,
     handleProjectArchiveToggle,
+    handleProjectQuickArchive,
     handleProjectQuickUnarchive,
     handleProjectMove,
   };

@@ -46,6 +46,7 @@ test("assertMutationRateLimit keys authenticated requests by user and workspace"
       userId: 1,
       workspaceId: 1,
       workspaceRole: "owner",
+      appRole: "admin",
       timezone: "UTC",
       issuedAt: 1_000,
     }),

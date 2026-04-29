@@ -19,6 +19,8 @@ model User {
   avatarUrl          String?           @map("avatar_url")
   passwordHash       String?           @map("password_hash")
   timezone           String?           @db.VarChar(100)
+  appRole            String            @default("user") @map("app_role") @db.VarChar(40)
+  deactivatedAt      DateTime?         @map("deactivated_at")
   createdAt          DateTime          @default(now()) @map("created_at")
   updatedAt          DateTime          @updatedAt @map("updated_at")
   workspaces         Workspace[]       @relation("WorkspaceOwners")
@@ -32,6 +34,8 @@ model User {
   updatedTasks       Task[]            @relation("UpdatedTasks")
   auditLogs          AuditLog[]        @relation("AuditActors")
 
+  @@index([appRole])
+  @@index([deactivatedAt])
   @@map("users")
 }
 

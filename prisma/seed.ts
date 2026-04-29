@@ -36,6 +36,7 @@ async function main() {
       email: "account@taskewr.com",
       passwordHash: hashPassword("taskewr"),
       timezone: "Europe/Bucharest",
+      appRole: "admin",
     },
   });
 

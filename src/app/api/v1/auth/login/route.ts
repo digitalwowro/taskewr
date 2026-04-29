@@ -42,6 +42,7 @@ export async function POST(request: Request) {
       userId: session.userId,
       workspaceId: session.workspaceId,
       workspaceRole: session.workspaceRole,
+      appRole: session.appRole,
       timezone: session.timezone,
     });
   } catch (error) {

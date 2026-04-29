@@ -2,6 +2,7 @@ import { AuthorizationError } from "@/domain/common/errors";
 import type { AuthenticatedActor } from "@/types/auth";
 
 type WorkspaceAccessActor = Pick<AuthenticatedActor, "accessibleWorkspaceIds">;
+type UserManagementActor = Pick<AuthenticatedActor, "appRole">;
 type ProjectAccessActor = {
   accessibleProjectIds: number[];
 };
@@ -22,6 +23,15 @@ export function assertCanAccessWorkspace(actor: WorkspaceAccessActor, workspaceI
     throw new AuthorizationError(
       "You do not have access to that workspace.",
       "workspace_access_denied",
+    );
+  }
+}
+
+export function assertCanManageUsers(actor: UserManagementActor) {
+  if (actor.appRole !== "admin") {
+    throw new AuthorizationError(
+      "You do not have permission to manage users.",
+      "user_management_denied",
     );
   }
 }

@@ -478,6 +478,18 @@ export const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    id: "users",
+    label: "Users",
+    icon: (
+      <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <path d="M7.5 9.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+        <path d="M2.8 16.5a4.7 4.7 0 0 1 9.4 0" strokeLinecap="round" />
+        <path d="M14 8.5a2.4 2.4 0 1 0 0-4.8" strokeLinecap="round" />
+        <path d="M14 11.5a4 4 0 0 1 3.7 3.9" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     id: "search",
     label: "Search",
     icon: (

@@ -6,6 +6,7 @@ import type { TaskStatus } from "@/domain/tasks/constants";
 import type { TaskListItem } from "@/domain/tasks/types";
 import { usePersistedCollapsedSections } from "@/hooks/use-persisted-collapsed-sections";
 import {
+  actionButtonClassName,
   CountPill,
   DashboardCompactTaskRow,
   FocusItem,
@@ -18,6 +19,61 @@ import {
 } from "@/components/app/ui";
 import { ToolbarMenuFrame } from "@/components/app/filter-toolbar";
 import type { ProjectView } from "@/domain/projects/constants";
+
+function IconActionButton({
+  label,
+  tone = "neutral",
+  onClick,
+  children,
+}: {
+  label: string;
+  tone?: "neutral" | "accent";
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const toneClass =
+    tone === "accent"
+      ? "border-[rgba(34,122,89,0.16)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)] hover:bg-[rgba(34,122,89,0.12)]"
+      : "border-[var(--line-soft)] bg-white text-[var(--ink-muted)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]";
+
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        onClick={(event) => {
+          onClick();
+          event.currentTarget.blur();
+        }}
+        aria-label={label}
+        title={label}
+        className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition ${toneClass}`}
+      >
+        {children}
+      </button>
+      <span className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
+        {label}
+      </span>
+    </span>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M3.25 11.75 4 8.85l5.9-5.9a1.35 1.35 0 0 1 1.9 0l1.25 1.25a1.35 1.35 0 0 1 0 1.9L7.15 12l-2.9.75h-1Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m9.1 3.75 3.15 3.15" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M6.75 4.25 3 8l3.75 3.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.5 8h9.25" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 type WorkspaceDisplayMode = "single" | "two";
 
@@ -88,7 +144,7 @@ function persistDashboardWorkspaceSetting(sectionId: string, setting: WorkspaceD
 }
 
 function useDashboardWorkspaceSetting(sectionId: string, workspaces: AppWorkspace[]) {
-  const [setting, setSetting] = useState(() => readDashboardWorkspaceSettings(sectionId, workspaces));
+  const [setting, setSetting] = useState(() => normalizeWorkspaceSetting(null, workspaces));
 
   useEffect(() => {
     setSetting(readDashboardWorkspaceSettings(sectionId, workspaces));
@@ -304,34 +360,69 @@ function CollapseButton({
   collapsed,
   label,
   onClick,
+  tooltipPlacement = "bottom",
 }: {
   collapsed: boolean;
   label: string;
   onClick: () => void;
+  tooltipPlacement?: "top" | "bottom";
 }) {
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipSuppressed, setTooltipSuppressed] = useState(false);
+  const tooltipLabel = `${collapsed ? "Expand" : "Collapse"} ${label}`;
+  const tooltipPlacementClass =
+    tooltipPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2";
+  const showTooltip = () => {
+    if (!tooltipSuppressed) {
+      setTooltipVisible(true);
+    }
+  };
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={!collapsed}
-      aria-label={`${collapsed ? "Expand" : "Collapse"} ${label}`}
-      title={`${collapsed ? "Expand" : "Collapse"} ${label}`}
-      className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl border border-[var(--line-soft)] bg-white text-[var(--ink-subtle)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+    <span
+      className="relative inline-flex"
+      onMouseEnter={showTooltip}
+      onMouseLeave={() => {
+        setTooltipVisible(false);
+        setTooltipSuppressed(false);
+      }}
+      onFocus={showTooltip}
+      onBlur={() => setTooltipVisible(false)}
     >
-      <svg
-        viewBox="0 0 16 16"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
+      <button
+        type="button"
+        onClick={(event) => {
+          onClick();
+          setTooltipVisible(false);
+          setTooltipSuppressed(true);
+          event.currentTarget.blur();
+        }}
+        aria-expanded={!collapsed}
+        aria-label={tooltipLabel}
+        className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl border border-[var(--line-soft)] bg-white text-[var(--ink-subtle)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
       >
-        {collapsed ? (
-          <path d="m4.5 6.25 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
-        ) : (
-          <path d="m4.5 9.75 3.5-3.5 3.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
-        )}
-      </svg>
-    </button>
+        <svg
+          viewBox="0 0 16 16"
+          className="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+        >
+          {collapsed ? (
+            <path d="m4.5 6.25 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
+          ) : (
+            <path d="m4.5 9.75 3.5-3.5 3.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+        </svg>
+      </button>
+      <span
+        className={`pointer-events-none absolute right-0 z-20 whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] ${tooltipPlacementClass} ${
+          tooltipVisible ? "block" : "hidden"
+        }`}
+      >
+        {tooltipLabel}
+      </span>
+    </span>
   );
 }
 
@@ -765,7 +856,7 @@ export function DashboardContent({
             <button
               type="button"
               onClick={onOpenProjects}
-              className="text-sm font-medium text-[var(--ink-subtle)] transition hover:text-[var(--ink-strong)]"
+              className={actionButtonClassName("neutral")}
             >
               View all projects
             </button>
@@ -773,6 +864,7 @@ export function DashboardContent({
               collapsed={projectsCollapsed}
               label="project groups"
               onClick={() => toggleSection("projects")}
+              tooltipPlacement="top"
             />
           </div>
         </div>
@@ -820,6 +912,7 @@ export function ProjectsContent({
   onToggleArchived,
   onEditProject,
   onMoveProject,
+  onQuickArchive,
   onQuickUnarchive,
   projectReorderPendingId,
   onOpenProject,
@@ -831,6 +924,7 @@ export function ProjectsContent({
   onToggleArchived: () => void;
   onEditProject: (projectId: string) => void;
   onMoveProject: (projectId: string, direction: "up" | "down") => void;
+  onQuickArchive: (projectId: string) => void;
   onQuickUnarchive: (projectId: string) => void;
   projectReorderPendingId: string | null;
   onOpenProject: (projectId: string) => void;
@@ -875,6 +969,7 @@ export function ProjectsContent({
                 project={project}
                 onEdit={onEditProject}
                 onMove={onMoveProject}
+                onArchive={onQuickArchive}
                 onUnarchive={onQuickUnarchive}
                 isReordering={projectReorderPendingId === project.id}
                 onOpen={onOpenProject}
@@ -901,7 +996,7 @@ export function ProjectsContent({
           <button
             type="button"
             onClick={onToggleArchived}
-            className="inline-flex h-9 items-center rounded-xl border border-[var(--line-strong)] bg-white px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+            className={actionButtonClassName("neutral")}
           >
             {showArchivedProjects ? "Hide archived" : "Show archived"}
           </button>
@@ -916,6 +1011,7 @@ export function ProjectsContent({
                   project={project}
                   onEdit={onEditProject}
                   onMove={onMoveProject}
+                  onArchive={onQuickArchive}
                   onUnarchive={onQuickUnarchive}
                   isReordering={projectReorderPendingId === project.id}
                   onOpen={onOpenProject}
@@ -994,20 +1090,12 @@ export function ProjectDetailContent({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onEditProject}
-            className="inline-flex h-8 items-center rounded-lg border border-[var(--line-soft)] bg-white px-2.5 text-[13px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
-          >
-            Edit Project
-          </button>
-          <button
-            type="button"
-            onClick={onBackToProjects}
-            className="inline-flex h-8 items-center rounded-lg border border-[rgba(34,122,89,0.16)] bg-[rgba(34,122,89,0.08)] px-2.5 text-[13px] font-medium text-[var(--accent-strong)] transition hover:bg-[rgba(34,122,89,0.12)]"
-          >
-            Back to Projects
-          </button>
+          <IconActionButton label="Edit project" onClick={onEditProject}>
+            <EditIcon />
+          </IconActionButton>
+          <IconActionButton label="Back to projects" tone="accent" onClick={onBackToProjects}>
+            <BackIcon />
+          </IconActionButton>
         </div>
       </div>
 

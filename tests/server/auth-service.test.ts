@@ -19,14 +19,16 @@ class TestAuthService extends AuthService {
 }
 
 function buildSession(overrides: Partial<SessionPayload> = {}): SessionPayload {
-  return {
+  const session: SessionPayload = {
     userId: 7,
     workspaceId: 3,
     workspaceRole: "owner",
+    appRole: "admin",
     timezone: "Europe/Bucharest",
     issuedAt: Date.now(),
-    ...overrides,
   };
+
+  return { ...session, ...overrides };
 }
 
 test("loginWithPassword returns the single workspace membership", async () => {
@@ -36,6 +38,8 @@ test("loginWithPassword returns the single workspace membership", async () => {
         id: 7,
         passwordHash: hashPassword("taskewr"),
         timezone: "Europe/Bucharest",
+        appRole: "admin",
+        deactivatedAt: null,
         memberships: [
           {
             workspaceId: 3,
@@ -59,6 +63,7 @@ test("loginWithPassword returns the single workspace membership", async () => {
   assert.equal(session.userId, 7);
   assert.equal(session.workspaceId, 3);
   assert.equal(session.workspaceRole, "owner");
+  assert.equal(session.appRole, "admin");
 });
 
 test("loginWithPassword uses the first workspace when multiple memberships exist", async () => {
@@ -68,6 +73,8 @@ test("loginWithPassword uses the first workspace when multiple memberships exist
         id: 7,
         passwordHash: hashPassword("taskewr"),
         timezone: "Europe/Bucharest",
+        appRole: "user",
+        deactivatedAt: null,
         memberships: [
           {
             workspaceId: 3,
@@ -99,6 +106,41 @@ test("loginWithPassword uses the first workspace when multiple memberships exist
 
   assert.equal(session.workspaceId, 3);
   assert.equal(session.workspaceRole, "owner");
+  assert.equal(session.appRole, "user");
+});
+
+test("loginWithPassword rejects deactivated users", async () => {
+  const authService = new AuthService({
+    user: {
+      findUnique: async () => ({
+        id: 7,
+        passwordHash: hashPassword("taskewr"),
+        timezone: "Europe/Bucharest",
+        appRole: "user",
+        deactivatedAt: new Date(),
+        memberships: [
+          {
+            workspaceId: 3,
+            role: "owner",
+            workspace: {
+              id: 3,
+              name: "Work",
+              slug: "work",
+            },
+          },
+        ],
+      }),
+    },
+  });
+
+  await assert.rejects(
+    () =>
+      authService.loginWithPassword({
+        email: "account@taskewr.com",
+        password: "taskewr",
+      }),
+    (error) => error instanceof Error && error.message === "Invalid email or password.",
+  );
 });
 
 test("getAuthenticatedActor rejects stale sessions without a backing user", async () => {
@@ -120,6 +162,8 @@ test("getAuthenticatedActor rejects stale sessions without workspace membership"
       user: {
         findUnique: async () => ({
           timezone: "Europe/Bucharest",
+          appRole: "admin",
+          deactivatedAt: null,
           memberships: [],
         }),
       },
@@ -136,6 +180,8 @@ test("getAuthenticatedActor returns current user and membership data", async () 
       user: {
         findUnique: async () => ({
           timezone: "UTC",
+          appRole: "admin",
+          deactivatedAt: null,
           memberships: [
             {
               workspaceId: 3,
@@ -164,6 +210,7 @@ test("getAuthenticatedActor returns current user and membership data", async () 
     userId: 7,
     workspaceId: 3,
     workspaceRole: "owner",
+    appRole: "admin",
     workspaceMemberships: [
       {
         workspaceId: 3,

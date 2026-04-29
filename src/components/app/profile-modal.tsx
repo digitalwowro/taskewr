@@ -31,7 +31,7 @@ export function ProfileModal({
 }) {
   const dialogRef = useRef<HTMLElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [username, setUsername] = useState(profile?.name ?? "");
+  const [displayName, setDisplayName] = useState(profile?.name ?? "");
   const [email, setEmail] = useState(profile?.email ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatarUrl ?? null);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -60,7 +60,7 @@ export function ProfileModal({
     return null;
   }
 
-  const avatarInitial = (username.trim().charAt(0) || "R").toUpperCase();
+  const avatarInitial = (displayName.trim().charAt(0) || "R").toUpperCase();
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -85,8 +85,8 @@ export function ProfileModal({
   };
 
   const handleSave = async () => {
-    if (!username.trim()) {
-      setFieldError("Username is required.");
+    if (!displayName.trim()) {
+      setFieldError("Display name is required.");
       return;
     }
 
@@ -102,7 +102,7 @@ export function ProfileModal({
 
     setFieldError(null);
     await onSave({
-      name: username.trim(),
+      name: displayName.trim(),
       email: email.trim(),
       currentPassword,
       newPassword,
@@ -187,11 +187,11 @@ export function ProfileModal({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                Name
+                Display name
               </label>
               <input
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
                 className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
               />
             </div>

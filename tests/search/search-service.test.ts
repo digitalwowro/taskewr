@@ -16,6 +16,7 @@ test("SearchService applies default task search filters", async () => {
       return Promise.resolve({
         workspaceId: 3,
         actorUserId: 7,
+        appRole: "admin",
         accessibleProjectIds: [1, 4],
       });
     },
@@ -49,6 +50,7 @@ test("SearchService preserves explicit all-status and priority filters", async (
       return Promise.resolve({
         workspaceId: 3,
         actorUserId: 7,
+        appRole: "admin",
         accessibleProjectIds: [1, 4],
       });
     },
