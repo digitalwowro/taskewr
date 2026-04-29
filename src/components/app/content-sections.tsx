@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppProject, AppWorkspace, ProjectGroup } from "@/app/app-data";
 import type { TaskStatus } from "@/domain/tasks/constants";
 import type { TaskListItem } from "@/domain/tasks/types";
 import { usePersistedCollapsedSections } from "@/hooks/use-persisted-collapsed-sections";
 import {
   CountPill,
+  DashboardCompactTaskRow,
   FocusItem,
   HorizontalListRow,
   MetricCard,
@@ -15,6 +16,7 @@ import {
   ProjectSection,
   TaskTableHeader,
 } from "@/components/app/ui";
+import { ToolbarMenuFrame } from "@/components/app/filter-toolbar";
 import type { ProjectView } from "@/domain/projects/constants";
 
 type WorkspaceDisplayMode = "single" | "two";
@@ -26,6 +28,10 @@ type WorkspaceDisplaySetting = {
 };
 
 const DASHBOARD_WORKSPACE_SETTINGS_KEY = "taskewr.dashboard.workspaceDisplaySettings";
+const WORKSPACE_DISPLAY_MODE_OPTIONS: Array<{ value: WorkspaceDisplayMode; label: string }> = [
+  { value: "single", label: "Single Workspace" },
+  { value: "two", label: "Two Workspaces" },
+];
 
 function normalizeWorkspaceSetting(
   value: Partial<WorkspaceDisplaySetting> | null | undefined,
@@ -131,59 +137,163 @@ function WorkspaceDisplayControls({
   workspaces: AppWorkspace[];
   onChange: (value: Partial<WorkspaceDisplaySetting>) => void;
 }) {
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
+  const [leftMenuOpen, setLeftMenuOpen] = useState(false);
+  const [rightMenuOpen, setRightMenuOpen] = useState(false);
+  const modeMenuRef = useRef<HTMLDivElement | null>(null);
+  const leftMenuRef = useRef<HTMLDivElement | null>(null);
+  const rightMenuRef = useRef<HTMLDivElement | null>(null);
+  const selectedModeLabel =
+    WORKSPACE_DISPLAY_MODE_OPTIONS.find((option) => option.value === setting.mode)?.label ?? "Single Workspace";
+  const leftWorkspaceName =
+    workspaces.find((workspace) => workspace.id === setting.leftWorkspaceId)?.name ?? "Workspace";
+  const rightWorkspaceName =
+    workspaces.find((workspace) => workspace.id === setting.rightWorkspaceId)?.name ?? "Workspace";
+
+  useEffect(() => {
+    if (!modeMenuOpen && !leftMenuOpen && !rightMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        !modeMenuRef.current?.contains(target) &&
+        !leftMenuRef.current?.contains(target) &&
+        !rightMenuRef.current?.contains(target)
+      ) {
+        setModeMenuOpen(false);
+        setLeftMenuOpen(false);
+        setRightMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [leftMenuOpen, modeMenuOpen, rightMenuOpen]);
+
   if (workspaces.length < 2) {
     return null;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        onClick={() => onChange({ mode: "single" })}
-        className={`inline-flex h-9 items-center rounded-xl border px-4 text-sm font-semibold transition ${
-          setting.mode === "single"
-            ? "border-[rgba(34,122,89,0.22)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
-            : "border-[var(--line-strong)] bg-white text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)]"
-        }`}
-      >
-        Single
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange({ mode: "two" })}
-        className={`inline-flex h-9 items-center rounded-xl border px-4 text-sm font-semibold transition ${
-          setting.mode === "two"
-            ? "border-[rgba(34,122,89,0.22)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
-            : "border-[var(--line-strong)] bg-white text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)]"
-        }`}
-      >
-        Two workspaces
-      </button>
+      <ToolbarMenuFrame menuRef={modeMenuRef} label="Layout">
+        <button
+          type="button"
+          onClick={() => {
+            setModeMenuOpen((current) => !current);
+            setLeftMenuOpen(false);
+            setRightMenuOpen(false);
+          }}
+          aria-haspopup="menu"
+          aria-expanded={modeMenuOpen}
+          className="inline-flex h-7 max-w-[13rem] items-center rounded-lg px-2 text-[12px] font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+        >
+          <span className="truncate">{selectedModeLabel}</span>
+        </button>
+        {modeMenuOpen ? (
+          <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[13rem] rounded-2xl border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+            <div className="space-y-1">
+              {WORKSPACE_DISPLAY_MODE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange({ mode: option.value });
+                    setModeMenuOpen(false);
+                  }}
+                  className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                    setting.mode === option.value
+                      ? "bg-[var(--surface-subtle)] text-[var(--ink-strong)]"
+                      : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </ToolbarMenuFrame>
       {setting.mode === "two" ? (
         <>
-          <span className="mx-1 h-8 w-px bg-[var(--line-soft)]" />
-          <select
-            value={setting.leftWorkspaceId}
-            onChange={(event) => onChange({ leftWorkspaceId: event.target.value })}
-            className="h-9 rounded-xl border border-[var(--line-strong)] bg-white px-3 text-sm font-medium text-[var(--ink-muted)] outline-none"
-          >
-            {workspaces.map((workspace) => (
-              <option key={workspace.id} value={workspace.id}>
-                Left: {workspace.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={setting.rightWorkspaceId}
-            onChange={(event) => onChange({ rightWorkspaceId: event.target.value })}
-            className="h-9 rounded-xl border border-[var(--line-strong)] bg-white px-3 text-sm font-medium text-[var(--ink-muted)] outline-none"
-          >
-            {workspaces.map((workspace) => (
-              <option key={workspace.id} value={workspace.id}>
-                Right: {workspace.name}
-              </option>
-            ))}
-          </select>
+          <ToolbarMenuFrame menuRef={leftMenuRef} label="Left">
+            <button
+              type="button"
+              onClick={() => {
+                setLeftMenuOpen((current) => !current);
+                setModeMenuOpen(false);
+                setRightMenuOpen(false);
+              }}
+              aria-haspopup="menu"
+              aria-expanded={leftMenuOpen}
+              className="inline-flex h-7 max-w-[10rem] items-center rounded-lg px-2 text-[12px] font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+            >
+              <span className="truncate">{leftWorkspaceName}</span>
+            </button>
+            {leftMenuOpen ? (
+              <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[13rem] rounded-2xl border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+                <div className="space-y-1">
+                  {workspaces.map((workspace) => (
+                    <button
+                      key={workspace.id}
+                      type="button"
+                      onClick={() => {
+                        onChange({ leftWorkspaceId: workspace.id });
+                        setLeftMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                        setting.leftWorkspaceId === workspace.id
+                          ? "bg-[var(--surface-subtle)] text-[var(--ink-strong)]"
+                          : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+                      }`}
+                    >
+                      {workspace.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </ToolbarMenuFrame>
+          <ToolbarMenuFrame menuRef={rightMenuRef} label="Right">
+            <button
+              type="button"
+              onClick={() => {
+                setRightMenuOpen((current) => !current);
+                setModeMenuOpen(false);
+                setLeftMenuOpen(false);
+              }}
+              aria-haspopup="menu"
+              aria-expanded={rightMenuOpen}
+              className="inline-flex h-7 max-w-[10rem] items-center rounded-lg px-2 text-[12px] font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+            >
+              <span className="truncate">{rightWorkspaceName}</span>
+            </button>
+            {rightMenuOpen ? (
+              <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[13rem] rounded-2xl border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+                <div className="space-y-1">
+                  {workspaces.map((workspace) => (
+                    <button
+                      key={workspace.id}
+                      type="button"
+                      onClick={() => {
+                        onChange({ rightWorkspaceId: workspace.id });
+                        setRightMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                        setting.rightWorkspaceId === workspace.id
+                          ? "bg-[var(--surface-subtle)] text-[var(--ink-strong)]"
+                          : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+                      }`}
+                    >
+                      {workspace.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </ToolbarMenuFrame>
         </>
       ) : null}
     </div>
@@ -206,7 +316,7 @@ function CollapseButton({
       aria-expanded={!collapsed}
       aria-label={`${collapsed ? "Expand" : "Collapse"} ${label}`}
       title={`${collapsed ? "Expand" : "Collapse"} ${label}`}
-      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-white text-[var(--ink-subtle)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+      className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl border border-[var(--line-soft)] bg-white text-[var(--ink-subtle)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
     >
       <svg
         viewBox="0 0 16 16"
@@ -238,6 +348,7 @@ function DashboardTaskSubsection({
   onToggleCollapsed,
   items,
   rowKind,
+  rowLayout = "table",
   emptyMessage,
   onEditTask,
   onCompleteTask,
@@ -255,6 +366,7 @@ function DashboardTaskSubsection({
   onToggleCollapsed: () => void;
   items: TaskListItem[];
   rowKind: "horizontal" | "focus";
+  rowLayout?: "table" | "compact";
   emptyMessage: string;
   onEditTask: (taskId: string) => void;
   onCompleteTask: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
@@ -282,32 +394,46 @@ function DashboardTaskSubsection({
       </div>
       {!collapsed ? (
         items.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full table-auto border-collapse">
-              <TaskTableHeader />
-              <tbody>
-                {items.map((item) =>
-                  rowKind === "horizontal" ? (
-                    <HorizontalListRow
-                      key={item.id}
-                      {...item}
-                      onEdit={onEditTask}
-                      onComplete={onCompleteTask}
-                      isCompleting={completingTaskId === item.id}
-                    />
-                  ) : (
-                    <FocusItem
-                      key={item.id}
-                      {...item}
-                      onEdit={onEditTask}
-                      onComplete={onCompleteTask}
-                      isCompleting={completingTaskId === item.id}
-                    />
-                  ),
-                )}
-              </tbody>
-            </table>
-          </div>
+          rowLayout === "compact" ? (
+            <div>
+              {items.map((item) => (
+                <DashboardCompactTaskRow
+                  key={item.id}
+                  {...item}
+                  onEdit={onEditTask}
+                  onComplete={onCompleteTask}
+                  isCompleting={completingTaskId === item.id}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto border-collapse">
+                <TaskTableHeader />
+                <tbody>
+                  {items.map((item) =>
+                    rowKind === "horizontal" ? (
+                      <HorizontalListRow
+                        key={item.id}
+                        {...item}
+                        onEdit={onEditTask}
+                        onComplete={onCompleteTask}
+                        isCompleting={completingTaskId === item.id}
+                      />
+                    ) : (
+                      <FocusItem
+                        key={item.id}
+                        {...item}
+                        onEdit={onEditTask}
+                        onComplete={onCompleteTask}
+                        isCompleting={completingTaskId === item.id}
+                      />
+                    ),
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )
         ) : (
           <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
             {emptyMessage}
@@ -429,6 +555,7 @@ export function DashboardContent({
     const renderSections = (
       sectionOverdueItems: TaskListItem[],
       sectionTodayItems: TaskListItem[],
+      rowLayout: "table" | "compact" = "table",
     ) => (
       <div className="space-y-5">
         {sectionOverdueItems.length > 0 ? (
@@ -445,6 +572,7 @@ export function DashboardContent({
             onToggleCollapsed={() => toggleSection(overdueSectionId)}
             items={sectionOverdueItems}
             rowKind="horizontal"
+            rowLayout={rowLayout}
             emptyMessage=""
             onEditTask={onEditTask}
             onCompleteTask={onCompleteTask}
@@ -465,6 +593,7 @@ export function DashboardContent({
           onToggleCollapsed={() => toggleSection(todaySectionId)}
           items={sectionTodayItems}
           rowKind="focus"
+          rowLayout={rowLayout}
           emptyMessage={todayEmptyMessage}
           onEditTask={onEditTask}
           onCompleteTask={onCompleteTask}
@@ -505,7 +634,7 @@ export function DashboardContent({
                 </h3>
                 <span className="text-xs text-[var(--ink-subtle)]">{columnCount} visible</span>
               </div>
-              {renderSections(columnOverdueItems, columnTodayItems)}
+              {renderSections(columnOverdueItems, columnTodayItems, "compact")}
             </div>
           );
         })}
@@ -547,7 +676,7 @@ export function DashboardContent({
                 Scheduled work window
               </h2>
             </div>
-            <div className="flex flex-col items-end gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-3">
               <WorkspaceDisplayControls
                 setting={recurringWorkspaceSetting}
                 workspaces={workspaces}
@@ -589,7 +718,7 @@ export function DashboardContent({
                 Current work window
               </h2>
             </div>
-            <div className="flex flex-col items-end gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-3">
               <WorkspaceDisplayControls
                 setting={focusWorkspaceSetting}
                 workspaces={workspaces}

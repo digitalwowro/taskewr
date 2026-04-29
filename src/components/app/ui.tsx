@@ -5,6 +5,7 @@ import type { TaskListItem } from "@/domain/tasks/types";
 
 export function StatusPill({
   tone,
+  compact = false,
   children,
 }: {
   tone:
@@ -18,6 +19,7 @@ export function StatusPill({
     | "priorityBlue"
     | "priorityOrange"
     | "priorityRed";
+  compact?: boolean;
   children: ReactNode;
 }) {
   const tones = {
@@ -43,7 +45,7 @@ export function StatusPill({
 
   return (
     <span
-      className={`inline-flex h-7 items-center justify-center rounded-full border px-2.5 text-center text-[11px] font-medium leading-none whitespace-nowrap ${tones[tone]}`}
+      className={`inline-flex items-center justify-center rounded-full border text-center font-medium leading-none whitespace-nowrap ${compact ? "h-6 px-2 text-[10px]" : "h-7 px-2.5 text-[11px]"} ${tones[tone]}`}
     >
       {children}
     </span>
@@ -86,15 +88,22 @@ function getPriorityTone(
 
 function InlineTooltip({
   label,
+  align = "center",
   children,
 }: {
   label: string;
+  align?: "center" | "right";
   children: ReactNode;
 }) {
+  const alignmentClass =
+    align === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
+
   return (
     <span className="group relative inline-flex">
       {children}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
+      <span
+        className={`pointer-events-none absolute bottom-full z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${alignmentClass}`}
+      >
         {label}
       </span>
     </span>
@@ -135,12 +144,20 @@ function getOverdueDaysFromLabel(due: string) {
 function DueDisplay({ due }: { due: string }) {
   const overdueDays = getOverdueDaysFromLabel(due);
 
+  if (due === "No due date") {
+    return (
+      <InlineTooltip label="No due date" align="right">
+        <span className="text-[var(--ink-subtle)]">-</span>
+      </InlineTooltip>
+    );
+  }
+
   if (!overdueDays) {
     return <>{due}</>;
   }
 
   return (
-    <InlineTooltip label={due}>
+    <InlineTooltip label={due} align="right">
       <span className="inline-flex items-center justify-end gap-1 text-[var(--accent-red)]">
         <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
           <circle cx="8" cy="8" r="5.5" />
@@ -479,6 +496,79 @@ export function HorizontalListRow({
         <DueDisplay due={due} />
       </td>
     </tr>
+  );
+}
+
+export function DashboardCompactTaskRow({
+  id,
+  title,
+  project,
+  due,
+  status,
+  statusValue = "todo",
+  priority,
+  onEdit,
+  onComplete,
+  isCompleting,
+  repeatRuleId,
+  repeatCarryCount,
+}: {
+  id: string;
+  title: string;
+  project: string;
+  due: string;
+  status?: string;
+  statusValue?: TaskListItem["statusValue"];
+  priority?: string;
+  onEdit: (taskId: string) => void;
+  onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
+  isCompleting?: boolean;
+  repeatRuleId?: string | null;
+  repeatCarryCount?: number;
+}) {
+  const statusLabel = status ?? "Todo";
+  const priorityLabel = priority ?? "Low";
+  const statusTone = getStatusTone(statusLabel);
+  const priorityTone = getPriorityTone(priorityLabel);
+  const isRecurring = Boolean(repeatRuleId);
+
+  return (
+    <div className="border-b border-[var(--line-soft)] px-4 py-3 transition-colors last:border-b-0 hover:bg-[var(--surface-subtle)]">
+      <div className="flex min-w-0 gap-3">
+        <div className="pt-0.5">
+          <TaskCompleteButton
+            task={{ id, statusValue }}
+            isCompleting={isCompleting}
+            onComplete={onComplete}
+          />
+        </div>
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex min-w-0 items-start gap-2">
+            <span className="shrink-0 pt-1 font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
+              {id}
+            </span>
+            <button
+              type="button"
+              onClick={() => onEdit(id)}
+              className="min-w-0 flex-1 text-left text-sm font-medium leading-snug text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+            >
+              {title}
+            </button>
+            <span className="shrink-0 pt-1 text-xs whitespace-nowrap text-[var(--ink-subtle)]">
+              <DueDisplay due={due} />
+            </span>
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="min-w-0 max-w-full truncate text-[12px] text-[var(--ink-subtle)]">
+              {project}
+            </span>
+            {isRecurring ? <RepeatBadge task={{ repeatRuleId, repeatCarryCount }} /> : null}
+            <StatusPill tone={statusTone} compact>{statusLabel}</StatusPill>
+            <StatusPill tone={priorityTone} compact>{priorityLabel}</StatusPill>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
