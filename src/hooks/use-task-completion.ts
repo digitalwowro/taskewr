@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import type { TaskListItem } from "@/domain/tasks/types";
 import { isUnauthorizedError, requestJson } from "@/lib/api-client";
 
-const TASK_COMPLETION_FADE_MS = 500;
+const TASK_COMPLETION_PENDING_MS = 500;
 
 export function useTaskCompletion({
   redirectToLogin,
@@ -31,7 +31,7 @@ export function useTaskCompletion({
         .then(
           () =>
             new Promise<void>((resolve) => {
-              window.setTimeout(resolve, isReopening ? 0 : TASK_COMPLETION_FADE_MS);
+              window.setTimeout(resolve, TASK_COMPLETION_PENDING_MS);
             }),
         )
         .then(() => {

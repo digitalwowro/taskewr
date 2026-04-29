@@ -96,10 +96,6 @@ function RepeatBadge({ task }: { task: Pick<TaskListItem, "repeatRuleId" | "repe
   );
 }
 
-function getTaskCompletionClass(isCompleting?: boolean) {
-  return isCompleting ? "pointer-events-none translate-y-1 opacity-0" : "";
-}
-
 const taskTableHeaderClass =
   "border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]";
 const taskTableCellClass = "border-b border-[var(--line-soft)] px-4 py-3 align-middle";
@@ -164,7 +160,13 @@ function TaskCompleteButton({
       } ${isCompleting ? "cursor-wait opacity-70" : ""}`}
     >
       {isCompleting ? (
-        <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-[rgba(34,122,89,0.24)] border-t-[var(--accent-strong)]" />
+        <span
+          className={`h-2.5 w-2.5 animate-spin rounded-full border-2 ${
+            isDone
+              ? "border-white/30 border-t-white"
+              : "border-[rgba(34,122,89,0.24)] border-t-[var(--accent-strong)]"
+          }`}
+        />
       ) : (
         <svg
           viewBox="0 0 16 16"
@@ -297,9 +299,7 @@ export function FocusItem({
   const priorityTone = getPriorityTone(priority);
 
   return (
-    <tr
-      className={`text-sm transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] ${getTaskCompletionClass(isCompleting)}`}
-    >
+    <tr className="text-sm transition-colors hover:bg-[var(--surface-subtle)]">
       <td className={`${taskTableCellClass} w-px`}>
         <TaskCompleteButton
           task={{ id, statusValue }}
@@ -379,9 +379,7 @@ export function HorizontalListRow({
   const priorityTone = getPriorityTone(priority ?? "Low");
 
   return (
-    <tr
-      className={`text-sm transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] ${getTaskCompletionClass(isCompleting)}`}
-    >
+    <tr className="text-sm transition-colors hover:bg-[var(--surface-subtle)]">
       <td className={`${taskTableCellClass} w-px`}>
         <TaskCompleteButton
           task={{ id, statusValue }}
@@ -480,10 +478,7 @@ export function ProjectSection({
                 const priorityTone = getPriorityTone(item.priority);
 
                 return (
-                  <tr
-                    key={item.id}
-                    className={`text-sm transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] ${getTaskCompletionClass(completingTaskId === item.id)}`}
-                  >
+                  <tr key={item.id} className="text-sm transition-colors hover:bg-[var(--surface-subtle)]">
                     <td className={`${taskTableCellClass} w-px pl-5`}>
                       <TaskCompleteButton
                         task={item}
@@ -742,9 +737,9 @@ export function ProjectBoardLane({
                 onDragTaskStart(item.id);
               }}
               onDragEnd={onDragTaskEnd}
-              className={`rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card)] p-3 transition-all duration-500 ease-out hover:bg-[var(--surface-subtle)] ${
+              className={`rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card)] p-3 transition-colors hover:bg-[var(--surface-subtle)] ${
                 draggingTaskId === item.id ? "opacity-60" : ""
-              } ${getTaskCompletionClass(completingTaskId === item.id)}`}
+              }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">

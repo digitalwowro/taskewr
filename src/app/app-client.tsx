@@ -405,7 +405,7 @@ export function TaskewrApp({
           <div
             className={`min-w-0 min-h-0 flex-1 overflow-y-auto bg-[var(--surface-main)] px-6 ${
               initialSection === "project_detail"
-                ? "pb-6 pt-1.5"
+                ? "pb-6 pt-2.5"
                 : initialSection === "dashboard"
                   ? "pb-6 pt-2.5"
                   : "py-6"
@@ -414,7 +414,7 @@ export function TaskewrApp({
             <div className="mx-auto w-full max-w-[1360px]">
               {initialSection === "dashboard" ? (
                 <div className="flex w-full gap-6">
-                  <div className="min-w-0 flex-1 space-y-2.5">
+                  <div className="min-w-0 flex-1 space-y-5">
                     <DashboardTaskToolbar
                       sortMenuRef={projectSortMenuRef}
                       statusMenuRef={projectStatusMenuRef}
@@ -510,7 +510,7 @@ export function TaskewrApp({
                   onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
                 />
               ) : (initialSection === "project_detail" || initialSection === "task_detail") && selectedProject ? (
-                <div className="space-y-2.5">
+                <div className="space-y-5">
                   {initialSection === "project_detail" ? (
                     <ProjectTaskToolbar
                       view={projectView}

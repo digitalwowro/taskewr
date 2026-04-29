@@ -88,14 +88,14 @@ export function DashboardContent({
   const projectsCollapsed = isSectionCollapsed("projects");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <section className="grid gap-2 lg:grid-cols-3">
         <MetricCard label="Active tasks" value={String(visibleTaskCount)} tone="green" detail="+3 this week" />
         <MetricCard label="Overdue" value={String(filteredOverdueItems.length)} tone="red" detail="Needs attention" />
         <MetricCard label="Due today" value={String(filteredTodayItems.length)} tone="amber" detail="Current focus" />
       </section>
 
-      <section className="space-y-5 pt-2.5">
+      <section className="space-y-5">
         <article className="rounded-2xl border border-[rgba(37,99,235,0.14)] bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(246,249,255,1)_100%)] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
           <header className="flex items-start justify-between gap-4">
             <div>
@@ -315,7 +315,7 @@ export function DashboardContent({
         </article>
       </section>
 
-      <section className="space-y-4 pt-2.5">
+      <section className="space-y-5">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-subtle)]">
@@ -386,7 +386,7 @@ export function ProjectsContent({
   onOpenProject: (projectId: string) => void;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <section className="grid gap-4 lg:grid-cols-2">
         <MetricCard
           label="Active projects"
@@ -402,7 +402,7 @@ export function ProjectsContent({
         />
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-5">
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-subtle)]">
@@ -418,7 +418,7 @@ export function ProjectsContent({
         </div>
 
         {activeProjects.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-5">
             {activeProjects.map((project) => (
               <ProjectRow
                 key={project.id}
@@ -438,8 +438,8 @@ export function ProjectsContent({
         )}
       </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between rounded-2xl border border-[var(--line-soft)] bg-white px-5 py-4">
+      <section className="space-y-5">
+        <div className="flex items-center justify-between rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-5 py-4">
           <div>
             <p className="text-sm font-semibold text-[var(--ink-strong)]">
               Archived projects
@@ -459,7 +459,7 @@ export function ProjectsContent({
 
         {showArchivedProjects ? (
           archivedProjects.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-5">
               {archivedProjects.map((project) => (
                 <ProjectRow
                   key={project.id}
@@ -562,7 +562,7 @@ export function ProjectDetailContent({
       </div>
 
       <div className="mt-5">
-        <div className="space-y-4">
+        <div className="space-y-5">
           {selectedProjectOverdueTasks.length > 0 ? (
             <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
               <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
@@ -606,7 +606,7 @@ export function ProjectDetailContent({
           ) : null}
 
           {projectView === "board" ? (
-            <div className="grid gap-4 xl:grid-cols-3">
+            <div className="grid gap-5 xl:grid-cols-3">
               <ProjectBoardLane
                 title="Todo"
                 laneStatus="todo"
