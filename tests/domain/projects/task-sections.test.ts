@@ -5,8 +5,10 @@ import { splitProjectTaskSections } from "@/domain/projects/task-sections";
 import type { TaskListItem } from "@/domain/tasks/types";
 
 function task(input: Partial<TaskListItem> & { id: string }): TaskListItem {
+  const { id, ...rest } = input;
+
   return {
-    id: input.id,
+    id,
     project: "Channel Sales",
     status: "Todo",
     statusValue: "todo",
@@ -17,8 +19,8 @@ function task(input: Partial<TaskListItem> & { id: string }): TaskListItem {
     startDate: null,
     createdAt: "2026-04-01T00:00:00.000Z",
     updatedAt: "2026-04-01T00:00:00.000Z",
-    title: input.id,
-    ...input,
+    title: id,
+    ...rest,
   };
 }
 

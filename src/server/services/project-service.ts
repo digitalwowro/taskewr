@@ -1,5 +1,9 @@
 import { ProjectsRepository } from "@/data/prisma/repositories/projects-repository";
-import { assertCanAccessProject, requireWorkspaceOwnership } from "@/domain/auth/policies";
+import {
+  assertCanAccessProject,
+  assertCanAccessWorkspace,
+  requireWorkspaceOwnership,
+} from "@/domain/auth/policies";
 import {
   assertProjectCanArchive,
   assertProjectCanUnarchive,
@@ -27,7 +31,7 @@ export class ProjectService {
 
   async listProjects(includeArchived = true) {
     const context = await this.contextService.getAppContext();
-    return this.repository.listProjects(context.workspaceId, includeArchived);
+    return this.repository.listProjectsByIds(context.accessibleProjectIds, includeArchived);
   }
 
   async getProject(id: number) {
@@ -38,15 +42,7 @@ export class ProjectService {
       throw new NotFoundError("Project not found.", "project_not_found");
     }
 
-    assertCanAccessProject(
-      {
-        userId: context.actorUserId ?? 0,
-        workspaceId: context.workspaceId,
-        workspaceRole: context.workspaceRole,
-        timezone: context.timezone,
-      },
-      { workspaceId: requireWorkspaceOwnership(project.workspaceId) },
-    );
+    assertCanAccessProject(context, { projectId: project.id });
 
     return project;
   }
@@ -64,11 +60,12 @@ export class ProjectService {
 
   async planUnarchive(id: number) {
     const project = await this.getProject(id);
-    const context = await this.contextService.getAppContext();
 
     assertProjectCanUnarchive(project.archivedAt !== null);
 
-    const aggregate = await this.repository.maxActiveSortOrder(context.workspaceId);
+    const aggregate = await this.repository.maxActiveSortOrder(
+      requireWorkspaceOwnership(project.workspaceId),
+    );
 
     return {
       id: project.id,
@@ -80,20 +77,34 @@ export class ProjectService {
   async createProject(input: ProjectMutationInput) {
     const payload = projectMutationSchema.parse(input);
     const context = await this.contextService.getAppContext();
-    const aggregate = await this.repository.maxActiveSortOrder(context.workspaceId);
+    const workspaceId = payload.workspaceId ?? context.workspaceId;
 
-    return this.repository.create({
-      workspaceId: context.workspaceId,
-      ownerUserId: context.actorUserId,
-      name: payload.name,
-      description: payload.description || null,
-      sortOrder: nextUnarchivedSortOrder(aggregate._max.sortOrder ?? null),
-    });
+    assertCanAccessWorkspace(context, workspaceId);
+
+    const aggregate = await this.repository.maxActiveSortOrder(workspaceId);
+
+    return this.repository.createWithOwnerMember(
+      {
+        workspaceId,
+        ownerUserId: context.actorUserId,
+        name: payload.name,
+        description: payload.description || null,
+        sortOrder: nextUnarchivedSortOrder(aggregate._max.sortOrder ?? null),
+      },
+      context.actorUserId,
+    );
   }
 
   async updateProject(id: number, input: ProjectMutationInput) {
-    await this.getProject(id);
+    const project = await this.getProject(id);
     const payload = projectMutationSchema.parse(input);
+
+    if (payload.workspaceId && payload.workspaceId !== project.workspaceId) {
+      throw new ValidationError(
+        "Moving projects between workspaces is not supported yet.",
+        "project_workspace_move_not_supported",
+      );
+    }
 
     return this.repository.updateById(id, {
       name: payload.name,
@@ -120,6 +131,7 @@ export class ProjectService {
 
   async moveProject(id: number, input: ProjectMoveInput) {
     const payload = projectMoveSchema.parse(input);
+    const context = await this.contextService.getAppContext();
     const project = await this.getProject(id);
 
     if (project.archivedAt !== null) {
@@ -133,6 +145,7 @@ export class ProjectService {
       requireWorkspaceOwnership(project.workspaceId),
       project.sortOrder,
       payload.direction,
+      context.accessibleProjectIds,
     );
 
     assertProjectMoveTargetExists(targetProject?.sortOrder ?? null);

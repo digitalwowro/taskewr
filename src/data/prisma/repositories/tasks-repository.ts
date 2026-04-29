@@ -4,20 +4,41 @@ import type { PrismaClient } from "@/generated/prisma/client";
 export class TasksRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
+  private readonly taskInclude = {
+    project: {
+      include: {
+        workspace: true,
+      },
+    },
+    parentTask: true,
+    repeatRule: true,
+    childTasks: true,
+    taskLabels: {
+      include: {
+        label: true,
+      },
+    },
+  } as const;
+
+  private readonly taskListInclude = {
+    project: {
+      include: {
+        workspace: true,
+      },
+    },
+    parentTask: true,
+    repeatRule: true,
+    taskLabels: {
+      include: {
+        label: true,
+      },
+    },
+  } as const;
+
   findById(id: number) {
     return this.prisma.task.findUnique({
       where: { id },
-      include: {
-        project: true,
-        parentTask: true,
-        repeatRule: true,
-        childTasks: true,
-        taskLabels: {
-          include: {
-            label: true,
-          },
-        },
-      },
+      include: this.taskInclude,
     });
   }
 
@@ -45,37 +66,23 @@ export class TasksRepository {
             }),
       },
       orderBy: [{ status: "asc" }, { sortOrder: "asc" }],
-      include: {
-        project: true,
-        childTasks: true,
-        repeatRule: true,
-        taskLabels: {
-          include: {
-            label: true,
-          },
-        },
-      },
+      include: this.taskInclude,
     });
   }
 
-  listWorkspaceTasks(workspaceId: number) {
+  listTasksForProjects(projectIds: number[]) {
+    if (projectIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
     return this.prisma.task.findMany({
       where: {
-        project: {
-          workspaceId,
+        projectId: {
+          in: projectIds,
         },
       },
       orderBy: [{ updatedAt: "desc" }],
-      include: {
-        project: true,
-        parentTask: true,
-        repeatRule: true,
-        taskLabels: {
-          include: {
-            label: true,
-          },
-        },
-      },
+      include: this.taskListInclude,
     });
   }
 
@@ -125,17 +132,7 @@ export class TasksRepository {
   create(data: Prisma.TaskUncheckedCreateInput) {
     return this.prisma.task.create({
       data,
-      include: {
-       project: true,
-        parentTask: true,
-        repeatRule: true,
-        childTasks: true,
-        taskLabels: {
-          include: {
-            label: true,
-          },
-        },
-      },
+      include: this.taskInclude,
     });
   }
 
@@ -143,17 +140,7 @@ export class TasksRepository {
     return this.prisma.task.update({
       where: { id },
       data,
-      include: {
-        project: true,
-        parentTask: true,
-        repeatRule: true,
-        childTasks: true,
-        taskLabels: {
-          include: {
-            label: true,
-          },
-        },
-      },
+      include: this.taskInclude,
     });
   }
 

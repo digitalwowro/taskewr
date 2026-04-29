@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { AppProject } from "@/app/app-data";
+import type { AppProject, AppWorkspace } from "@/app/app-data";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 const NEW_PROJECT_ID = "NEW_PROJECT";
@@ -16,6 +16,7 @@ function validateProjectEditorInput(input: { name: string }) {
 
 export function ProjectEditorModal({
   project,
+  workspaces,
   onClose,
   onSave,
   onToggleArchive,
@@ -23,14 +24,16 @@ export function ProjectEditorModal({
   error,
 }: {
   project: AppProject | null;
+  workspaces: AppWorkspace[];
   onClose: () => void;
-  onSave: (input: { name: string; description: string }) => Promise<void>;
+  onSave: (input: { workspaceId: number; name: string; description: string }) => Promise<void>;
   onToggleArchive: () => Promise<void>;
   isSaving: boolean;
   error: string | null;
 }) {
   const [name, setName] = useState(project?.name ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
+  const [workspaceId, setWorkspaceId] = useState(project?.workspaceId ?? workspaces[0]?.id ?? "");
   const [nameError, setNameError] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const dialogRef = useRef<HTMLElement | null>(null);
@@ -67,7 +70,11 @@ export function ProjectEditorModal({
       return;
     }
 
-    await onSave({ name: name.trim(), description: description.trim() });
+    await onSave({
+      workspaceId: Number(workspaceId),
+      name: name.trim(),
+      description: description.trim(),
+    });
   };
 
   return (
@@ -107,6 +114,29 @@ export function ProjectEditorModal({
         </div>
 
         <div className="space-y-4 px-5 py-5">
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+              Workspace
+            </label>
+            <select
+              value={workspaceId}
+              onChange={(event) => setWorkspaceId(event.target.value)}
+              disabled={isSaving || !isCreating}
+              className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+            >
+              {workspaces.map((workspace) => (
+                <option key={workspace.id} value={workspace.id}>
+                  {workspace.name}
+                </option>
+              ))}
+            </select>
+            {!isCreating ? (
+              <p className="text-xs text-[var(--ink-subtle)]">
+                Existing projects stay in their current workspace.
+              </p>
+            ) : null}
+          </div>
+
           <div className="space-y-2">
             <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
               Project name

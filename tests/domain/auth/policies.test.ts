@@ -15,6 +15,15 @@ function buildActor(overrides: Partial<AuthenticatedActor> = {}): AuthenticatedA
     userId: 7,
     workspaceId: 3,
     workspaceRole: "member",
+    workspaceMemberships: [
+      {
+        workspaceId: 3,
+        workspaceName: "Work",
+        workspaceSlug: "work",
+        role: "member",
+      },
+    ],
+    accessibleWorkspaceIds: [3],
     timezone: "UTC",
     ...overrides,
   };
@@ -31,15 +40,16 @@ test("workspace policy denies access outside the actor workspace", () => {
   );
 });
 
-test("project and task policies are currently workspace-scoped", () => {
-  const actor = buildActor({
-    workspaceRole: "viewer",
-  });
+test("project and task policies require explicit project access", () => {
+  const actor = {
+    ...buildActor({ workspaceRole: "viewer" }),
+    accessibleProjectIds: [10],
+  };
 
-  assert.doesNotThrow(() => assertCanAccessProject(actor, { workspaceId: 3 }));
-  assert.doesNotThrow(() => assertCanAccessTask(actor, { workspaceId: 3 }));
-  assert.throws(() => assertCanAccessProject(actor, { workspaceId: 4 }), AuthorizationError);
-  assert.throws(() => assertCanAccessTask(actor, { workspaceId: 4 }), AuthorizationError);
+  assert.doesNotThrow(() => assertCanAccessProject(actor, { projectId: 10 }));
+  assert.doesNotThrow(() => assertCanAccessTask(actor, { projectId: 10 }));
+  assert.throws(() => assertCanAccessProject(actor, { projectId: 11 }), AuthorizationError);
+  assert.throws(() => assertCanAccessTask(actor, { projectId: 11 }), AuthorizationError);
 });
 
 test("workspace ownership helper rejects records without a workspace", () => {

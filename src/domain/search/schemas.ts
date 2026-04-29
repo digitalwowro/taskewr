@@ -20,6 +20,8 @@ export type TaskSearchResult = {
   title: string;
   projectId: number;
   projectName: string;
+  workspaceId: number | null;
+  workspaceName: string;
   status: string;
   priority: string;
   dueDate: Date | null;

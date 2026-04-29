@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { SearchRepository } from "@/data/prisma/repositories/search-repository";
 import type { PrismaClient } from "@/generated/prisma/client";
+import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
 import type { TaskSearchInput } from "@/domain/search/schemas";
 
 function createRepository(findManyImpl: (args: unknown) => Promise<unknown>) {
@@ -13,14 +14,15 @@ function createRepository(findManyImpl: (args: unknown) => Promise<unknown>) {
   } as unknown as PrismaClient);
 }
 
-const baseInput: TaskSearchInput = {
+const baseInput: TaskSearchInput & { projectIds: number[] } = {
   query: "rollout",
   sort: "priority",
   direction: "desc",
-  status: ["todo", "in_progress"],
-  priority: [],
+  status: ["todo", "in_progress"] as TaskStatus[],
+  priority: [] as TaskPriority[],
   includeArchivedProjects: false,
   limit: 50,
+  projectIds: [1, 4],
 };
 
 test("SearchRepository excludes archived projects by default and applies filters", async () => {
@@ -39,6 +41,10 @@ test("SearchRepository excludes archived projects by default and applies filters
         project: {
           id: 4,
           name: "Service Management",
+          workspaceId: 1,
+          workspace: {
+            name: "Work",
+          },
         },
       },
     ];
@@ -52,6 +58,8 @@ test("SearchRepository excludes archived projects by default and applies filters
       title: "Review delayed migration notes for customer rollout",
       projectId: 4,
       projectName: "Service Management",
+      workspaceId: 1,
+      workspaceName: "Work",
       status: "in_progress",
       priority: "urgent",
       dueDate: new Date("2026-03-30T00:00:00.000Z"),
@@ -60,6 +68,9 @@ test("SearchRepository excludes archived projects by default and applies filters
 
   assert.deepEqual(capturedArgs, {
     where: {
+      projectId: {
+        in: [1, 4],
+      },
       project: {
         archivedAt: null,
       },
@@ -80,6 +91,12 @@ test("SearchRepository excludes archived projects by default and applies filters
         select: {
           id: true,
           name: true,
+          workspaceId: true,
+          workspace: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },
@@ -94,7 +111,7 @@ test("SearchRepository sorts priority results in descending rank order", async (
       status: "todo",
       priority: "low",
       dueDate: null,
-      project: { id: 1, name: "Channel Sales" },
+      project: { id: 1, name: "Channel Sales", workspaceId: 1, workspace: { name: "Work" } },
     },
     {
       id: 145,
@@ -102,7 +119,7 @@ test("SearchRepository sorts priority results in descending rank order", async (
       status: "in_progress",
       priority: "urgent",
       dueDate: null,
-      project: { id: 4, name: "Service Management" },
+      project: { id: 4, name: "Service Management", workspaceId: 1, workspace: { name: "Work" } },
     },
     {
       id: 214,
@@ -110,7 +127,7 @@ test("SearchRepository sorts priority results in descending rank order", async (
       status: "todo",
       priority: "high",
       dueDate: null,
-      project: { id: 1, name: "Channel Sales" },
+      project: { id: 1, name: "Channel Sales", workspaceId: 1, workspace: { name: "Work" } },
     },
   ]);
 
@@ -134,7 +151,7 @@ test("SearchRepository keeps completed priority results at the bottom", async ()
       status: "done",
       priority: "urgent",
       dueDate: null,
-      project: { id: 1, name: "Channel Sales" },
+      project: { id: 1, name: "Channel Sales", workspaceId: 1, workspace: { name: "Work" } },
     },
     {
       id: 145,
@@ -142,7 +159,7 @@ test("SearchRepository keeps completed priority results at the bottom", async ()
       status: "todo",
       priority: "low",
       dueDate: null,
-      project: { id: 4, name: "Service Management" },
+      project: { id: 4, name: "Service Management", workspaceId: 1, workspace: { name: "Work" } },
     },
     {
       id: 214,
@@ -150,7 +167,7 @@ test("SearchRepository keeps completed priority results at the bottom", async ()
       status: "in_progress",
       priority: "medium",
       dueDate: null,
-      project: { id: 1, name: "Channel Sales" },
+      project: { id: 1, name: "Channel Sales", workspaceId: 1, workspace: { name: "Work" } },
     },
   ]);
 
@@ -190,6 +207,9 @@ test("SearchRepository respects explicit non-priority sorts and archived inclusi
 
   assert.deepEqual(capturedArgs, {
     where: {
+      projectId: {
+        in: [1, 4],
+      },
       priority: {
         in: ["urgent", "high"],
       },
@@ -203,6 +223,12 @@ test("SearchRepository respects explicit non-priority sorts and archived inclusi
         select: {
           id: true,
           name: true,
+          workspaceId: true,
+          workspace: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },

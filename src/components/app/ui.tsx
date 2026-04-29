@@ -84,15 +84,71 @@ function getPriorityTone(
   }
 }
 
+function InlineTooltip({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <span className="group relative inline-flex">
+      {children}
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
+        {label}
+      </span>
+    </span>
+  );
+}
+
 function RepeatBadge({ task }: { task: Pick<TaskListItem, "repeatRuleId" | "repeatCarryCount"> }) {
   if (!task.repeatRuleId) {
     return null;
   }
 
+  const carryCount = task.repeatCarryCount ?? 0;
+  const label =
+    carryCount > 0
+      ? `Carried forward ${carryCount} time${carryCount === 1 ? "" : "s"} from a previous recurrence.`
+      : "Repeats from a recurrence rule.";
+
   return (
-    <span className="inline-flex h-6 items-center rounded-full border border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--accent-strong)]">
-      {(task.repeatCarryCount ?? 0) > 0 ? "Carried" : "Repeats"}
-    </span>
+    <InlineTooltip label={label}>
+      <span className="inline-flex h-6 min-w-6 items-center justify-center gap-1 rounded-full border border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] px-1.5 text-[10px] font-semibold text-[var(--accent-strong)]">
+        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
+          <path d="M12.5 5.25A5 5 0 0 0 3.7 4.1L2.5 5.25" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2.5 2.6v2.65h2.65" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M3.5 10.75a5 5 0 0 0 8.8 1.15l1.2-1.15" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M13.5 13.4v-2.65h-2.65" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {carryCount > 0 ? <span>{carryCount}</span> : null}
+      </span>
+    </InlineTooltip>
+  );
+}
+
+function getOverdueDaysFromLabel(due: string) {
+  const match = due.match(/^(\d+) days? overdue$/);
+  return match ? match[1] : null;
+}
+
+function DueDisplay({ due }: { due: string }) {
+  const overdueDays = getOverdueDaysFromLabel(due);
+
+  if (!overdueDays) {
+    return <>{due}</>;
+  }
+
+  return (
+    <InlineTooltip label={due}>
+      <span className="inline-flex items-center justify-end gap-1 text-[var(--accent-red)]">
+        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
+          <circle cx="8" cy="8" r="5.5" />
+          <path d="M8 4.75V8l2.2 1.45" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span>{overdueDays}</span>
+      </span>
+    </InlineTooltip>
   );
 }
 
@@ -340,7 +396,7 @@ export function FocusItem({
       <td
         className={`${taskTableCellClass} w-px text-right text-xs whitespace-nowrap text-[var(--ink-subtle)]`}
       >
-        {due}
+        <DueDisplay due={due} />
       </td>
     </tr>
   );
@@ -420,13 +476,14 @@ export function HorizontalListRow({
       <td
         className={`${taskTableCellClass} w-px text-right text-xs whitespace-nowrap text-[var(--ink-subtle)]`}
       >
-        {due}
+        <DueDisplay due={due} />
       </td>
     </tr>
   );
 }
 
 export function ProjectSection({
+  id,
   name,
   items,
   onEdit,
@@ -434,6 +491,7 @@ export function ProjectSection({
   completingTaskId,
   onOpenProject,
 }: {
+  id: string;
   name: string;
   items: {
     project: string;
@@ -449,7 +507,7 @@ export function ProjectSection({
   onEdit: (taskId: string) => void;
   onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
   completingTaskId?: string | null;
-  onOpenProject: (projectName: string) => void;
+  onOpenProject: (projectId: string) => void;
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white">
@@ -462,7 +520,7 @@ export function ProjectSection({
         </div>
         <button
           type="button"
-          onClick={() => onOpenProject(name)}
+          onClick={() => onOpenProject(id)}
           className="text-sm font-medium text-[var(--ink-subtle)] transition hover:text-[var(--ink-strong)]"
         >
           Open project
@@ -512,7 +570,7 @@ export function ProjectSection({
                     <td
                       className={`${taskTableCellClass} w-px pr-5 text-right text-xs whitespace-nowrap text-[var(--ink-subtle)]`}
                     >
-                      {item.due}
+                      <DueDisplay due={item.due} />
                     </td>
                   </tr>
                 );
@@ -752,7 +810,9 @@ export function ProjectBoardLane({
                     {item.id}
                   </span>
                 </div>
-                <span className="text-[11px] text-[var(--ink-subtle)]">{item.due}</span>
+                <span className="text-[11px] text-[var(--ink-subtle)]">
+                  <DueDisplay due={item.due} />
+                </span>
               </div>
               <button
                 type="button"

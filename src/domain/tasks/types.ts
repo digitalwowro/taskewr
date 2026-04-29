@@ -18,6 +18,8 @@ export type TaskFilters = {
 export type TaskListItem = {
   id: string;
   projectId?: string;
+  workspaceId?: string | null;
+  workspaceName?: string;
   title: string;
   project: string;
   status: string;

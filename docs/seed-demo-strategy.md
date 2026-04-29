@@ -7,8 +7,9 @@
 
 ## Seed Layers
 - **Runtime demo seed**: populated by [prisma/seed.ts](../prisma/seed.ts)
-  - one workspace
+  - Work and Personal workspaces
   - one owner user
+  - explicit project memberships for every seeded project
   - realistic active and archived projects
   - realistic tasks across statuses and priorities
   - labels, parent tasks, overdue tasks, and board ordering examples
@@ -23,6 +24,8 @@
   - overdue tasks
   - active tasks
   - archived projects
+  - projects split across more than one workspace
+  - project membership rows that match seeded project owners
   - parent/subtask relationships
   - labels that exercise auto-create and existing-label behavior
 

@@ -7,7 +7,7 @@ test("SearchService applies default task search filters", async () => {
   let capturedInput: unknown = null;
 
   const service = new SearchService({
-    searchTasks(input) {
+    searchTasks(input: unknown) {
       capturedInput = input;
       return Promise.resolve([]);
     },
@@ -16,6 +16,7 @@ test("SearchService applies default task search filters", async () => {
       return Promise.resolve({
         workspaceId: 3,
         actorUserId: 7,
+        accessibleProjectIds: [1, 4],
       });
     },
   } as never);
@@ -31,7 +32,7 @@ test("SearchService applies default task search filters", async () => {
     priority: [],
     includeArchivedProjects: false,
     limit: 50,
-    workspaceId: 3,
+    projectIds: [1, 4],
   });
 });
 
@@ -39,7 +40,7 @@ test("SearchService preserves explicit all-status and priority filters", async (
   let capturedInput: unknown = null;
 
   const service = new SearchService({
-    searchTasks(input) {
+    searchTasks(input: unknown) {
       capturedInput = input;
       return Promise.resolve([]);
     },
@@ -48,6 +49,7 @@ test("SearchService preserves explicit all-status and priority filters", async (
       return Promise.resolve({
         workspaceId: 3,
         actorUserId: 7,
+        accessibleProjectIds: [1, 4],
       });
     },
   } as never);
@@ -68,6 +70,6 @@ test("SearchService preserves explicit all-status and priority filters", async (
     priority: ["urgent"],
     includeArchivedProjects: true,
     limit: 10,
-    workspaceId: 3,
+    projectIds: [1, 4],
   });
 });

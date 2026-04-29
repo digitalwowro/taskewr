@@ -110,6 +110,7 @@ export function TaskewrApp({
     activeStatusLabels,
     activePriorityLabels,
   } = useTaskFilterToolbarState(initialFilters, initialProjectView);
+  const workspaces = data.workspaces;
   const todayItems = data.todayItems;
   const overdueItems = data.overdueItems;
   const recurringOverdueItems = data.recurringOverdueItems;
@@ -191,6 +192,8 @@ export function TaskewrApp({
     for (const task of [
       ...todayItems,
       ...overdueItems,
+      ...recurringOverdueItems,
+      ...recurringTodayItems,
       ...groupedProjects.flatMap((project) => project.items),
       ...Object.values(projectTasksByProjectId).flat(),
     ]) {
@@ -198,7 +201,14 @@ export function TaskewrApp({
     }
 
     return [...dedupedTasks.values()];
-  }, [groupedProjects, overdueItems, projectTasksByProjectId, todayItems]);
+  }, [
+    groupedProjects,
+    overdueItems,
+    projectTasksByProjectId,
+    recurringOverdueItems,
+    recurringTodayItems,
+    todayItems,
+  ]);
   const parentTaskOptionsByProject = useMemo(
     () =>
       allTasks.reduce<Record<string, { id: string; title: string }[]>>((accumulator, task) => {
@@ -258,6 +268,7 @@ export function TaskewrApp({
   } = useProjectEditorState({
     activeProjects,
     archivedProjects,
+    workspaces,
     redirectToLogin,
     refreshApp: () => router.refresh(),
   });
@@ -273,10 +284,10 @@ export function TaskewrApp({
     () =>
       allProjects.find((project) =>
         initialSection === "task_detail"
-          ? project.name === selectedTask?.project
+          ? project.id === selectedTask?.projectId
           : project.id === initialProjectId,
       ) ?? activeProjects[0],
-    [activeProjects, allProjects, initialProjectId, initialSection, selectedTask?.project],
+    [activeProjects, allProjects, initialProjectId, initialSection, selectedTask?.projectId],
   );
   const defaultTaskProjectId =
     initialSection === "project_detail" || initialSection === "task_detail"
@@ -477,6 +488,7 @@ export function TaskewrApp({
 
                     <DashboardContent
                       visibleTaskCount={visibleTaskCount}
+                      workspaces={workspaces}
                       filteredRecurringOverdueItems={filteredRecurringOverdueItems}
                       filteredRecurringTodayItems={filteredRecurringTodayItems}
                       filteredOverdueItems={filteredOverdueItems}
@@ -486,13 +498,7 @@ export function TaskewrApp({
                       onCompleteTask={completeTask}
                       completingTaskId={completingTaskId}
                       onOpenProjects={() => router.push("/projects")}
-                      onOpenProjectByName={(projectName) => {
-                        const project = activeProjects.find((item) => item.name === projectName);
-
-                        if (project) {
-                          router.push(`/projects/${project.id}`);
-                        }
-                      }}
+                      onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
                     />
                   </div>
                 </div>
@@ -605,6 +611,7 @@ export function TaskewrApp({
       <ProjectEditorModal
         key={editingProject?.id ?? "project-editor-empty"}
         project={editingProject}
+        workspaces={workspaces}
         onClose={() => setEditingProjectId(null)}
         onSave={handleProjectSave}
         onToggleArchive={handleProjectArchiveToggle}

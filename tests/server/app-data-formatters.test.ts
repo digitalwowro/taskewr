@@ -30,7 +30,11 @@ function buildTask(overrides: Record<string, unknown> = {}) {
     createdAt: new Date("2026-03-30T10:00:00.000Z"),
     updatedAt: new Date("2026-03-31T10:00:00.000Z"),
     project: {
+      workspaceId: 1,
       name: "Service Management",
+      workspace: {
+        name: "Work",
+      },
     },
     repeatRule: {
       isActive: true,
@@ -56,6 +60,8 @@ test("toTaskListItem maps task records into app task rows", () => {
   assert.deepEqual(toTaskListItem(buildTask() as never, "UTC"), {
     id: "TSK-12",
     projectId: "4",
+    workspaceId: "1",
+    workspaceName: "Work",
     title: "Review rollout",
     project: "Service Management",
     status: "In Progress",
@@ -117,12 +123,18 @@ test("project card helpers preserve display labels", () => {
       id: 1,
       name: "Active",
       description: null,
+      workspaceId: 1,
+      workspace: {
+        name: "Work",
+      },
       archivedAt: null,
       updatedAt: referenceDate,
       _count: { tasks: 3 },
     }, referenceDate),
     {
       id: "1",
+      workspaceId: "1",
+      workspaceName: "Work",
       name: "Active",
       description: "",
       taskCount: 3,
@@ -135,12 +147,18 @@ test("project card helpers preserve display labels", () => {
       id: 2,
       name: "Archived",
       description: "Done",
+      workspaceId: 2,
+      workspace: {
+        name: "Personal",
+      },
       archivedAt: new Date("2026-04-01T00:00:00.000Z"),
       updatedAt: referenceDate,
       _count: { tasks: 1 },
     }, referenceDate),
     {
       id: "2",
+      workspaceId: "2",
+      workspaceName: "Personal",
       name: "Archived",
       description: "Done",
       taskCount: 1,

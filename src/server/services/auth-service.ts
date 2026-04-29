@@ -14,7 +14,43 @@ import { clearCsrfCookie, setCsrfCookie } from "@/lib/csrf";
 import type { AuthenticatedActor, SessionPayload } from "@/types/auth";
 import { db } from "@/lib/db";
 
-type AuthDatabase = Pick<typeof db, "user">;
+type AuthDatabase = {
+  user: {
+    findUnique(args: unknown): Promise<unknown>;
+    update?(args: unknown): Promise<unknown>;
+  };
+};
+
+type LoginUserRecord = {
+  id: number;
+  passwordHash: string | null;
+  timezone: string | null;
+  memberships: {
+    workspaceId: number;
+    role: string;
+  }[];
+};
+
+type ActorUserRecord = {
+  timezone: string | null;
+  memberships: {
+    workspaceId: number;
+    role: string;
+    workspace: {
+      name: string;
+      slug: string;
+    };
+  }[];
+};
+
+type ProfileUserRecord = {
+  id: number;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  timezone: string | null;
+  passwordHash?: string | null;
+};
 
 export class AuthService {
   constructor(private readonly database: AuthDatabase = db) {}
@@ -22,7 +58,7 @@ export class AuthService {
   async loginWithPassword(input: LoginInput): Promise<SessionPayload> {
     const payload = loginSchema.parse(input);
 
-    const user = await this.database.user.findUnique({
+    const user = (await this.database.user.findUnique({
       where: { email: payload.email },
       include: {
         memberships: {
@@ -30,10 +66,9 @@ export class AuthService {
           include: {
             workspace: true,
           },
-          take: 2,
         },
       },
-    });
+    })) as LoginUserRecord | null;
 
     if (!user || !verifyPassword(payload.password, user.passwordHash)) {
       throw new AuthenticationError("Invalid email or password.", "auth_invalid_credentials");
@@ -43,13 +78,6 @@ export class AuthService {
 
     if (!membership) {
       throw new NotFoundError("Workspace membership not found.", "workspace_membership_not_found");
-    }
-
-    if (user.memberships.length > 1) {
-      throw new ValidationError(
-        "Multiple workspaces are not supported for this account yet.",
-        "multiple_workspaces_not_supported",
-      );
     }
 
     return {
@@ -95,23 +123,26 @@ export class AuthService {
       return null;
     }
 
-    const user = await this.database.user.findUnique({
+    const user = (await this.database.user.findUnique({
       where: { id: session.userId },
       select: {
         timezone: true,
         memberships: {
-          where: {
-            workspaceId: session.workspaceId,
-          },
           select: {
             workspaceId: true,
             role: true,
+            workspace: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
           },
-          take: 1,
+          orderBy: { id: "asc" },
         },
       },
-    });
-    const membership = user?.memberships[0];
+    })) as ActorUserRecord | null;
+    const membership = user?.memberships.find((item) => item.workspaceId === session.workspaceId);
 
     if (!user || !membership) {
       return null;
@@ -121,6 +152,13 @@ export class AuthService {
       userId: session.userId,
       workspaceId: membership.workspaceId,
       workspaceRole: membership.role,
+      workspaceMemberships: user.memberships.map((item) => ({
+        workspaceId: item.workspaceId,
+        workspaceName: item.workspace.name,
+        workspaceSlug: item.workspace.slug,
+        role: item.role,
+      })),
+      accessibleWorkspaceIds: user.memberships.map((item) => item.workspaceId),
       timezone: user.timezone,
     };
   }
@@ -132,7 +170,7 @@ export class AuthService {
       return null;
     }
 
-    const user = await this.database.user.findUnique({
+    const user = (await this.database.user.findUnique({
       where: { id: actor.userId },
       select: {
         id: true,
@@ -141,7 +179,7 @@ export class AuthService {
         avatarUrl: true,
         timezone: true,
       },
-    });
+    })) as ProfileUserRecord | null;
 
     if (!user) {
       return null;
@@ -163,24 +201,24 @@ export class AuthService {
 
     const payload = profileUpdateSchema.parse(input);
 
-    const user = await this.database.user.findUnique({
+    const user = (await this.database.user.findUnique({
       where: { id: actor.userId },
       select: {
         id: true,
         email: true,
         passwordHash: true,
       },
-    });
+    })) as ProfileUserRecord | null;
 
     if (!user) {
       throw new NotFoundError("User not found.", "user_not_found");
     }
 
     if (payload.email !== user.email) {
-      const existingUser = await this.database.user.findUnique({
+      const existingUser = (await this.database.user.findUnique({
         where: { email: payload.email },
         select: { id: true },
-      });
+      })) as { id: number } | null;
 
       if (existingUser && existingUser.id !== user.id) {
         throw new ValidationError("Email address is already in use.", "user_email_taken");
@@ -201,7 +239,7 @@ export class AuthService {
           })()
         : {};
 
-    const updatedUser = await this.database.user.update({
+    const updatedUser = (await this.database.user.update?.({
       where: { id: actor.userId },
       data: {
         name: payload.name,
@@ -216,7 +254,11 @@ export class AuthService {
         avatarUrl: true,
         timezone: true,
       },
-    });
+    })) as ProfileUserRecord | undefined;
+
+    if (!updatedUser) {
+      throw new NotFoundError("User not found.", "user_not_found");
+    }
 
     return {
       ...updatedUser,

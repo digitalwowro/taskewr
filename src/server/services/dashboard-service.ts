@@ -16,13 +16,19 @@ export class DashboardService {
   async getProjectGroups(filters?: Partial<TaskFilters>) {
     const normalized = normalizeTaskFilters(filters);
     const context = await this.contextService.getAppContext();
-    const projects = await this.projectsRepository.listProjects(context.workspaceId, false);
+    const projects = await this.projectsRepository.listProjectsByIds(
+      context.accessibleProjectIds,
+      false,
+    );
 
     const groups = await Promise.all(
       projects.map(async (project) => {
         const tasks = await this.tasksRepository.listProjectTasks(project.id);
         const mapped: TaskListItem[] = tasks.map((task) => ({
           id: `TSK-${task.id}`,
+          projectId: String(task.projectId),
+          workspaceId: task.project.workspaceId ? String(task.project.workspaceId) : null,
+          workspaceName: task.project.workspace?.name ?? "No workspace",
           title: task.title,
           project: project.name,
           status: task.status,
@@ -41,6 +47,8 @@ export class DashboardService {
         return {
           id: project.id,
           name: project.name,
+          workspaceId: project.workspaceId ? String(project.workspaceId) : null,
+          workspaceName: project.workspace?.name ?? "No workspace",
           count: filtered.length,
           items: filtered,
         };

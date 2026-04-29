@@ -13,23 +13,24 @@ datasource db {
 }
 
 model User {
-  id            Int               @id @default(autoincrement())
-  name          String
-  email         String            @unique
-  avatarUrl     String?           @map("avatar_url")
-  passwordHash  String?           @map("password_hash")
-  timezone      String?           @db.VarChar(100)
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
-  workspaces    Workspace[]       @relation("WorkspaceOwners")
-  memberships   WorkspaceMember[]
-  authAccounts  AuthAccount[]
-  assignedTasks Task[]            @relation("AssignedTasks")
-  projects      Project[]         @relation("OwnedProjects")
-  labels        Label[]           @relation("OwnedLabels")
-  createdTasks  Task[]            @relation("CreatedTasks")
-  updatedTasks  Task[]            @relation("UpdatedTasks")
-  auditLogs     AuditLog[]        @relation("AuditActors")
+  id                 Int               @id @default(autoincrement())
+  name               String
+  email              String            @unique
+  avatarUrl          String?           @map("avatar_url")
+  passwordHash       String?           @map("password_hash")
+  timezone           String?           @db.VarChar(100)
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  workspaces         Workspace[]       @relation("WorkspaceOwners")
+  memberships        WorkspaceMember[]
+  authAccounts       AuthAccount[]
+  assignedTasks      Task[]            @relation("AssignedTasks")
+  projects           Project[]         @relation("OwnedProjects")
+  projectMemberships ProjectMember[]
+  labels             Label[]           @relation("OwnedLabels")
+  createdTasks       Task[]            @relation("CreatedTasks")
+  updatedTasks       Task[]            @relation("UpdatedTasks")
+  auditLogs          AuditLog[]        @relation("AuditActors")
 
   @@map("users")
 }
@@ -67,6 +68,22 @@ model WorkspaceMember {
   @@map("workspace_members")
 }
 
+model ProjectMember {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  userId    Int      @map("user_id")
+  role      String   @db.VarChar(40)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+  @@index([projectId])
+  @@map("project_members")
+}
+
 model AuthAccount {
   id                Int      @id @default(autoincrement())
   userId            Int      @map("user_id")
@@ -94,6 +111,7 @@ model Project {
   updatedAt   DateTime         @updatedAt @map("updated_at")
   workspace   Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   owner       User?            @relation("OwnedProjects", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  members     ProjectMember[]
   tasks       Task[]
   cycles      Cycle[]
   repeatRules TaskRepeatRule[]
@@ -139,13 +157,13 @@ model Task {
   sourceRepeatRule   TaskRepeatRule? @relation("RepeatRuleSourceTask")
   taskLabels         TaskLabel[]
 
+  @@unique([repeatRuleId, repeatScheduledFor])
   @@index([projectId])
   @@index([assigneeUserId])
   @@index([cycleId])
   @@index([parentTaskId])
   @@index([repeatRuleId])
   @@index([repeatScheduledFor])
-  @@unique([repeatRuleId, repeatScheduledFor])
   @@index([status])
   @@index([priority])
   @@index([startDate])

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { AppProject } from "@/app/app-data";
+import type { AppProject, AppWorkspace } from "@/app/app-data";
 import { isUnauthorizedError, requestJson } from "@/lib/api-client";
 
 export const NEW_PROJECT_ID = "NEW_PROJECT";
@@ -9,11 +9,13 @@ export const NEW_PROJECT_ID = "NEW_PROJECT";
 export function useProjectEditorState({
   activeProjects,
   archivedProjects,
+  workspaces,
   redirectToLogin,
   refreshApp,
 }: {
   activeProjects: AppProject[];
   archivedProjects: AppProject[];
+  workspaces: AppWorkspace[];
   redirectToLogin: () => void;
   refreshApp: () => void;
 }) {
@@ -31,13 +33,15 @@ export function useProjectEditorState({
       editingProjectId === NEW_PROJECT_ID
         ? {
             id: NEW_PROJECT_ID,
+            workspaceId: workspaces[0]?.id ?? null,
+            workspaceName: workspaces[0]?.name ?? "Workspace",
             name: "",
             description: "",
             taskCount: 0,
             updatedLabel: "Will appear in active projects",
           }
         : allProjects.find((project) => project.id === editingProjectId) ?? null,
-    [allProjects, editingProjectId],
+    [allProjects, editingProjectId, workspaces],
   );
 
   const openNewProject = () => {
@@ -45,7 +49,7 @@ export function useProjectEditorState({
     setEditingProjectId(NEW_PROJECT_ID);
   };
 
-  const handleProjectSave = async (input: { name: string; description: string }) => {
+  const handleProjectSave = async (input: { workspaceId: number; name: string; description: string }) => {
     if (!editingProject) {
       return;
     }

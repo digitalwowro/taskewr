@@ -15,7 +15,7 @@ export class SearchService {
 
     return this.repository.searchTasks({
       ...normalized,
-      workspaceId: context.workspaceId,
+      projectIds: context.accessibleProjectIds,
     });
   }
 }

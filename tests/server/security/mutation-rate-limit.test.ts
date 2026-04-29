@@ -43,9 +43,11 @@ test("assertMutationRateLimit keys authenticated requests by user and workspace"
   });
   const authService = {
     getSession: async () => ({
-      userId: "user-1",
-      workspaceId: "workspace-1",
-      email: "account@taskewr.com",
+      userId: 1,
+      workspaceId: 1,
+      workspaceRole: "owner",
+      timezone: "UTC",
+      issuedAt: 1_000,
     }),
   };
   const request = new Request("http://taskewr.test/api/v1/tasks");

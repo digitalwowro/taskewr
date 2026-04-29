@@ -6,7 +6,11 @@ import { formatDashboardDueLabel } from "@/lib/time/dashboard-dates";
 
 export type AppTaskRecord = Prisma.TaskGetPayload<{
   include: {
-    project: true;
+    project: {
+      include: {
+        workspace: true;
+      };
+    };
     parentTask: true;
     repeatRule: true;
     taskLabels: {
@@ -21,6 +25,10 @@ export type AppProjectRecord = {
   id: number;
   name: string;
   description: string | null;
+  workspaceId: number | null;
+  workspace: {
+    name: string;
+  } | null;
   archivedAt: Date | null;
   updatedAt: Date;
   _count: {
@@ -78,6 +86,8 @@ export function toTaskListItem(task: AppTaskRecord, timezone: string | null): Ta
   return {
     id: `TSK-${task.id}`,
     projectId: String(task.projectId),
+    workspaceId: task.project.workspaceId ? String(task.project.workspaceId) : null,
+    workspaceName: task.project.workspace?.name ?? "No workspace",
     title: task.title,
     project: task.project.name,
     status: statusLabel,
@@ -143,6 +153,8 @@ export function toTaskDetails(
 export function toActiveProjectCard(project: AppProjectRecord, referenceDate = new Date()): AppProject {
   return {
     id: String(project.id),
+    workspaceId: project.workspaceId ? String(project.workspaceId) : null,
+    workspaceName: project.workspace?.name ?? "No workspace",
     name: project.name,
     description: project.description ?? "",
     taskCount: project._count.tasks,
@@ -153,6 +165,8 @@ export function toActiveProjectCard(project: AppProjectRecord, referenceDate = n
 export function toArchivedProjectCard(project: AppProjectRecord, referenceDate = new Date()): AppProject {
   return {
     id: String(project.id),
+    workspaceId: project.workspaceId ? String(project.workspaceId) : null,
+    workspaceName: project.workspace?.name ?? "No workspace",
     name: project.name,
     description: project.description ?? "",
     taskCount: project._count.tasks,

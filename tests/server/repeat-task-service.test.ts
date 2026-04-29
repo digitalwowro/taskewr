@@ -52,9 +52,11 @@ function buildStore(rule: ReturnType<typeof buildRule>) {
     tasks,
     listDueRules: async (_workspaceId: number, throughDate: Date) =>
       rule.nextDueDate && rule.nextDueDate <= throughDate ? [rule] : [],
+    listDueRulesForProjects: async (_projectIds: number[], throughDate: Date) =>
+      rule.nextDueDate && rule.nextDueDate <= throughDate ? [rule] : [],
     updateRule: async (_id: number, data: { nextDueDate?: Date | string | null; lastSyncedAt?: Date }) => {
       if ("nextDueDate" in data) {
-        rule.nextDueDate =
+        (rule as { nextDueDate: Date | null }).nextDueDate =
           typeof data.nextDueDate === "string"
             ? new Date(`${data.nextDueDate}T00:00:00.000Z`)
             : data.nextDueDate ?? null;
@@ -120,4 +122,3 @@ test("create separate repeat rules preserve missed work", async () => {
     ["2026-04-01", "2026-04-02", "2026-04-03"],
   );
 });
-

@@ -7,12 +7,15 @@ import {
   buildAppProjectHref,
   buildTaskHref,
 } from "@/app/app-routing";
+import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
 
 const baseFilters = {
   sort: "priority" as const,
   direction: "desc" as const,
-  selectedStatuses: ["todo", "in_progress"] as const,
-  selectedPriorities: [] as const,
+  selectedStatuses: ["todo", "in_progress"] as TaskStatus[],
+  selectedPriorities: [] as TaskPriority[],
+  startDate: null,
+  endDate: null,
   projectView: "board" as const,
 };
 
@@ -55,6 +58,8 @@ test("buildPathQuery returns the bare pathname only when query state is empty", 
       direction: "desc",
       selectedStatuses: [],
       selectedPriorities: [],
+      startDate: null,
+      endDate: null,
       projectView: "list",
     }),
     "/projects/1?sort=priority&direction=desc&status=all",

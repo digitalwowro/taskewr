@@ -1,6 +1,11 @@
 import { AuthorizationError } from "@/domain/common/errors";
 import type { AuthenticatedActor } from "@/types/auth";
 
+type WorkspaceAccessActor = Pick<AuthenticatedActor, "accessibleWorkspaceIds">;
+type ProjectAccessActor = {
+  accessibleProjectIds: number[];
+};
+
 export function requireWorkspaceOwnership(workspaceId: number | null | undefined) {
   if (workspaceId === null || workspaceId === undefined) {
     throw new AuthorizationError(
@@ -12,8 +17,8 @@ export function requireWorkspaceOwnership(workspaceId: number | null | undefined
   return workspaceId;
 }
 
-export function assertCanAccessWorkspace(actor: AuthenticatedActor, workspaceId: number) {
-  if (actor.workspaceId !== workspaceId) {
+export function assertCanAccessWorkspace(actor: WorkspaceAccessActor, workspaceId: number) {
+  if (!actor.accessibleWorkspaceIds.includes(workspaceId)) {
     throw new AuthorizationError(
       "You do not have access to that workspace.",
       "workspace_access_denied",
@@ -22,15 +27,20 @@ export function assertCanAccessWorkspace(actor: AuthenticatedActor, workspaceId:
 }
 
 export function assertCanAccessProject(
-  actor: AuthenticatedActor,
-  input: { workspaceId: number },
+  actor: ProjectAccessActor,
+  input: { projectId: number },
 ) {
-  assertCanAccessWorkspace(actor, input.workspaceId);
+  if (!actor.accessibleProjectIds.includes(input.projectId)) {
+    throw new AuthorizationError(
+      "You do not have access to that project.",
+      "project_access_denied",
+    );
+  }
 }
 
 export function assertCanAccessTask(
-  actor: AuthenticatedActor,
-  input: { workspaceId: number },
+  actor: ProjectAccessActor,
+  input: { projectId: number },
 ) {
-  assertCanAccessWorkspace(actor, input.workspaceId);
+  assertCanAccessProject(actor, input);
 }

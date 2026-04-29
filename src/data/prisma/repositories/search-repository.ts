@@ -3,6 +3,10 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import type { TaskSearchInput, TaskSearchResult } from "@/domain/search/schemas";
 import { TASK_PRIORITY_RANK, type TaskPriority } from "@/domain/tasks/constants";
 
+type SearchRepositoryInput = TaskSearchInput & {
+  projectIds: number[];
+};
+
 function priorityRank(priority: string) {
   return TASK_PRIORITY_RANK[priority as TaskPriority] ?? 0;
 }
@@ -14,25 +18,21 @@ function completedRank(status: string) {
 export class SearchRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async searchTasks(input: TaskSearchInput): Promise<TaskSearchResult[]> {
+  async searchTasks(input: SearchRepositoryInput): Promise<TaskSearchResult[]> {
     const query = input.query.trim();
 
     const rows = await this.prisma.task.findMany({
       where: {
-        ...(input.workspaceId
-          ? {
+        projectId: {
+          in: input.projectIds,
+        },
+        ...(input.includeArchivedProjects
+          ? {}
+          : {
               project: {
-                workspaceId: input.workspaceId,
-                ...(input.includeArchivedProjects ? {} : { archivedAt: null }),
+                archivedAt: null,
               },
-            }
-          : input.includeArchivedProjects
-            ? {}
-            : {
-                project: {
-                  archivedAt: null,
-                },
-              }),
+            }),
         ...(query === ""
           ? {}
           : {
@@ -72,6 +72,12 @@ export class SearchRepository {
           select: {
             id: true,
             name: true,
+            workspaceId: true,
+            workspace: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
       },
@@ -82,6 +88,8 @@ export class SearchRepository {
       title: row.title,
       projectId: row.project.id,
       projectName: row.project.name,
+      workspaceId: row.project.workspaceId,
+      workspaceName: row.project.workspace?.name ?? "No workspace",
       status: row.status,
       priority: row.priority,
       dueDate: row.dueDate,

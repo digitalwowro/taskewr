@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const projectMutationSchema = z.object({
+  workspaceId: z.number().int().positive().optional(),
   name: z.string().trim().min(1).max(200),
   description: z.string().trim().max(5000).optional().default(""),
 });

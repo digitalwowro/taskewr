@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { AuthService } from "@/server/services/auth-service";
-import { ValidationError } from "@/domain/common/errors";
 import { hashPassword } from "@/lib/auth";
 import type { SessionPayload } from "@/types/auth";
 
@@ -43,6 +42,8 @@ test("loginWithPassword returns the single workspace membership", async () => {
             role: "owner",
             workspace: {
               id: 3,
+              name: "Work",
+              slug: "work",
             },
           },
         ],
@@ -60,7 +61,7 @@ test("loginWithPassword returns the single workspace membership", async () => {
   assert.equal(session.workspaceRole, "owner");
 });
 
-test("loginWithPassword rejects accounts with multiple workspace memberships", async () => {
+test("loginWithPassword uses the first workspace when multiple memberships exist", async () => {
   const authService = new AuthService({
     user: {
       findUnique: async () => ({
@@ -73,6 +74,8 @@ test("loginWithPassword rejects accounts with multiple workspace memberships", a
             role: "owner",
             workspace: {
               id: 3,
+              name: "Work",
+              slug: "work",
             },
           },
           {
@@ -80,6 +83,8 @@ test("loginWithPassword rejects accounts with multiple workspace memberships", a
             role: "owner",
             workspace: {
               id: 4,
+              name: "Personal",
+              slug: "personal",
             },
           },
         ],
@@ -87,10 +92,13 @@ test("loginWithPassword rejects accounts with multiple workspace memberships", a
     },
   });
 
-  await assert.rejects(
-    () => authService.loginWithPassword({ email: "account@taskewr.com", password: "taskewr" }),
-    (error) => error instanceof ValidationError && error.code === "multiple_workspaces_not_supported",
-  );
+  const session = await authService.loginWithPassword({
+    email: "account@taskewr.com",
+    password: "taskewr",
+  });
+
+  assert.equal(session.workspaceId, 3);
+  assert.equal(session.workspaceRole, "owner");
 });
 
 test("getAuthenticatedActor rejects stale sessions without a backing user", async () => {
@@ -132,6 +140,18 @@ test("getAuthenticatedActor returns current user and membership data", async () 
             {
               workspaceId: 3,
               role: "owner",
+              workspace: {
+                name: "Work",
+                slug: "work",
+              },
+            },
+            {
+              workspaceId: 4,
+              role: "member",
+              workspace: {
+                name: "Personal",
+                slug: "personal",
+              },
             },
           ],
         }),
@@ -144,6 +164,21 @@ test("getAuthenticatedActor returns current user and membership data", async () 
     userId: 7,
     workspaceId: 3,
     workspaceRole: "owner",
+    workspaceMemberships: [
+      {
+        workspaceId: 3,
+        workspaceName: "Work",
+        workspaceSlug: "work",
+        role: "owner",
+      },
+      {
+        workspaceId: 4,
+        workspaceName: "Personal",
+        workspaceSlug: "personal",
+        role: "member",
+      },
+    ],
+    accessibleWorkspaceIds: [3, 4],
     timezone: "UTC",
   });
 });

@@ -6,9 +6,18 @@ export type SessionPayload = {
   issuedAt: number;
 };
 
+export type AuthenticatedWorkspaceMembership = {
+  workspaceId: number;
+  workspaceName: string;
+  workspaceSlug: string;
+  role: string;
+};
+
 export type AuthenticatedActor = {
   userId: number;
   workspaceId: number;
   workspaceRole: string;
+  workspaceMemberships: AuthenticatedWorkspaceMembership[];
+  accessibleWorkspaceIds: number[];
   timezone: string | null;
 };

@@ -12,6 +12,7 @@ type RepeatRuleRecord = Awaited<ReturnType<RepeatRulesRepository["listDueRules"]
 type RepeatRulesStore = Pick<
   RepeatRulesRepository,
   | "listDueRules"
+  | "listDueRulesForProjects"
   | "updateRule"
   | "findTaskForOccurrence"
   | "findOpenTaskForRule"
@@ -70,6 +71,15 @@ export class RepeatTaskService {
   async syncDueTasks(workspaceId: number, now = new Date()) {
     const today = toDateOnly(now);
     const rules = await this.repository.listDueRules(workspaceId, fromDateOnly(today));
+
+    for (const rule of rules) {
+      await this.syncRule(rule, today);
+    }
+  }
+
+  async syncDueTasksForProjects(projectIds: number[], now = new Date()) {
+    const today = toDateOnly(now);
+    const rules = await this.repository.listDueRulesForProjects(projectIds, fromDateOnly(today));
 
     for (const rule of rules) {
       await this.syncRule(rule, today);

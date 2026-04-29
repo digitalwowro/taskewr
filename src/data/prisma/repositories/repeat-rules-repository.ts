@@ -6,13 +6,40 @@ export class RepeatRulesRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   listDueRules(workspaceId: number, throughDate: Date) {
-    return this.prisma.taskRepeatRule.findMany({
-      where: {
-        isActive: true,
+    return this.listDueRulesWhere(
+      {
         project: {
           workspaceId,
           archivedAt: null,
         },
+      },
+      throughDate,
+    );
+  }
+
+  listDueRulesForProjects(projectIds: number[], throughDate: Date) {
+    if (projectIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.listDueRulesWhere(
+      {
+        projectId: {
+          in: projectIds,
+        },
+        project: {
+          archivedAt: null,
+        },
+      },
+      throughDate,
+    );
+  }
+
+  private listDueRulesWhere(where: Prisma.TaskRepeatRuleWhereInput, throughDate: Date) {
+    return this.prisma.taskRepeatRule.findMany({
+      where: {
+        ...where,
+        isActive: true,
         OR: [
           { nextDueDate: null },
           {

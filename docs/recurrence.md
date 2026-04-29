@@ -22,7 +22,7 @@ These options are independent. Daily is simply every 1 day and does not get hidd
 
 ## Current Sync Strategy
 
-Repeat sync runs opportunistically when app data is loaded. The app calls `RepeatTaskService.syncDueTasks(workspaceId, now)` before loading dashboard, project, or task page data.
+Repeat sync runs opportunistically when app data is loaded. The app calls `RepeatTaskService.syncDueTasksForProjects(accessibleProjectIds, now)` before loading dashboard, project, or task page data, so request-time sync only touches projects the actor can access.
 
 This is enough for task creation because the user sees updated repeated tasks when the app or API is opened.
 
@@ -31,9 +31,8 @@ This is enough for task creation because the user sees updated repeated tasks wh
 Notifications will need background work because a user may not open the app before a reminder time. When notification support is added:
 
 - keep the repeat calculation inside `RepeatTaskService`
-- add a worker process that calls the same sync service
+- add a worker process that calls the same sync service with an explicit project scope
 - add notification sending after sync
 - run `app` and `worker` as separate containers from the same Docker image
 
 The worker should not introduce a parallel repeat implementation.
-

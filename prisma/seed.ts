@@ -19,8 +19,10 @@ function hashPassword(password: string) {
 async function main() {
   await prisma.taskLabel.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.taskRepeatRule.deleteMany();
   await prisma.label.deleteMany();
   await prisma.cycle.deleteMany();
+  await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.workspaceMember.deleteMany();
   await prisma.authAccount.deleteMany();
@@ -37,27 +39,42 @@ async function main() {
     },
   });
 
-  const workspace = await prisma.workspace.create({
+  const workWorkspace = await prisma.workspace.create({
     data: {
       ownerUserId: user.id,
-      name: "Taskewr",
-      slug: "taskewr",
+      name: "Work",
+      slug: "work",
     },
   });
 
-  await prisma.workspaceMember.create({
+  const personalWorkspace = await prisma.workspace.create({
     data: {
-      workspaceId: workspace.id,
-      userId: user.id,
-      role: "owner",
+      ownerUserId: user.id,
+      name: "Personal",
+      slug: "personal",
     },
+  });
+
+  await prisma.workspaceMember.createMany({
+    data: [
+      {
+        workspaceId: workWorkspace.id,
+        userId: user.id,
+        role: "owner",
+      },
+      {
+        workspaceId: personalWorkspace.id,
+        userId: user.id,
+        role: "owner",
+      },
+    ],
   });
 
   const projects = await Promise.all([
     prisma.project.create({
       data: {
         id: 1,
-        workspaceId: workspace.id,
+        workspaceId: workWorkspace.id,
         ownerUserId: user.id,
         name: "Channel Sales",
         description: "Partner-facing onboarding, quoting, and documentation work for the sales channel.",
@@ -67,7 +84,7 @@ async function main() {
     prisma.project.create({
       data: {
         id: 2,
-        workspaceId: workspace.id,
+        workspaceId: workWorkspace.id,
         ownerUserId: user.id,
         name: "Partner Portal",
         description: "Packaging, migration guidance, and partner communication assets for the portal refresh.",
@@ -77,7 +94,7 @@ async function main() {
     prisma.project.create({
       data: {
         id: 3,
-        workspaceId: workspace.id,
+        workspaceId: personalWorkspace.id,
         ownerUserId: user.id,
         name: "Internal Ops",
         description: "Internal workflow cleanup, status updates, and coordination tasks across operations.",
@@ -87,7 +104,7 @@ async function main() {
     prisma.project.create({
       data: {
         id: 4,
-        workspaceId: workspace.id,
+        workspaceId: workWorkspace.id,
         ownerUserId: user.id,
         name: "Service Management",
         description: "Customer rollout stabilization, service handoff notes, and migration coordination.",
@@ -97,7 +114,7 @@ async function main() {
     prisma.project.create({
       data: {
         id: 5,
-        workspaceId: workspace.id,
+        workspaceId: workWorkspace.id,
         ownerUserId: user.id,
         name: "Partner Training",
         description: "Archived enablement project preserved for historical reference and task lookup.",
@@ -108,7 +125,7 @@ async function main() {
     prisma.project.create({
       data: {
         id: 6,
-        workspaceId: workspace.id,
+        workspaceId: personalWorkspace.id,
         ownerUserId: user.id,
         name: "Legacy Rollout Notes",
         description: "Older rollout planning work no longer active on the current dashboard.",
@@ -120,13 +137,21 @@ async function main() {
 
   const byProject = Object.fromEntries(projects.map((project) => [project.name, project]));
 
+  await prisma.projectMember.createMany({
+    data: projects.map((project) => ({
+      projectId: project.id,
+      userId: user.id,
+      role: "owner",
+    })),
+  });
+
   const labels = await Promise.all([
-    prisma.label.create({ data: { workspaceId: workspace.id, ownerUserId: user.id, name: "migration", color: "#0f766e" } }),
-    prisma.label.create({ data: { workspaceId: workspace.id, ownerUserId: user.id, name: "rollout", color: "#b27a1a" } }),
-    prisma.label.create({ data: { workspaceId: workspace.id, ownerUserId: user.id, name: "customer", color: "#7c8b84" } }),
-    prisma.label.create({ data: { workspaceId: workspace.id, ownerUserId: user.id, name: "documentation", color: "#0f766e" } }),
-    prisma.label.create({ data: { workspaceId: workspace.id, ownerUserId: user.id, name: "onboarding", color: "#227a59" } }),
-    prisma.label.create({ data: { workspaceId: workspace.id, ownerUserId: user.id, name: "operations", color: "#7c8b84" } }),
+    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "migration", color: "#0f766e" } }),
+    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "rollout", color: "#b27a1a" } }),
+    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "customer", color: "#7c8b84" } }),
+    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "documentation", color: "#0f766e" } }),
+    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "onboarding", color: "#227a59" } }),
+    prisma.label.create({ data: { workspaceId: personalWorkspace.id, ownerUserId: user.id, name: "operations", color: "#7c8b84" } }),
   ]);
 
   const labelByName = Object.fromEntries(labels.map((label) => [label.name, label]));

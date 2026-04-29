@@ -28,19 +28,20 @@ export class AppDataService {
 
   private async loadBaseRecords() {
     const context = await this.contextService.getAppContext();
-    await this.repeatTaskService.syncDueTasks(context.workspaceId);
+    await this.repeatTaskService.syncDueTasksForProjects(context.accessibleProjectIds);
     const [projects, tasks] = await Promise.all([
-      this.projectsRepository.listProjects(context.workspaceId, true),
-      this.tasksRepository.listWorkspaceTasks(context.workspaceId),
+      this.projectsRepository.listProjectsByIds(context.accessibleProjectIds, true),
+      this.tasksRepository.listTasksForProjects(context.accessibleProjectIds),
     ]);
 
-    return { projects, tasks, timezone: context.timezone };
+    return { projects, tasks, timezone: context.timezone, workspaces: context.workspaces };
   }
 
   private buildData(
     projects: Awaited<ReturnType<AppDataService["loadBaseRecords"]>>["projects"],
     tasks: Awaited<ReturnType<AppDataService["loadBaseRecords"]>>["tasks"],
     timezone: string | null,
+    workspaces: Awaited<ReturnType<AppDataService["loadBaseRecords"]>>["workspaces"],
     filtersInput?: Partial<TaskFilters>,
   ): AppData {
     const filters = normalizeTaskFilters(filtersInput ?? DEFAULT_TASK_FILTERS);
@@ -95,6 +96,7 @@ export class AppDataService {
       filters,
     );
 
+    const projectById = new Map(projects.map((project) => [String(project.id), project]));
     const projectGroupsMap = new Map<string, TaskListItem[]>();
 
     for (const item of dashboardBuckets.projectItems) {
@@ -102,22 +104,33 @@ export class AppDataService {
         continue;
       }
 
-      const groupItems = projectGroupsMap.get(item.project) ?? [];
+      const projectId = item.projectId ?? "";
+      const groupItems = projectGroupsMap.get(projectId) ?? [];
       groupItems.push(item);
-      projectGroupsMap.set(item.project, groupItems);
+      projectGroupsMap.set(projectId, groupItems);
     }
 
-    const groupedProjects: ProjectGroup[] = [...projectGroupsMap.entries()].map(([name, items]) => {
+    const groupedProjects: ProjectGroup[] = [...projectGroupsMap.entries()].map(([projectId, items]) => {
       const filteredItems = sortTaskItems(filterTaskItems(items, filters), filters);
+      const project = projectById.get(projectId);
 
       return {
-        name,
+        id: projectId,
+        name: project?.name ?? items[0]?.project ?? "Project",
+        workspaceId: project?.workspaceId ? String(project.workspaceId) : null,
+        workspaceName: project?.workspace?.name ?? "No workspace",
         count: filteredItems.length,
         items: filteredItems,
       };
     });
 
     return {
+      workspaces: workspaces.map((workspace) => ({
+        id: String(workspace.id),
+        name: workspace.name,
+        slug: workspace.slug,
+        role: workspace.role,
+      })),
       recurringOverdueItems,
       recurringTodayItems,
       todayItems,
@@ -131,31 +144,31 @@ export class AppDataService {
   }
 
   async getData(filtersInput?: Partial<TaskFilters>): Promise<AppData> {
-    const { projects, tasks, timezone } = await this.loadBaseRecords();
-    return this.buildData(projects, tasks, timezone, filtersInput);
+    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
+    return this.buildData(projects, tasks, timezone, workspaces, filtersInput);
   }
 
   async getDashboardData(filtersInput?: Partial<TaskFilters>) {
-    const { projects, tasks, timezone } = await this.loadBaseRecords();
-    return this.buildData(projects, tasks, timezone, filtersInput);
+    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
+    return this.buildData(projects, tasks, timezone, workspaces, filtersInput);
   }
 
   async getProjectsPageData() {
-    const { projects, tasks, timezone } = await this.loadBaseRecords();
-    return this.buildData(projects, tasks, timezone, DEFAULT_TASK_FILTERS);
+    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
+    return this.buildData(projects, tasks, timezone, workspaces, DEFAULT_TASK_FILTERS);
   }
 
   async getDataForProject(projectId: string, filtersInput?: Partial<TaskFilters>) {
-    const { projects, tasks, timezone } = await this.loadBaseRecords();
+    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
     const projectExists = projects.some((project) => String(project.id) === projectId);
 
-    return projectExists ? this.buildData(projects, tasks, timezone, filtersInput) : null;
+    return projectExists ? this.buildData(projects, tasks, timezone, workspaces, filtersInput) : null;
   }
 
   async getDataForTask(taskId: string, filtersInput?: Partial<TaskFilters>) {
-    const { projects, tasks, timezone } = await this.loadBaseRecords();
+    const { projects, tasks, timezone, workspaces } = await this.loadBaseRecords();
     const taskExists = tasks.some((task) => String(task.id) === taskId);
 
-    return taskExists ? this.buildData(projects, tasks, timezone, filtersInput) : null;
+    return taskExists ? this.buildData(projects, tasks, timezone, workspaces, filtersInput) : null;
   }
 }

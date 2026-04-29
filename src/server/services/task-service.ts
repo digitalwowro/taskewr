@@ -25,7 +25,6 @@ import type { RepeatSettingsInput } from "@/domain/tasks/repeat-schemas";
 import { NotFoundError, ValidationError } from "@/domain/common/errors";
 import { AppContextService } from "@/server/services/app-context-service";
 import { db } from "@/lib/db";
-import type { AuthenticatedActor } from "@/types/auth";
 
 export class TaskService {
   constructor(
@@ -42,15 +41,7 @@ export class TaskService {
       throw new NotFoundError("Task not found.", "task_not_found");
     }
 
-    assertCanAccessTask(
-      {
-        userId: context.actorUserId ?? 0,
-        workspaceId: context.workspaceId,
-        workspaceRole: context.workspaceRole,
-        timezone: context.timezone,
-      },
-      { workspaceId: requireWorkspaceOwnership(task.project.workspaceId) },
-    );
+    assertCanAccessTask(context, { projectId: task.projectId });
 
     return task;
   }
@@ -81,15 +72,6 @@ export class TaskService {
     }
   }
 
-  private toActor(context: Awaited<ReturnType<AppContextService["getAppContext"]>>): AuthenticatedActor {
-    return {
-      userId: context.actorUserId ?? 0,
-      workspaceId: context.workspaceId,
-      workspaceRole: context.workspaceRole,
-      timezone: context.timezone,
-    };
-  }
-
   private async assertCanUseProject(projectId: number, context: Awaited<ReturnType<AppContextService["getAppContext"]>>) {
     const project = await this.repository.findProjectById(projectId);
 
@@ -97,9 +79,7 @@ export class TaskService {
       throw new NotFoundError("Project not found.", "project_not_found");
     }
 
-    assertCanAccessProject(this.toActor(context), {
-      workspaceId: requireWorkspaceOwnership(project.workspaceId),
-    });
+    assertCanAccessProject(context, { projectId: project.id });
 
     if (project.archivedAt !== null) {
       throw new ValidationError(
@@ -107,6 +87,11 @@ export class TaskService {
         "task_project_archived",
       );
     }
+
+    return {
+      id: project.id,
+      workspaceId: requireWorkspaceOwnership(project.workspaceId),
+    };
   }
 
   async planBoardMove(input: {
@@ -179,7 +164,7 @@ export class TaskService {
     const payload = taskMutationSchema.parse(input);
     const context = await this.contextService.getAppContext();
 
-    await this.assertCanUseProject(payload.projectId, context);
+    const targetProject = await this.assertCanUseProject(payload.projectId, context);
 
     await this.validateParentAssignment({
       taskId: null,
@@ -201,8 +186,14 @@ export class TaskService {
       dueDate: payload.dueDate ? new Date(payload.dueDate) : null,
     });
 
-    await this.syncLabels(createdTask.id, payload.labels, context);
-    await this.syncRepeatSettings(createdTask.id, payload, context);
+    await this.syncLabels(createdTask.id, payload.labels, {
+      workspaceId: targetProject.workspaceId,
+      actorUserId: context.actorUserId,
+    });
+    await this.syncRepeatSettings(createdTask.id, payload, {
+      workspaceId: targetProject.workspaceId,
+      actorUserId: context.actorUserId,
+    });
     return this.getTask(createdTask.id);
   }
 
@@ -211,7 +202,7 @@ export class TaskService {
     const context = await this.contextService.getAppContext();
     const currentTask = await this.getTask(id);
 
-    await this.assertCanUseProject(payload.projectId, context);
+    const targetProject = await this.assertCanUseProject(payload.projectId, context);
 
     assertTaskProjectChangeAllowed({
       currentProjectId: currentTask.projectId,
@@ -242,8 +233,14 @@ export class TaskService {
       },
     });
 
-    await this.syncLabels(id, payload.labels, context);
-    await this.syncRepeatSettings(id, payload, context, currentTask.repeatRuleId);
+    await this.syncLabels(id, payload.labels, {
+      workspaceId: targetProject.workspaceId,
+      actorUserId: context.actorUserId,
+    });
+    await this.syncRepeatSettings(id, payload, {
+      workspaceId: targetProject.workspaceId,
+      actorUserId: context.actorUserId,
+    }, currentTask.repeatRuleId);
     return this.getTask(id);
   }
 

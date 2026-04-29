@@ -8,6 +8,16 @@ const appContext = {
   workspaceId: 1,
   actorUserId: 7,
   workspaceRole: "owner",
+  workspaces: [
+    {
+      id: 1,
+      name: "Work",
+      slug: "work",
+      role: "owner",
+    },
+  ],
+  accessibleWorkspaceIds: [1],
+  accessibleProjectIds: [1],
   timezone: "UTC",
 };
 
@@ -55,60 +65,66 @@ const validTaskInput = {
   },
 };
 
-test("createTask rejects target projects outside the actor workspace", async () => {
+test("createTask rejects target projects without explicit membership", async () => {
   const service = buildTaskService({
     findProjectById: async () => ({
       id: 2,
-      workspaceId: 99,
+      workspaceId: 1,
       archivedAt: null,
     }),
   });
 
   await assert.rejects(
     () => service.createTask(validTaskInput as never),
-    (error) => error instanceof AuthorizationError && error.code === "workspace_access_denied",
+    (error) => error instanceof AuthorizationError && error.code === "project_access_denied",
   );
 });
 
-test("updateTask rejects moving a task into a project outside the actor workspace", async () => {
+test("updateTask rejects moving a task into a project without explicit membership", async () => {
   const service = buildTaskService({
     findById: async () => buildTask(),
     findProjectById: async () => ({
       id: 2,
-      workspaceId: 99,
+      workspaceId: 1,
       archivedAt: null,
     }),
   });
 
   await assert.rejects(
     () => service.updateTask(10, validTaskInput as never),
-    (error) => error instanceof AuthorizationError && error.code === "workspace_access_denied",
+    (error) => error instanceof AuthorizationError && error.code === "project_access_denied",
   );
 });
 
-test("getTask rejects tasks whose project has no workspace ownership", async () => {
+test("getTask rejects tasks without explicit project membership", async () => {
   const service = buildTaskService({
     findById: async () => buildTask({
+      projectId: 99,
       project: {
-        workspaceId: null,
+        workspaceId: 1,
       },
     }),
   });
 
   await assert.rejects(
     () => service.getTask(10),
-    (error) => error instanceof AuthorizationError && error.code === "workspace_access_denied",
+    (error) => error instanceof AuthorizationError && error.code === "project_access_denied",
   );
 });
 
 test("createTask rejects target projects without workspace ownership", async () => {
-  const service = buildTaskService({
+  const service = new TaskService({
     findProjectById: async () => ({
       id: 2,
       workspaceId: null,
       archivedAt: null,
     }),
-  });
+  } as never, {} as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never);
 
   await assert.rejects(
     () => service.createTask(validTaskInput as never),
@@ -117,13 +133,18 @@ test("createTask rejects target projects without workspace ownership", async () 
 });
 
 test("createTask rejects archived target projects", async () => {
-  const service = buildTaskService({
+  const service = new TaskService({
     findProjectById: async () => ({
       id: 2,
       workspaceId: 1,
       archivedAt: new Date("2026-04-01T00:00:00.000Z"),
     }),
-  });
+  } as never, {} as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never);
 
   await assert.rejects(
     () => service.createTask(validTaskInput as never),

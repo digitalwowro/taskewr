@@ -129,15 +129,16 @@ Prepared now for future:
 
 Taskewr is private by default.
 
-The current product supports a single workspace membership per login account. Multi-workspace accounts should not silently select a workspace; login rejects them until workspace switching is designed and implemented.
+The current product supports multiple workspace memberships per login account. Workspace membership allows a user to create projects in that workspace, but it is not the visibility boundary for existing project data.
 
-Future collaboration must be explicit:
+Project membership is the source of truth for project and task visibility:
 
-- private by default
-- explicitly shared projects/tasks later
-- no implicit workspace-wide visibility
+- a user only sees projects where they have a `ProjectMember` row
+- task reads and mutations inherit access from the task project
+- dashboard, search, repeat sync, project detail, and task detail must filter through accessible project IDs
+- workspace owners do not implicitly see every project in the workspace unless they are also project members
 
-The data model should remain ready to evolve from owner-only to workspace membership and ACLs.
+Sharing/invite UI is intentionally deferred. The data model supports future sharing, while v1 only auto-adds the project creator as project owner.
 
 ## Search Backend Readiness
 
@@ -213,7 +214,7 @@ The implementation baseline is now in place:
 - real DB-backed dashboard, projects, project detail, and task flows
 - real task/project mutation APIs
 - real login/session foundation
-- centralized app context and policy checks
+- multi-workspace app context and project-membership policy checks
 - search backend implemented and tested
 - Docker local development and production build flow verified
 

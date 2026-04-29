@@ -1,13 +1,25 @@
 import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
 
-export type ProjectGroup = {
+export type AppWorkspace = {
+  id: string;
   name: string;
+  slug: string;
+  role: string;
+};
+
+export type ProjectGroup = {
+  id: string;
+  name: string;
+  workspaceId: string | null;
+  workspaceName: string;
   count: number;
   items: TaskListItem[];
 };
 
 export type AppProject = {
   id: string;
+  workspaceId: string | null;
+  workspaceName: string;
   name: string;
   description: string;
   taskCount: number;
@@ -16,6 +28,7 @@ export type AppProject = {
 };
 
 export type AppData = {
+  workspaces: AppWorkspace[];
   recurringOverdueItems: TaskListItem[];
   recurringTodayItems: TaskListItem[];
   todayItems: TaskListItem[];

@@ -4,34 +4,39 @@ import type { Prisma } from "@/generated/prisma/client";
 export class ProjectsRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  listProjects(workspaceId: number, includeArchived = true) {
-    const include = {
-      _count: {
-        select: {
-          tasks: true,
-        },
+  private readonly projectInclude = {
+    workspace: true,
+    _count: {
+      select: {
+        tasks: true,
       },
-    } as const;
+    },
+  } as const;
+
+  listProjectsByIds(projectIds: number[], includeArchived = true) {
+    if (projectIds.length === 0) {
+      return Promise.resolve([]);
+    }
 
     if (!includeArchived) {
       return this.prisma.project.findMany({
-        where: { workspaceId, archivedAt: null },
-        orderBy: [{ sortOrder: "asc" }],
-        include,
+        where: { id: { in: projectIds }, archivedAt: null },
+        orderBy: [{ workspaceId: "asc" }, { sortOrder: "asc" }],
+        include: this.projectInclude,
       });
     }
 
     return this.prisma.$transaction(async (tx) => {
       const [active, archived] = await Promise.all([
         tx.project.findMany({
-          where: { workspaceId, archivedAt: null },
-          orderBy: [{ sortOrder: "asc" }],
-          include,
+          where: { id: { in: projectIds }, archivedAt: null },
+          orderBy: [{ workspaceId: "asc" }, { sortOrder: "asc" }],
+          include: this.projectInclude,
         }),
         tx.project.findMany({
-          where: { workspaceId, archivedAt: { not: null } },
-          orderBy: [{ sortOrder: "asc" }],
-          include,
+          where: { id: { in: projectIds }, archivedAt: { not: null } },
+          orderBy: [{ workspaceId: "asc" }, { sortOrder: "asc" }],
+          include: this.projectInclude,
         }),
       ]);
 
@@ -42,13 +47,7 @@ export class ProjectsRepository {
   findById(id: number) {
     return this.prisma.project.findUnique({
       where: { id },
-      include: {
-        _count: {
-          select: {
-            tasks: true,
-          },
-        },
-      },
+      include: this.projectInclude,
     });
   }
 
@@ -63,11 +62,17 @@ export class ProjectsRepository {
     workspaceId: number,
     sortOrder: number,
     direction: "up" | "down",
+    accessibleProjectIds: number[],
   ) {
+    if (accessibleProjectIds.length === 0) {
+      return Promise.resolve(null);
+    }
+
     return this.prisma.project.findFirst({
       where:
         direction === "up"
           ? {
+              id: { in: accessibleProjectIds },
               workspaceId,
               archivedAt: null,
               sortOrder: {
@@ -75,6 +80,7 @@ export class ProjectsRepository {
               },
             }
           : {
+              id: { in: accessibleProjectIds },
               workspaceId,
               archivedAt: null,
               sortOrder: {
@@ -84,13 +90,7 @@ export class ProjectsRepository {
       orderBy: {
         sortOrder: direction === "up" ? "desc" : "asc",
       },
-      include: {
-        _count: {
-          select: {
-            tasks: true,
-          },
-        },
-      },
+      include: this.projectInclude,
     });
   }
 
@@ -113,27 +113,27 @@ export class ProjectsRepository {
 
       return tx.project.findUnique({
         where: { id: currentProjectId },
-        include: {
-          _count: {
-            select: {
-              tasks: true,
-            },
-          },
-        },
+        include: this.projectInclude,
       });
     });
   }
 
-  create(data: Prisma.ProjectUncheckedCreateInput) {
-    return this.prisma.project.create({
-      data,
-      include: {
-        _count: {
-          select: {
-            tasks: true,
-          },
+  createWithOwnerMember(data: Prisma.ProjectUncheckedCreateInput, userId: number) {
+    return this.prisma.$transaction(async (tx) => {
+      const project = await tx.project.create({
+        data,
+        include: this.projectInclude,
+      });
+
+      await tx.projectMember.create({
+        data: {
+          projectId: project.id,
+          userId,
+          role: "owner",
         },
-      },
+      });
+
+      return project;
     });
   }
 
@@ -141,13 +141,7 @@ export class ProjectsRepository {
     return this.prisma.project.update({
       where: { id },
       data,
-      include: {
-        _count: {
-          select: {
-            tasks: true,
-          },
-        },
-      },
+      include: this.projectInclude,
     });
   }
 }

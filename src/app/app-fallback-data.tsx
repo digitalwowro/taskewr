@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { AppProject, ProjectGroup } from "@/app/app-data";
+import type { AppProject, AppWorkspace, ProjectGroup } from "@/app/app-data";
 import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
 
 export type NavItem = {
@@ -55,6 +55,21 @@ export const DEFAULT_TODAY_ITEMS: TaskListItem[] = [
   },
 ];
 
+export const DEFAULT_WORKSPACES: AppWorkspace[] = [
+  {
+    id: "1",
+    name: "Work",
+    slug: "work",
+    role: "owner",
+  },
+  {
+    id: "2",
+    name: "Personal",
+    slug: "personal",
+    role: "owner",
+  },
+];
+
 export const DEFAULT_OVERDUE_ITEMS: TaskListItem[] = [
   {
     id: "TSK-145",
@@ -88,7 +103,10 @@ export const DEFAULT_OVERDUE_ITEMS: TaskListItem[] = [
 
 export const DEFAULT_GROUPED_PROJECTS: ProjectGroup[] = [
   {
+    id: "1",
     name: "Channel Sales",
+    workspaceId: "1",
+    workspaceName: "Work",
     count: 8,
     items: [
       {
@@ -178,7 +196,10 @@ export const DEFAULT_GROUPED_PROJECTS: ProjectGroup[] = [
     ],
   },
   {
+    id: "2",
     name: "Partner Portal",
+    workspaceId: "1",
+    workspaceName: "Work",
     count: 5,
     items: [
       {
@@ -254,7 +275,10 @@ export const DEFAULT_GROUPED_PROJECTS: ProjectGroup[] = [
     ],
   },
   {
+    id: "3",
     name: "Internal Ops",
+    workspaceId: "2",
+    workspaceName: "Personal",
     count: 5,
     items: [
       {
@@ -316,7 +340,10 @@ export const DEFAULT_GROUPED_PROJECTS: ProjectGroup[] = [
     ],
   },
   {
+    id: "4",
     name: "Service Management",
+    workspaceId: "1",
+    workspaceName: "Work",
     count: 3,
     items: [
       {
@@ -368,6 +395,8 @@ export const DEFAULT_GROUPED_PROJECTS: ProjectGroup[] = [
 export const DEFAULT_ACTIVE_PROJECTS: AppProject[] = [
   {
     id: "1",
+    workspaceId: "1",
+    workspaceName: "Work",
     name: "Channel Sales",
     description: "Partner-facing onboarding, quoting, and documentation work for the sales channel.",
     taskCount: 8,
@@ -375,6 +404,8 @@ export const DEFAULT_ACTIVE_PROJECTS: AppProject[] = [
   },
   {
     id: "2",
+    workspaceId: "1",
+    workspaceName: "Work",
     name: "Partner Portal",
     description: "Packaging, migration guidance, and partner communication assets for the portal refresh.",
     taskCount: 5,
@@ -382,6 +413,8 @@ export const DEFAULT_ACTIVE_PROJECTS: AppProject[] = [
   },
   {
     id: "3",
+    workspaceId: "2",
+    workspaceName: "Personal",
     name: "Internal Ops",
     description: "Internal workflow cleanup, status updates, and coordination tasks across operations.",
     taskCount: 5,
@@ -389,6 +422,8 @@ export const DEFAULT_ACTIVE_PROJECTS: AppProject[] = [
   },
   {
     id: "4",
+    workspaceId: "1",
+    workspaceName: "Work",
     name: "Service Management",
     description: "Customer rollout stabilization, service handoff notes, and migration coordination.",
     taskCount: 3,
@@ -399,6 +434,8 @@ export const DEFAULT_ACTIVE_PROJECTS: AppProject[] = [
 export const DEFAULT_ARCHIVED_PROJECTS: AppProject[] = [
   {
     id: "5",
+    workspaceId: "1",
+    workspaceName: "Work",
     name: "Partner Training",
     description: "Archived enablement project preserved for historical reference and task lookup.",
     taskCount: 4,
@@ -407,6 +444,8 @@ export const DEFAULT_ARCHIVED_PROJECTS: AppProject[] = [
   },
   {
     id: "6",
+    workspaceId: "2",
+    workspaceName: "Personal",
     name: "Legacy Rollout Notes",
     description: "Older rollout planning work no longer active on the current dashboard.",
     taskCount: 7,
