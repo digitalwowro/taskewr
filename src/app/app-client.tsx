@@ -24,6 +24,7 @@ import {
 import { ProfileModal } from "@/components/app/profile-modal";
 import { ProjectArchiveModal } from "@/components/app/project-archive-modal";
 import { ProjectEditorModal } from "@/components/app/project-editor-modal";
+import { ProjectMembersModal } from "@/components/app/project-members-modal";
 import { TaskModalSwitcher } from "@/components/app/task-modal-switcher";
 import { TaskProjectRequiredModal } from "@/components/app/task-project-required-modal";
 import { UserDeactivateModal } from "@/components/app/user-deactivate-modal";
@@ -42,6 +43,7 @@ import { usePersistedSidebarState } from "@/hooks/use-persisted-sidebar-state";
 import { useProfileState } from "@/hooks/use-profile-state";
 import { useProjectDetailState } from "@/hooks/use-project-detail-state";
 import { useProjectEditorState } from "@/hooks/use-project-editor-state";
+import { useProjectMembersState } from "@/hooks/use-project-members-state";
 import { useProjectBoardMove } from "@/hooks/use-project-board-move";
 import { useTaskCompletion } from "@/hooks/use-task-completion";
 import { NEW_TASK_ID, useTaskEditorState } from "@/hooks/use-task-editor-state";
@@ -388,6 +390,19 @@ export function TaskewrApp({
     redirectToLogin,
     refreshApp: () => router.refresh(),
   });
+  const {
+    details: projectMembersDetails,
+    loading: projectMembersLoading,
+    mutationPending: projectMembersMutationPending,
+    mutationError: projectMembersMutationError,
+    openProjectMembers,
+    closeProjectMembers,
+    addProjectMember,
+    updateProjectMemberRole,
+    removeProjectMember,
+  } = useProjectMembersState({
+    redirectToLogin,
+  });
   const projectOptions = useMemo(
     () =>
       activeProjects.map((project) => ({
@@ -682,6 +697,7 @@ export function TaskewrApp({
                   showArchivedProjects={showArchivedProjects}
                   onToggleArchived={() => setShowArchivedProjects((current) => !current)}
                   onEditProject={setEditingProjectId}
+                  onManageProjectUsers={openProjectMembers}
                   onMoveProject={handleProjectMove}
                   onQuickArchive={openProjectArchiveConfirm}
                   onQuickUnarchive={handleProjectQuickUnarchive}
@@ -830,6 +846,21 @@ export function TaskewrApp({
         onConfirm={() => archivingProject ? handleProjectQuickArchive(archivingProject.id) : Promise.resolve()}
         isSaving={projectMutationPending}
         error={projectMutationError}
+      />
+      <ProjectMembersModal
+        key={
+          projectMembersDetails
+            ? `project-members-${projectMembersDetails.projectId}`
+            : "project-members-empty"
+        }
+        details={projectMembersDetails}
+        loading={projectMembersLoading}
+        onClose={closeProjectMembers}
+        onAddMember={addProjectMember}
+        onUpdateRole={updateProjectMemberRole}
+        onRemoveMember={removeProjectMember}
+        isSaving={projectMembersMutationPending}
+        error={projectMembersMutationError}
       />
       <UserEditorModal
         key={editingUser ? `user-editor-${editingUser.id}-${editingUser.email}` : "user-editor-empty"}

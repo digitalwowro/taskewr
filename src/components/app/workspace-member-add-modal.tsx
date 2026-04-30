@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { WORKSPACE_ROLE_OPTIONS } from "@/components/app/access-role-format";
 import { ModalHeaderKicker } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type {
@@ -9,12 +10,6 @@ import type {
   WorkspaceNewMemberInput,
   WorkspaceUserCandidate,
 } from "@/hooks/use-workspace-admin-state";
-
-const WORKSPACE_ROLES = [
-  { value: "owner", label: "Owner" },
-  { value: "admin", label: "Admin" },
-  { value: "member", label: "Member" },
-] as const;
 
 const FALLBACK_TIMEZONES = [
   "UTC",
@@ -92,10 +87,10 @@ export function WorkspaceMemberAddModal({
   }, [userCandidates, workspace]);
   const roleOptions = useMemo(() => {
     if (workspace?.actorCanManageOwners) {
-      return WORKSPACE_ROLES;
+      return WORKSPACE_ROLE_OPTIONS;
     }
 
-    return WORKSPACE_ROLES.filter((option) => option.value !== "owner");
+    return WORKSPACE_ROLE_OPTIONS.filter((option) => option.value !== "owner");
   }, [workspace?.actorCanManageOwners]);
 
   useFocusTrap(dialogRef, workspace !== null);
@@ -251,7 +246,7 @@ export function WorkspaceMemberAddModal({
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                    Role
+                    Workspace Role
                   </label>
                   <div className="relative">
                     <select
@@ -330,7 +325,7 @@ export function WorkspaceMemberAddModal({
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                      Role
+                      Workspace Role
                     </label>
                     <div className="relative">
                       <select

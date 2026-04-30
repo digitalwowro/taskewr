@@ -3,17 +3,12 @@
 import { useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 
+import { accessRoleTone, workspaceRoleLabel } from "@/components/app/access-role-format";
 import { ToolbarMenuFrame } from "@/components/app/filter-toolbar";
 import { MetricCard, StatusPill as AppStatusPill } from "@/components/app/ui";
 import type {
   WorkspaceAdminItem,
 } from "@/hooks/use-workspace-admin-state";
-
-const WORKSPACE_ROLES = [
-  { value: "owner", label: "Owner" },
-  { value: "admin", label: "Admin" },
-  { value: "member", label: "Member" },
-] as const;
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -21,22 +16,6 @@ function formatDate(value: string) {
     day: "numeric",
     year: "numeric",
   }).format(new Date(value));
-}
-
-function roleLabel(role: string) {
-  return WORKSPACE_ROLES.find((option) => option.value === role)?.label ?? role;
-}
-
-function roleTone(role: string) {
-  if (role === "owner") {
-    return "green" as const;
-  }
-
-  if (role === "admin") {
-    return "blue" as const;
-  }
-
-  return "neutral" as const;
 }
 
 function pluralize(value: number, singular: string, plural = `${singular}s`) {
@@ -65,7 +44,7 @@ function WorkspaceMetaRail({ workspace }: { workspace: WorkspaceAdminItem }) {
     <dl className="flex max-w-full flex-wrap gap-1.5">
       <WorkspaceMetaItem label="ID" value={`WKS-${workspace.id}`} />
       <WorkspaceMetaItem label="Members" value={pluralize(workspace.memberCount, "member")} />
-      <WorkspaceMetaItem label="Owner" value={workspace.ownerName ?? "Unassigned"} />
+      <WorkspaceMetaItem label="Workspace Owner" value={workspace.ownerName ?? "Unassigned"} />
       <WorkspaceMetaItem label="Projects" value={String(workspace.projectCount)} />
       <WorkspaceMetaItem label="Labels" value={String(workspace.labelCount)} />
       <WorkspaceMetaItem label="Updated" value={formatDate(workspace.updatedAt)} />
@@ -295,7 +274,7 @@ export function WorkspacesContent({
                         <IconActionButton
                           label={
                             !workspace.actorCanDelete
-                              ? "Only workspace owners can delete workspaces"
+                              ? "Only Workspace Owners can delete workspaces"
                               : workspace.canDelete
                                 ? "Delete workspace"
                                 : "Only empty workspaces can be deleted"
@@ -341,7 +320,7 @@ export function WorkspacesContent({
                           <tr className="bg-[var(--surface-subtle)]/60 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                             <th className="px-4 py-2">User</th>
                             <th className="px-4 py-2">Email</th>
-                            <th className="px-4 py-2">Role</th>
+                            <th className="px-4 py-2">Workspace Role</th>
                             <th className="px-4 py-2">Status</th>
                             <th className="px-4 py-2">Joined</th>
                             <th className="px-4 py-2 text-right">Actions</th>
@@ -358,8 +337,8 @@ export function WorkspacesContent({
                               <td className="px-4 py-3 font-medium">{member.name}</td>
                               <td className="px-4 py-3 text-[var(--ink-muted)]">{member.email}</td>
                               <td className="px-4 py-3">
-                                <AppStatusPill tone={roleTone(member.role)}>
-                                  {roleLabel(member.role)}
+                                <AppStatusPill tone={accessRoleTone(member.role)}>
+                                  {workspaceRoleLabel(member.role)}
                                 </AppStatusPill>
                               </td>
                               <td className="px-4 py-3">

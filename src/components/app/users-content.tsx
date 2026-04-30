@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { UserAdminItem } from "@/hooks/use-user-admin-state";
+import { appRoleLabel, appRoleTone } from "@/components/app/access-role-format";
 import { ToolbarMenuFrame } from "@/components/app/filter-toolbar";
 import { MetricCard, StatusPill as AppStatusPill } from "@/components/app/ui";
 
@@ -14,14 +15,10 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function roleLabel(role: string) {
-  return role === "admin" ? "Admin" : "User";
-}
-
 function UserRolePill({ role }: { role: string }) {
   return (
-    <AppStatusPill tone={role === "admin" ? "green" : "neutral"}>
-      {roleLabel(role)}
+    <AppStatusPill tone={appRoleTone(role)}>
+      {appRoleLabel(role)}
     </AppStatusPill>
   );
 }
@@ -276,7 +273,7 @@ export function UsersContent({
                 <th className="px-5 py-3">ID</th>
                 <th className="px-5 py-3">Display name</th>
                 <th className="px-5 py-3">Email</th>
-                <th className="px-5 py-3">App role</th>
+                <th className="px-5 py-3">App Role</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Timezone</th>
                 <th className="px-5 py-3">Created</th>

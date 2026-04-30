@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MANAGEABLE_PROJECT_ROLES } from "@/domain/auth/types";
 
 export const projectMutationSchema = z.object({
   workspaceId: z.number().int().positive().optional(),
@@ -13,3 +14,15 @@ export const projectMoveSchema = z.object({
 });
 
 export type ProjectMoveInput = z.infer<typeof projectMoveSchema>;
+
+export const projectMemberCreateSchema = z.object({
+  userId: z.number().int().positive(),
+  role: z.enum(MANAGEABLE_PROJECT_ROLES).optional().default("member"),
+});
+
+export const projectMemberUpdateSchema = z.object({
+  role: z.enum(MANAGEABLE_PROJECT_ROLES),
+});
+
+export type ProjectMemberCreateInput = z.input<typeof projectMemberCreateSchema>;
+export type ProjectMemberUpdateInput = z.input<typeof projectMemberUpdateSchema>;

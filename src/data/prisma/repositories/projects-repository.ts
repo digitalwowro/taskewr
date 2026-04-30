@@ -1,6 +1,12 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Prisma } from "@/generated/prisma/client";
 
+const projectMemberOrderBy: Prisma.ProjectMemberOrderByWithRelationInput[] = [
+  { role: "desc" },
+  { user: { name: "asc" } },
+  { user: { email: "asc" } },
+];
+
 export class ProjectsRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -9,6 +15,17 @@ export class ProjectsRepository {
     _count: {
       select: {
         tasks: true,
+      },
+    },
+  } as const;
+
+  private readonly projectMemberInclude = {
+    user: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        deactivatedAt: true,
       },
     },
   } as const;
@@ -48,6 +65,19 @@ export class ProjectsRepository {
     return this.prisma.project.findUnique({
       where: { id },
       include: this.projectInclude,
+    });
+  }
+
+  findByIdForMembers(id: number) {
+    return this.prisma.project.findUnique({
+      where: { id },
+      include: {
+        workspace: true,
+        members: {
+          include: this.projectMemberInclude,
+          orderBy: projectMemberOrderBy,
+        },
+      },
     });
   }
 
@@ -142,6 +172,105 @@ export class ProjectsRepository {
       where: { id },
       data,
       include: this.projectInclude,
+    });
+  }
+
+  listActiveWorkspaceMemberCandidates(input: {
+    workspaceId: number;
+    excludedUserIds: number[];
+  }) {
+    return this.prisma.user.findMany({
+      where: {
+        deactivatedAt: null,
+        memberships: {
+          some: {
+            workspaceId: input.workspaceId,
+          },
+        },
+        ...(input.excludedUserIds.length > 0
+          ? { id: { notIn: input.excludedUserIds } }
+          : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+      orderBy: [{ name: "asc" }, { email: "asc" }, { id: "asc" }],
+    });
+  }
+
+  findActiveWorkspaceMemberUser(workspaceId: number, userId: number) {
+    return this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        deactivatedAt: null,
+        memberships: {
+          some: {
+            workspaceId,
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  findProjectMember(projectId: number, userId: number) {
+    return this.prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
+      },
+      include: this.projectMemberInclude,
+    });
+  }
+
+  addProjectMember(projectId: number, userId: number, role: string) {
+    return this.prisma.projectMember.create({
+      data: {
+        projectId,
+        userId,
+        role,
+      },
+    });
+  }
+
+  updateProjectMemberRole(projectId: number, userId: number, role: string) {
+    return this.prisma.projectMember.update({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
+      },
+      data: { role },
+    });
+  }
+
+  removeProjectMember(projectId: number, userId: number) {
+    return this.prisma.projectMember.delete({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
+      },
+    });
+  }
+
+  countActiveProjectOwners(projectId: number) {
+    return this.prisma.projectMember.count({
+      where: {
+        projectId,
+        role: "owner",
+        user: {
+          deactivatedAt: null,
+        },
+      },
     });
   }
 }

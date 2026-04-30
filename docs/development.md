@@ -40,6 +40,14 @@ If you open a new terminal, run `set -a; source .env.dev; set +a` again before r
 http://localhost:3000
 ```
 
+For local network testing from another device, use the Mac's private IP address:
+
+```bash
+ipconfig getifaddr en0
+```
+
+Then open `http://<private-ip>:3000`. The dev server binds to `0.0.0.0`, and `next.config.ts` allows private-network origins for development-only access. Next.js expects hostnames only in `allowedDevOrigins`, not full URLs.
+
 6. Log in with the seeded demo account:
 
 ```text

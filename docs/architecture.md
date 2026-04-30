@@ -148,7 +148,7 @@ Workspace administration is a separate surface:
 
 Newly created users get a personal workspace and owner membership automatically. The creating app admin is not automatically added to that personal workspace.
 
-Project movement between workspaces is intentionally deferred. When it is added, moving a project should preserve `ProjectMember` rows and require all current project members to already belong to the target workspace.
+Project movement between workspaces is intentionally deferred. To move a project to another workspace, all project users must also be added to the target workspace. Moving should preserve `ProjectMember` rows and should not grant access to other target-workspace members.
 
 Sharing/invite UI is intentionally deferred. The data model supports future sharing, while v1 only auto-adds the project creator as project owner.
 

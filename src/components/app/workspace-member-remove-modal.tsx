@@ -74,7 +74,7 @@ export function WorkspaceMemberRemoveModal({
             </h2>
             <p className="text-sm leading-6 text-[var(--ink-muted)]">
               {target.member.name} will be removed from {target.workspace.name}. Project access
-              and owner safeguards will still be checked before removal.
+              and Workspace Owner safeguards will still be checked before removal.
             </p>
           </div>
         </div>

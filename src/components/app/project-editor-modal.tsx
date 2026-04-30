@@ -178,7 +178,7 @@ export function ProjectEditorModal({
             </div>
             {!isCreating ? (
               <p className="text-xs text-[var(--ink-subtle)]">
-                Project moves need a separate move action; every project member must belong to the target workspace first.
+                To move this project to another workspace, make sure all project users are also added to the target workspace.
               </p>
             ) : null}
           </div>

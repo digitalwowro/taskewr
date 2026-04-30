@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { APP_ROLE_OPTIONS } from "@/components/app/access-role-format";
 import { ModalHeaderKicker } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type { UserAdminItem } from "@/hooks/use-user-admin-state";
@@ -244,7 +245,7 @@ export function UserEditorModal({
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-                  App role
+                  App Role
                 </label>
                 <div className="relative">
                   <select
@@ -258,8 +259,11 @@ export function UserEditorModal({
                     }}
                     className="h-9 w-full appearance-none rounded-[14px] border border-[var(--line-strong)] bg-white px-3 pr-8 text-[13px] text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
                   >
-                    <option value="admin">Admin</option>
-                    <option value="user">User</option>
+                    {APP_ROLE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                   <SelectChevron />
                 </div>

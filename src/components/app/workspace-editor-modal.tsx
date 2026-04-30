@@ -73,7 +73,7 @@ export function WorkspaceEditorModal({
   const isCreating = workspace.id === NEW_WORKSPACE_ID;
   const showOwnerSelector = isCreating && canChooseOwner;
   const deleteTooltip = !workspace.actorCanDelete
-    ? "Only workspace owners can delete workspaces."
+    ? "Only Workspace Owners can delete workspaces."
     : workspace.canDelete
       ? "Delete workspace"
       : "Delete requires an empty workspace. Remove projects, cycles, labels, and repeat rules first; members must also belong to another workspace.";
@@ -85,7 +85,7 @@ export function WorkspaceEditorModal({
     }
 
     if (showOwnerSelector && !ownerUserId) {
-      setFieldError("Workspace owner is required.");
+      setFieldError("Workspace Owner is required.");
       return;
     }
 
@@ -154,7 +154,7 @@ export function WorkspaceEditorModal({
           {showOwnerSelector ? (
             <div className="space-y-2">
               <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                Owner
+                Workspace Owner
               </label>
               <div className="relative">
                 <select
@@ -169,7 +169,7 @@ export function WorkspaceEditorModal({
                   className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
                 >
                   <option value="">
-                    {ownerCandidates.length === 0 ? "No active users available" : "Select owner"}
+                    {ownerCandidates.length === 0 ? "No active users available" : "Select workspace owner"}
                   </option>
                   {ownerCandidates.map((user) => (
                     <option key={user.id} value={user.id}>

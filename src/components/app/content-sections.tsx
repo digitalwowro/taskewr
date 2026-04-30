@@ -914,6 +914,7 @@ export function ProjectsContent({
   showArchivedProjects,
   onToggleArchived,
   onEditProject,
+  onManageProjectUsers,
   onMoveProject,
   onQuickArchive,
   onQuickUnarchive,
@@ -926,6 +927,7 @@ export function ProjectsContent({
   showArchivedProjects: boolean;
   onToggleArchived: () => void;
   onEditProject: (projectId: string) => void;
+  onManageProjectUsers: (projectId: string) => void;
   onMoveProject: (projectId: string, direction: "up" | "down") => void;
   onQuickArchive: (projectId: string) => void;
   onQuickUnarchive: (projectId: string) => void;
@@ -1004,6 +1006,7 @@ export function ProjectsContent({
                   key={project.id}
                   project={project}
                   onEdit={onEditProject}
+                  onManageUsers={onManageProjectUsers}
                   onMove={onMoveProject}
                   onArchive={onQuickArchive}
                   onUnarchive={onQuickUnarchive}
@@ -1048,6 +1051,7 @@ export function ProjectsContent({
                   key={project.id}
                   project={project}
                   onEdit={onEditProject}
+                  onManageUsers={onManageProjectUsers}
                   onMove={onMoveProject}
                   onArchive={onQuickArchive}
                   onUnarchive={onQuickUnarchive}

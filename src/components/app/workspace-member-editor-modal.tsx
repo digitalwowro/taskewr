@@ -2,15 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import {
+  WORKSPACE_ROLE_OPTIONS,
+  accessRoleTone,
+  projectRoleLabel,
+  workspaceRoleLabel,
+} from "@/components/app/access-role-format";
 import { ModalHeaderKicker, StatusPill } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type { WorkspaceMemberAccessDetails } from "@/hooks/use-workspace-admin-state";
-
-const WORKSPACE_ROLES = [
-  { value: "owner", label: "Owner" },
-  { value: "admin", label: "Admin" },
-  { value: "member", label: "Member" },
-] as const;
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -18,22 +18,6 @@ function formatDate(value: string) {
     day: "numeric",
     year: "numeric",
   }).format(new Date(value));
-}
-
-function roleLabel(role: string) {
-  return WORKSPACE_ROLES.find((option) => option.value === role)?.label ?? role;
-}
-
-function roleTone(role: string) {
-  if (role === "owner") {
-    return "green" as const;
-  }
-
-  if (role === "admin") {
-    return "blue" as const;
-  }
-
-  return "neutral" as const;
 }
 
 function SelectChevron() {
@@ -107,8 +91,8 @@ export function WorkspaceMemberEditorModal({
       ? "App-wide access overview"
       : "Access overview for workspaces you manage";
   const roleOptions = member?.currentWorkspace.actorCanManageOwners
-    ? WORKSPACE_ROLES
-    : WORKSPACE_ROLES.filter((option) => option.value !== "owner");
+    ? WORKSPACE_ROLE_OPTIONS
+    : WORKSPACE_ROLE_OPTIONS.filter((option) => option.value !== "owner");
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-5 backdrop-blur-sm">
@@ -171,12 +155,12 @@ export function WorkspaceMemberEditorModal({
                       {member.currentWorkspace.name}
                     </h3>
                     <p className="mt-1 text-sm text-[var(--ink-muted)]">
-                      Change the member role from here instead of directly in the table.
+                      Change the workspace role from here instead of directly in the table.
                     </p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                      Role
+                      Workspace Role
                     </label>
                     <div className="relative">
                       <select
@@ -224,7 +208,7 @@ export function WorkspaceMemberEditorModal({
                       <thead>
                         <tr className="bg-[var(--surface-subtle)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                           <th className="px-4 py-2">Workspace</th>
-                          <th className="px-4 py-2">Role</th>
+                          <th className="px-4 py-2">Workspace Role</th>
                           <th className="px-4 py-2">Joined</th>
                         </tr>
                       </thead>
@@ -238,7 +222,9 @@ export function WorkspaceMemberEditorModal({
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <StatusPill tone={roleTone(workspace.role)}>{roleLabel(workspace.role)}</StatusPill>
+                              <StatusPill tone={accessRoleTone(workspace.role)}>
+                                {workspaceRoleLabel(workspace.role)}
+                              </StatusPill>
                             </td>
                             <td className="px-4 py-3 text-[var(--ink-muted)]">
                               {formatDate(workspace.joinedAt)}
@@ -269,7 +255,7 @@ export function WorkspaceMemberEditorModal({
                         <tr className="bg-[var(--surface-subtle)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                           <th className="px-4 py-2">Project</th>
                           <th className="px-4 py-2">Workspace</th>
-                          <th className="px-4 py-2">Role</th>
+                          <th className="px-4 py-2">Project Role</th>
                           <th className="px-4 py-2">Joined</th>
                         </tr>
                       </thead>
@@ -283,7 +269,9 @@ export function WorkspaceMemberEditorModal({
                               {project.workspaceName}
                             </td>
                             <td className="px-4 py-3">
-                              <StatusPill tone={roleTone(project.role)}>{roleLabel(project.role)}</StatusPill>
+                              <StatusPill tone={accessRoleTone(project.role)}>
+                                {projectRoleLabel(project.role)}
+                              </StatusPill>
                             </td>
                             <td className="px-4 py-3 text-[var(--ink-muted)]">
                               {formatDate(project.joinedAt)}

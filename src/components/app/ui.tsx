@@ -143,17 +143,26 @@ function IconActionButton({
   );
 }
 
-function IconTooltip({
+export function IconTooltip({
   label,
+  tooltipAlign = "center",
+  tooltipSide = "top",
   children,
 }: {
   label: string;
+  tooltipAlign?: "center" | "right";
+  tooltipSide?: "top" | "bottom";
   children: ReactNode;
 }) {
+  const verticalClass = tooltipSide === "bottom" ? "top-full mt-2" : "bottom-full mb-2";
+  const horizontalClass = tooltipAlign === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
+
   return (
     <span className="group relative inline-flex">
       {children}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
+      <span
+        className={`pointer-events-none absolute z-30 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${verticalClass} ${horizontalClass}`}
+      >
         {label}
       </span>
     </span>
@@ -205,6 +214,17 @@ function ArchiveIcon() {
       <path d="M4.25 5.75v6.1A1.4 1.4 0 0 0 5.65 13.25h4.7a1.4 1.4 0 0 0 1.4-1.4v-6.1" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M5 2.75h6l1 3H4l1-3Z" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M6.75 8.5h2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M6.25 7.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+      <path d="M2.5 13.25c.35-2.15 1.65-3.5 3.75-3.5s3.4 1.35 3.75 3.5" strokeLinecap="round" />
+      <path d="M10.8 7.05a1.8 1.8 0 1 0 0-3.35" strokeLinecap="round" />
+      <path d="M11.75 9.85c1.05.35 1.75 1.45 1.95 3.1" strokeLinecap="round" />
     </svg>
   );
 }
@@ -864,6 +884,7 @@ export function ProjectStatusBadge({ archived }: { archived?: boolean }) {
 export function ProjectRow({
   project,
   onEdit,
+  onManageUsers,
   onOpen,
   onMove,
   onArchive,
@@ -872,6 +893,7 @@ export function ProjectRow({
 }: {
   project: AppProject;
   onEdit: (projectId: string) => void;
+  onManageUsers: (projectId: string) => void;
   onOpen: (projectId: string) => void;
   onMove: (projectId: string, direction: "up" | "down") => void;
   onArchive: (projectId: string) => void;
@@ -968,6 +990,16 @@ export function ProjectRow({
             }}
           >
             <EditIcon />
+          </IconActionButton>
+          <IconActionButton
+            label="Manage project users"
+            disabled={isReordering}
+            onClick={(event) => {
+              event.stopPropagation();
+              onManageUsers(project.id);
+            }}
+          >
+            <UsersIcon />
           </IconActionButton>
           {project.isArchived ? (
             <IconActionButton
