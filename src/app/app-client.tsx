@@ -22,12 +22,20 @@ import {
   ProjectsContent,
 } from "@/components/app/content-sections";
 import { ProfileModal } from "@/components/app/profile-modal";
+import { ProjectArchiveModal } from "@/components/app/project-archive-modal";
 import { ProjectEditorModal } from "@/components/app/project-editor-modal";
 import { TaskModalSwitcher } from "@/components/app/task-modal-switcher";
+import { TaskProjectRequiredModal } from "@/components/app/task-project-required-modal";
 import { UserDeactivateModal } from "@/components/app/user-deactivate-modal";
 import { UserEditorModal } from "@/components/app/user-editor-modal";
 import { UserPasswordModal } from "@/components/app/user-password-modal";
 import { UsersContent } from "@/components/app/users-content";
+import { WorkspaceDeleteModal } from "@/components/app/workspace-delete-modal";
+import { WorkspaceEditorModal } from "@/components/app/workspace-editor-modal";
+import { WorkspaceMemberAddModal } from "@/components/app/workspace-member-add-modal";
+import { WorkspaceMemberEditorModal } from "@/components/app/workspace-member-editor-modal";
+import { WorkspaceMemberRemoveModal } from "@/components/app/workspace-member-remove-modal";
+import { WorkspacesContent } from "@/components/app/workspaces-content";
 import { useClickOutside } from "@/hooks/use-click-outside";
 import { useDashboardTaskGroups } from "@/hooks/use-dashboard-task-groups";
 import { usePersistedSidebarState } from "@/hooks/use-persisted-sidebar-state";
@@ -39,6 +47,7 @@ import { useTaskCompletion } from "@/hooks/use-task-completion";
 import { NEW_TASK_ID, useTaskEditorState } from "@/hooks/use-task-editor-state";
 import { useTaskFilterToolbarState } from "@/hooks/use-task-filter-toolbar-state";
 import { useUserAdminState } from "@/hooks/use-user-admin-state";
+import { useWorkspaceAdminState } from "@/hooks/use-workspace-admin-state";
 import { requestJson } from "@/lib/api-client";
 import type { ProjectView } from "@/domain/projects/constants";
 import {
@@ -51,7 +60,7 @@ import {
   NAV_ITEMS,
 } from "@/app/app-fallback-data";
 
-type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail" | "users";
+type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail" | "users" | "workspaces";
 
 function getTaskByNumericId(tasks: TaskListItem[], id: string) {
   return tasks.find((task) => task.id.replace("TSK-", "") === id) ?? null;
@@ -60,6 +69,10 @@ function getTaskByNumericId(tasks: TaskListItem[], id: string) {
 function getPrimaryActionLabel(section: AppSection) {
   if (section === "users") {
     return "New User";
+  }
+
+  if (section === "workspaces") {
+    return "New Workspace";
   }
 
   if (section === "projects") {
@@ -92,6 +105,8 @@ export function TaskewrApp({
   );
   const [showArchivedProjects, setShowArchivedProjects] = useState(false);
   const [draggingProjectTaskId, setDraggingProjectTaskId] = useState<string | null>(null);
+  const [newTaskProjectId, setNewTaskProjectId] = useState<string | null>(null);
+  const [taskProjectRequiredOpen, setTaskProjectRequiredOpen] = useState(false);
   const {
     projectSortMenuOpen,
     setProjectSortMenuOpen,
@@ -233,8 +248,52 @@ export function TaskewrApp({
     enabled: canManageUsers && initialSection === "users",
     redirectToLogin,
   });
+  const {
+    workspaces: managedWorkspaces,
+    userCandidates: workspaceUserCandidates,
+    workspaceCount,
+    query: workspaceQuery,
+    loading: workspacesLoading,
+    loadError: workspacesLoadError,
+    editingWorkspace,
+    deletingWorkspace,
+    addingMemberWorkspace,
+    removingMemberDetails: removingWorkspaceMemberDetails,
+    memberDetails: workspaceMemberDetails,
+    memberDetailsLoading: workspaceMemberDetailsLoading,
+    mutationPending: workspaceMutationPending,
+    mutationError: workspaceMutationError,
+    setQuery: setWorkspaceQuery,
+    openNewWorkspace,
+    openEditWorkspace,
+    closeWorkspaceEditor,
+    openDeleteWorkspace,
+    closeDeleteWorkspace,
+    openAddMember: openWorkspaceMemberAdd,
+    closeAddMember: closeWorkspaceMemberAdd,
+    openRemoveMember: openWorkspaceMemberRemove,
+    closeRemoveMember: closeWorkspaceMemberRemove,
+    openEditMember: openWorkspaceMemberEditor,
+    closeMemberEditor: closeWorkspaceMemberEditor,
+    saveWorkspace,
+    deleteWorkspace,
+    addMember: addWorkspaceMember,
+    createAndAddMember: createAndAddWorkspaceMember,
+    saveEditingMemberRole: saveWorkspaceMemberRole,
+    removeMember: removeWorkspaceMember,
+  } = useWorkspaceAdminState({
+    enabled: initialSection === "workspaces",
+    redirectToLogin,
+  });
   const navItems = useMemo(
-    () => NAV_ITEMS.filter((item) => item.id !== "users" || canManageUsers),
+    () =>
+      NAV_ITEMS.filter((item) => {
+        if (item.id === "users") {
+          return canManageUsers;
+        }
+
+        return true;
+      }),
     [canManageUsers],
   );
   const primaryActionLabel = getPrimaryActionLabel(initialSection);
@@ -309,7 +368,10 @@ export function TaskewrApp({
   const {
     allProjects,
     editingProject,
+    archivingProject,
     openNewProject,
+    openProjectArchiveConfirm,
+    closeProjectArchiveConfirm,
     setEditingProjectId,
     projectMutationPending,
     projectMutationError,
@@ -327,7 +389,12 @@ export function TaskewrApp({
     refreshApp: () => router.refresh(),
   });
   const projectOptions = useMemo(
-    () => activeProjects.map((project) => ({ id: project.id, name: project.name })),
+    () =>
+      activeProjects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        workspaceName: project.workspaceName,
+      })),
     [activeProjects],
   );
   const selectedTask = useMemo(
@@ -347,6 +414,7 @@ export function TaskewrApp({
     initialSection === "project_detail" || initialSection === "task_detail"
       ? selectedProject?.id ?? activeProjects[0]?.id ?? ""
       : activeProjects[0]?.id ?? "";
+  const effectiveDefaultTaskProjectId = newTaskProjectId ?? defaultTaskProjectId;
   const {
     setEditingTaskId,
     taskEditorTask,
@@ -357,7 +425,7 @@ export function TaskewrApp({
     activeProjects,
     allTasks,
     closeTaskRoute,
-    defaultTaskProjectId,
+    defaultTaskProjectId: effectiveDefaultTaskProjectId,
     initialSection,
     initialTaskId,
     redirectToLogin,
@@ -389,9 +457,31 @@ export function TaskewrApp({
   };
 
   const openSection = (sectionId: string) => {
-    if (sectionId === "dashboard" || sectionId === "projects" || sectionId === "users") {
+    if (
+      sectionId === "dashboard" ||
+      sectionId === "projects" ||
+      sectionId === "users" ||
+      sectionId === "workspaces"
+    ) {
       router.push(sectionId === "dashboard" ? "/" : `/${sectionId}`);
     }
+  };
+
+  const openNewTask = (projectId?: string) => {
+    const targetProjectId = projectId ?? defaultTaskProjectId;
+
+    if (!targetProjectId || activeProjects.length === 0) {
+      setTaskProjectRequiredOpen(true);
+      return;
+    }
+
+    setNewTaskProjectId(targetProjectId);
+    setEditingTaskId(NEW_TASK_ID);
+  };
+
+  const closeInlineTaskEditor = () => {
+    setEditingTaskId(null);
+    setNewTaskProjectId(null);
   };
 
   const openPrimaryCreateAction = () => {
@@ -400,12 +490,17 @@ export function TaskewrApp({
       return;
     }
 
+    if (initialSection === "workspaces") {
+      openNewWorkspace();
+      return;
+    }
+
     if (initialSection === "projects") {
       openNewProject();
       return;
     }
 
-    setEditingTaskId(NEW_TASK_ID);
+    openNewTask();
   };
 
   useEffect(() => {
@@ -454,7 +549,13 @@ export function TaskewrApp({
           onOpenSection={openSection}
           onNewTask={openPrimaryCreateAction}
           primaryActionLabel={primaryActionLabel}
-          showPrimaryAction={initialSection !== "users" || canManageUsers}
+          showPrimaryAction={
+            initialSection === "users"
+              ? canManageUsers
+              : initialSection === "workspaces"
+                ? true
+                : true
+          }
           onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
           onOpenProfile={openProfileModal}
           onLogout={() => void handleLogout()}
@@ -468,26 +569,33 @@ export function TaskewrApp({
             visibleTaskCount={visibleTaskCount}
             activeProjectCount={activeProjects.length}
             userCount={activeUserCount}
+            workspaceCount={workspaceCount}
             selectedProjectName={selectedProject?.name ?? "Project"}
             selectedProjectTaskCount={selectedProjectTasks.length}
             searchHrefBase=""
-            showPrimaryAction={initialSection !== "users" || canManageUsers}
+            showPrimaryAction={
+              initialSection === "users"
+                ? canManageUsers
+                : initialSection === "workspaces"
+                  ? true
+                  : true
+            }
             onOpenTask={openTask}
             onPrimaryAction={openPrimaryCreateAction}
           />
 
           <div
-            className={`min-w-0 min-h-0 flex-1 overflow-y-auto bg-[var(--surface-main)] px-6 ${
+            className={`min-w-0 min-h-0 flex-1 overflow-y-auto bg-[var(--surface-main)] px-5 ${
               initialSection === "project_detail"
-                ? "pb-6 pt-2.5"
+                ? "pb-5 pt-2.5"
                 : initialSection === "dashboard"
-                  ? "pb-6 pt-2.5"
-                  : "py-6"
+                  ? "pb-5 pt-2.5"
+                  : "py-5"
             }`}
           >
             <div className="mx-auto w-full max-w-[1360px]">
               {initialSection === "dashboard" ? (
-                <div className="flex w-full gap-6">
+                <div className="flex w-full gap-5">
                   <div className="min-w-0 flex-1 space-y-5">
                     <DashboardTaskToolbar
                       sortMenuRef={projectSortMenuRef}
@@ -561,6 +669,7 @@ export function TaskewrApp({
                       onCompleteTask={completeTask}
                       completingTaskId={completingTaskId}
                       onOpenProjects={() => router.push("/projects")}
+                      onNewTask={openNewTask}
                       onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
                     />
                   </div>
@@ -574,7 +683,7 @@ export function TaskewrApp({
                   onToggleArchived={() => setShowArchivedProjects((current) => !current)}
                   onEditProject={setEditingProjectId}
                   onMoveProject={handleProjectMove}
-                  onQuickArchive={handleProjectQuickArchive}
+                  onQuickArchive={openProjectArchiveConfirm}
                   onQuickUnarchive={handleProjectQuickUnarchive}
                   projectReorderPendingId={projectReorderPendingId}
                   onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
@@ -595,6 +704,21 @@ export function TaskewrApp({
                   onResetPassword={openPasswordReset}
                   onDeactivateUser={openDeactivateUser}
                   onReactivateUser={reactivateUser}
+                />
+              ) : initialSection === "workspaces" ? (
+                <WorkspacesContent
+                  workspaces={managedWorkspaces}
+                  query={workspaceQuery}
+                  loading={workspacesLoading}
+                  loadError={workspacesLoadError}
+                  mutationError={workspaceMutationError}
+                  mutationPending={workspaceMutationPending}
+                  onSearch={setWorkspaceQuery}
+                  onEditWorkspace={openEditWorkspace}
+                  onDeleteWorkspace={openDeleteWorkspace}
+                  onAddMember={openWorkspaceMemberAdd}
+                  onRemoveMember={openWorkspaceMemberRemove}
+                  onEditMember={openWorkspaceMemberEditor}
                 />
               ) : (initialSection === "project_detail" || initialSection === "task_detail") && selectedProject ? (
                 <div className="space-y-5">
@@ -681,7 +805,7 @@ export function TaskewrApp({
                   />
                 </div>
               ) : (
-                <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-6 py-10">
+                <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-5 py-10">
                   <p className="text-sm text-[var(--ink-subtle)]">Task not found.</p>
                 </section>
               )}
@@ -696,6 +820,14 @@ export function TaskewrApp({
         onClose={() => setEditingProjectId(null)}
         onSave={handleProjectSave}
         onToggleArchive={handleProjectArchiveToggle}
+        isSaving={projectMutationPending}
+        error={projectMutationError}
+      />
+      <ProjectArchiveModal
+        key={archivingProject ? `project-archive-${archivingProject.id}` : "project-archive-empty"}
+        project={archivingProject}
+        onClose={closeProjectArchiveConfirm}
+        onConfirm={() => archivingProject ? handleProjectQuickArchive(archivingProject.id) : Promise.resolve()}
         isSaving={projectMutationPending}
         error={projectMutationError}
       />
@@ -723,6 +855,63 @@ export function TaskewrApp({
         isSaving={userMutationPending}
         error={userMutationError}
       />
+      <WorkspaceEditorModal
+        key={editingWorkspace ? `workspace-editor-${editingWorkspace.id}-${editingWorkspace.name}` : "workspace-editor-empty"}
+        workspace={editingWorkspace}
+        ownerCandidates={workspaceUserCandidates}
+        canChooseOwner={canManageUsers}
+        onClose={closeWorkspaceEditor}
+        onSave={saveWorkspace}
+        onDeleteWorkspace={(workspaceId) => {
+          closeWorkspaceEditor();
+          openDeleteWorkspace(workspaceId);
+        }}
+        isSaving={workspaceMutationPending}
+        error={workspaceMutationError}
+      />
+      <WorkspaceDeleteModal
+        key={deletingWorkspace ? `workspace-delete-${deletingWorkspace.id}` : "workspace-delete-empty"}
+        workspace={deletingWorkspace}
+        onClose={closeDeleteWorkspace}
+        onConfirm={deleteWorkspace}
+        isSaving={workspaceMutationPending}
+        error={workspaceMutationError}
+      />
+      <WorkspaceMemberAddModal
+        key={addingMemberWorkspace ? `workspace-member-add-${addingMemberWorkspace.id}` : "workspace-member-add-empty"}
+        workspace={addingMemberWorkspace}
+        userCandidates={workspaceUserCandidates}
+        onClose={closeWorkspaceMemberAdd}
+        onAddMember={addWorkspaceMember}
+        onCreateAndAddMember={createAndAddWorkspaceMember}
+        isSaving={workspaceMutationPending}
+        error={workspaceMutationError}
+      />
+      <WorkspaceMemberEditorModal
+        key={
+          workspaceMemberDetails
+            ? `workspace-member-${workspaceMemberDetails.currentWorkspace.id}-${workspaceMemberDetails.userId}`
+            : "workspace-member-empty"
+        }
+        member={workspaceMemberDetails}
+        loading={workspaceMemberDetailsLoading}
+        onClose={closeWorkspaceMemberEditor}
+        onSaveRole={saveWorkspaceMemberRole}
+        isSaving={workspaceMutationPending}
+        error={workspaceMutationError}
+      />
+      <WorkspaceMemberRemoveModal
+        key={
+          removingWorkspaceMemberDetails
+            ? `workspace-member-remove-${removingWorkspaceMemberDetails.workspace.id}-${removingWorkspaceMemberDetails.member.userId}`
+            : "workspace-member-remove-empty"
+        }
+        target={removingWorkspaceMemberDetails}
+        onClose={closeWorkspaceMemberRemove}
+        onConfirm={removeWorkspaceMember}
+        isSaving={workspaceMutationPending}
+        error={workspaceMutationError}
+      />
       <TaskModalSwitcher
         initialSection={initialSection}
         selectedTask={selectedTask}
@@ -733,8 +922,16 @@ export function TaskewrApp({
         taskMutationPending={taskMutationPending}
         taskMutationError={taskMutationError}
         onCloseTaskRoute={closeTaskRoute}
-        onCloseInlineTaskEditor={() => setEditingTaskId(null)}
+        onCloseInlineTaskEditor={closeInlineTaskEditor}
         onSaveTask={handleTaskSave}
+      />
+      <TaskProjectRequiredModal
+        open={taskProjectRequiredOpen}
+        onClose={() => setTaskProjectRequiredOpen(false)}
+        onOpenProjects={() => {
+          setTaskProjectRequiredOpen(false);
+          router.push("/projects");
+        }}
       />
       <ProfileModal
         key={

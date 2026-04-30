@@ -13,7 +13,7 @@ export default async function LoginPage({
     typeof resolvedSearchParams.next === "string" ? resolvedSearchParams.next : undefined;
 
   return (
-    <main className="min-h-screen bg-[var(--surface-base)] px-6 py-10 text-[var(--ink-strong)]">
+    <main className="min-h-screen bg-[var(--surface-base)] px-5 py-10 text-[var(--ink-strong)]">
       <div className="mx-auto flex min-h-[70vh] max-w-md items-center">
         <section className="w-full rounded-[24px] border border-[var(--line-soft)] bg-white p-8 shadow-[0_24px_64px_rgba(15,23,42,0.08)]">
           <div className="space-y-1.5">

@@ -22,13 +22,15 @@ type SearchResult = {
   dueDate: string | null;
 };
 
-type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail" | "users";
+type AppSection = "dashboard" | "projects" | "project_detail" | "task_detail" | "users" | "workspaces";
 
 type NavItem = {
   id: string;
   label: string;
   icon: ReactNode;
 };
+
+const ADMIN_NAV_ITEM_IDS = new Set(["users"]);
 
 type AppSidebarProps = {
   sidebarExpanded: boolean;
@@ -66,16 +68,59 @@ export function AppSidebar({
   avatarUrl,
 }: AppSidebarProps) {
   const visibleNavItems = navItems.filter((item) => item.id !== "search");
+  const primaryNavItems = visibleNavItems.filter((item) => !ADMIN_NAV_ITEM_IDS.has(item.id));
+  const adminNavItems = visibleNavItems.filter((item) => ADMIN_NAV_ITEM_IDS.has(item.id));
   const isDashboardActive = initialSection === "dashboard";
   const isProjectsActive =
     initialSection === "projects" ||
     initialSection === "project_detail" ||
     initialSection === "task_detail";
   const isUsersActive = initialSection === "users";
+  const isWorkspacesActive = initialSection === "workspaces";
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement | null>(null);
 
   useClickOutside([avatarMenuRef], avatarMenuOpen, () => setAvatarMenuOpen(false));
+
+  const isNavItemActive = (item: NavItem) =>
+    (isDashboardActive && item.id === "dashboard") ||
+    (isProjectsActive && item.id === "projects") ||
+    (isUsersActive && item.id === "users") ||
+    (isWorkspacesActive && item.id === "workspaces");
+
+  const renderCompactNavButton = (item: NavItem) => (
+    <button
+      key={item.id}
+      type="button"
+      onClick={() => onOpenSection(item.id)}
+      title={item.label}
+      aria-current={isNavItemActive(item) ? "page" : undefined}
+      className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+        isNavItemActive(item)
+          ? "border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
+          : "border-transparent text-[var(--ink-subtle)] hover:border-[var(--line-soft)] hover:bg-white"
+      }`}
+    >
+      {item.icon}
+    </button>
+  );
+
+  const renderExpandedNavButton = (item: NavItem) => (
+    <button
+      key={item.id}
+      type="button"
+      onClick={() => onOpenSection(item.id)}
+      aria-current={isNavItemActive(item) ? "page" : undefined}
+      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+        isNavItemActive(item)
+          ? "bg-[var(--surface-subtle)] font-medium text-[var(--ink-strong)]"
+          : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+      }`}
+    >
+      <span className="flex h-4 w-4 items-center justify-center">{item.icon}</span>
+      <span>{item.label}</span>
+    </button>
+  );
 
   return (
     <aside
@@ -110,30 +155,13 @@ export function AppSidebar({
               </svg>
             </button>
             <div className="mt-1 flex flex-col items-center gap-2">
-              {visibleNavItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onOpenSection(item.id)}
-                  title={item.label}
-                  aria-current={
-                    (isDashboardActive && item.id === "dashboard") ||
-                    (isProjectsActive && item.id === "projects") ||
-                    (isUsersActive && item.id === "users")
-                      ? "page"
-                      : undefined
-                  }
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
-                    (isDashboardActive && item.id === "dashboard") ||
-                    (isProjectsActive && item.id === "projects") ||
-                    (isUsersActive && item.id === "users")
-                      ? "border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
-                      : "border-transparent text-[var(--ink-subtle)] hover:border-[var(--line-soft)] hover:bg-white"
-                  }`}
-                >
-                  {item.icon}
-                </button>
-              ))}
+              {primaryNavItems.map(renderCompactNavButton)}
+              {adminNavItems.length > 0 ? (
+                <>
+                  <div className="my-1 h-px w-8 bg-[var(--line-soft)]" />
+                  {adminNavItems.map(renderCompactNavButton)}
+                </>
+              ) : null}
             </div>
           </div>
           <div
@@ -202,30 +230,17 @@ export function AppSidebar({
                 ) : null}
 
                 <nav className="space-y-1.5 text-sm">
-                  {visibleNavItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => onOpenSection(item.id)}
-                      aria-current={
-                        (isDashboardActive && item.id === "dashboard") ||
-                        (isProjectsActive && item.id === "projects") ||
-                        (isUsersActive && item.id === "users")
-                          ? "page"
-                          : undefined
-                      }
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-                        (isDashboardActive && item.id === "dashboard") ||
-                        (isProjectsActive && item.id === "projects") ||
-                        (isUsersActive && item.id === "users")
-                          ? "bg-[var(--surface-subtle)] font-medium text-[var(--ink-strong)]"
-                          : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
-                      }`}
-                    >
-                      <span className="flex h-4 w-4 items-center justify-center">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
+                  {primaryNavItems.map(renderExpandedNavButton)}
+                  {adminNavItems.length > 0 ? (
+                    <div className="mt-3 border-t border-[var(--line-soft)] pt-3">
+                      <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--ink-subtle)]">
+                        Administration
+                      </p>
+                      <div className="space-y-1.5">
+                        {adminNavItems.map(renderExpandedNavButton)}
+                      </div>
+                    </div>
+                  ) : null}
                 </nav>
 
                 <div className="border-t border-[var(--line-soft)] pt-4">
@@ -279,6 +294,7 @@ type AppHeaderProps = {
   visibleTaskCount: number;
   activeProjectCount: number;
   userCount: number;
+  workspaceCount: number;
   selectedProjectName: string;
   selectedProjectTaskCount: number;
   searchHrefBase: string;
@@ -495,6 +511,7 @@ export function AppHeader({
   visibleTaskCount,
   activeProjectCount,
   userCount,
+  workspaceCount,
   selectedProjectName,
   selectedProjectTaskCount,
   searchHrefBase,
@@ -510,10 +527,13 @@ export function AppHeader({
         : initialSection === "project_detail" || initialSection === "task_detail"
           ? `Search in ${selectedProjectName}`
           : "Search tasks";
-  const showTaskSearch = initialSection !== "users";
+  const showTaskSearch =
+    initialSection !== "users" &&
+    initialSection !== "workspaces" &&
+    initialSection !== "projects";
 
   return (
-    <header className="border-b border-[var(--line-soft)] bg-white px-6 py-4">
+    <header className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
@@ -522,6 +542,8 @@ export function AppHeader({
                 ? "Dashboard"
                 : initialSection === "projects"
                   ? "Projects"
+                  : initialSection === "workspaces"
+                    ? "Workspaces"
                   : initialSection === "users"
                     ? "Users"
                   : initialSection === "project_detail" || initialSection === "task_detail"
@@ -533,6 +555,8 @@ export function AppHeader({
                 ? `${visibleTaskCount} active`
                 : initialSection === "projects"
                   ? `${activeProjectCount} active`
+                  : initialSection === "workspaces"
+                    ? `${workspaceCount} visible`
                   : initialSection === "users"
                     ? `${userCount} active`
                   : initialSection === "project_detail" || initialSection === "task_detail"
@@ -558,6 +582,8 @@ export function AppHeader({
             >
               {initialSection === "projects"
                 ? "New Project"
+                : initialSection === "workspaces"
+                  ? "New Workspace"
                 : initialSection === "users"
                   ? "New User"
                   : "New Task"}

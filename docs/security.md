@@ -18,15 +18,23 @@ Session cookies must remain:
 
 ## Current Access Model
 
-Current access checks are workspace-scoped. The authenticated actor's workspace role is preserved through the app context, but role-based authorization is not complete yet.
+Taskewr supports multiple workspace memberships per login account. Login no longer assumes a single workspace.
 
-Before adding team roles or external sharing:
+Project membership is the source of truth for project and task visibility:
 
-- add explicit role checks to the existing policy layer
-- use the existing policy layer consistently
-- add tests for allowed and denied access paths
+- a user only sees projects where they have a `ProjectMember` row
+- task reads and mutations inherit access from the task's project
+- dashboard, search, repeat sync, project detail, and task detail must filter through accessible project IDs
+- workspace membership does not reveal every project in that workspace
 
-Taskewr currently supports one workspace membership per login account. Login rejects accounts with multiple workspace memberships until workspace switching exists.
+Workspace membership controls workspace administration and project creation scope:
+
+- workspace `owner` and `admin` members can manage that workspace
+- plain workspace `member` users cannot manage workspace settings or access
+- global app admins can administratively manage all users and workspaces
+- app-admin workspace management does not automatically grant project/task visibility
+
+Deactivation is the v1 user-delete mechanism. Deactivated users cannot log in, while historical ownership and membership records remain intact.
 
 ## Rate Limiting
 

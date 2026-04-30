@@ -6,7 +6,12 @@ import {
   assertCanAccessProject,
   assertCanAccessTask,
   assertCanAccessWorkspace,
+  assertCanDeleteWorkspace,
+  assertCanListWorkspaceAdmin,
+  assertCanManageWorkspace,
+  assertCanManageWorkspaceOwners,
   assertCanManageUsers,
+  assertCanViewWorkspaceAdmin,
   requireWorkspaceOwnership,
 } from "@/domain/auth/policies";
 import type { AuthenticatedActor } from "@/types/auth";
@@ -60,6 +65,164 @@ test("user management policy requires app admin role", () => {
   assert.throws(
     () => assertCanManageUsers(buildActor({ appRole: "user" })),
     (error) => error instanceof AuthorizationError && error.code === "user_management_denied",
+  );
+});
+
+test("workspace management policy allows app admins and workspace owners or admins", () => {
+  assert.doesNotThrow(() => assertCanManageWorkspace(buildActor({ appRole: "admin" }), 8));
+  assert.doesNotThrow(() =>
+    assertCanManageWorkspace(
+      buildActor({
+        workspaceMemberships: [
+          {
+            workspaceId: 8,
+            workspaceName: "Team",
+            workspaceSlug: "team",
+            role: "owner",
+          },
+        ],
+      }),
+      8,
+    ),
+  );
+  assert.doesNotThrow(() =>
+    assertCanManageWorkspace(
+      buildActor({
+        workspaceMemberships: [
+          {
+            workspaceId: 8,
+            workspaceName: "Team",
+            workspaceSlug: "team",
+            role: "admin",
+          },
+        ],
+      }),
+      8,
+    ),
+  );
+});
+
+test("workspace management policy rejects plain members", () => {
+  assert.throws(
+    () =>
+      assertCanManageWorkspace(
+        buildActor({
+          workspaceMemberships: [
+            {
+              workspaceId: 8,
+              workspaceName: "Team",
+              workspaceSlug: "team",
+              role: "member",
+            },
+          ],
+        }),
+        8,
+      ),
+    (error) => error instanceof AuthorizationError && error.code === "workspace_management_denied",
+  );
+});
+
+test("workspace owner management policy rejects workspace admins", () => {
+  assert.doesNotThrow(() =>
+    assertCanManageWorkspaceOwners(
+      buildActor({
+        workspaceMemberships: [
+          {
+            workspaceId: 8,
+            workspaceName: "Team",
+            workspaceSlug: "team",
+            role: "owner",
+          },
+        ],
+      }),
+      8,
+    ),
+  );
+  assert.doesNotThrow(() => assertCanManageWorkspaceOwners(buildActor({ appRole: "admin" }), 8));
+  assert.throws(
+    () =>
+      assertCanManageWorkspaceOwners(
+        buildActor({
+          workspaceMemberships: [
+            {
+              workspaceId: 8,
+              workspaceName: "Team",
+              workspaceSlug: "team",
+              role: "admin",
+            },
+          ],
+        }),
+        8,
+      ),
+    (error) =>
+      error instanceof AuthorizationError && error.code === "workspace_owner_management_denied",
+  );
+});
+
+test("workspace delete policy requires app admin or workspace owner", () => {
+  assert.doesNotThrow(() => assertCanDeleteWorkspace(buildActor({ appRole: "admin" }), 8));
+  assert.doesNotThrow(() =>
+    assertCanDeleteWorkspace(
+      buildActor({
+        workspaceMemberships: [
+          {
+            workspaceId: 8,
+            workspaceName: "Team",
+            workspaceSlug: "team",
+            role: "owner",
+          },
+        ],
+      }),
+      8,
+    ),
+  );
+  assert.throws(
+    () =>
+      assertCanDeleteWorkspace(
+        buildActor({
+          workspaceMemberships: [
+            {
+              workspaceId: 8,
+              workspaceName: "Team",
+              workspaceSlug: "team",
+              role: "admin",
+            },
+          ],
+        }),
+        8,
+      ),
+    (error) => error instanceof AuthorizationError && error.code === "workspace_delete_denied",
+  );
+});
+
+test("workspace admin listing includes any workspace member", () => {
+  assert.doesNotThrow(() => assertCanListWorkspaceAdmin(buildActor({ appRole: "admin" })));
+  assert.doesNotThrow(() =>
+    assertCanListWorkspaceAdmin(
+      buildActor({
+        workspaceMemberships: [
+          {
+            workspaceId: 8,
+            workspaceName: "Team",
+            workspaceSlug: "team",
+            role: "admin",
+          },
+        ],
+      }),
+    ),
+  );
+  assert.doesNotThrow(() => assertCanListWorkspaceAdmin(buildActor()));
+  assert.throws(
+    () => assertCanListWorkspaceAdmin(buildActor({ workspaceMemberships: [] })),
+    (error) => error instanceof AuthorizationError && error.code === "workspace_management_denied",
+  );
+});
+
+test("workspace admin view policy allows members only for their own workspaces", () => {
+  assert.doesNotThrow(() => assertCanViewWorkspaceAdmin(buildActor(), 3));
+  assert.throws(
+    () => assertCanViewWorkspaceAdmin(buildActor(), 4),
+    (error) => error instanceof AuthorizationError && error.code === "workspace_access_denied",
   );
 });
 

@@ -6,6 +6,7 @@ import type { RepeatIncompleteBehavior, RepeatScheduleType } from "@/domain/task
 import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
 import { TaskCoreFields, type TaskEditorFieldErrors } from "@/components/app/task-core-fields";
 import { TaskRepeatSettings } from "@/components/app/task-repeat-settings";
+import { ModalHeaderKicker } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 const NEW_TASK_ID = "NEW_TASK";
@@ -40,7 +41,7 @@ function validateTaskEditorInput(input: {
 export function TaskEditorModal(props: {
   task: TaskListItem | null;
   taskDetails: Record<string, TaskDetails>;
-  projectOptions: { id: string; name: string }[];
+  projectOptions: { id: string; name: string; workspaceName?: string }[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
   onClose: () => void;
   onSave: (input: {
@@ -85,7 +86,7 @@ function TaskEditorModalContent({
 }: {
   task: TaskListItem;
   taskDetails: Record<string, TaskDetails>;
-  projectOptions: { id: string; name: string }[];
+    projectOptions: { id: string; name: string; workspaceName?: string }[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
   onClose: () => void;
   onSave: (input: {
@@ -267,7 +268,7 @@ function TaskEditorModalContent({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-5 backdrop-blur-sm">
       <div
         className="absolute inset-0"
         onClick={() => {
@@ -286,14 +287,7 @@ function TaskEditorModalContent({
         <div className="sticky top-0 z-10 border-b border-[var(--line-soft)] bg-white/95 px-5 py-4 backdrop-blur">
           <div className="flex items-start gap-4">
             <div className="space-y-1.5">
-              <div className="flex items-center gap-3">
-                <span className="rounded-full bg-[var(--surface-subtle)] px-2.5 py-1 font-mono text-[11px] tracking-[0.14em] text-[var(--ink-subtle)]">
-                  {isCreating ? "NEW" : task.id}
-                </span>
-                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-                  {isCreating ? "New task" : "Edit task"}
-                </span>
-              </div>
+              <ModalHeaderKicker code={isCreating ? "NEW" : task.id} label={isCreating ? "New task" : "Edit task"} />
               <div className="flex items-center gap-3">
                 <h2
                   id="task-editor-title"

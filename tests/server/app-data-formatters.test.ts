@@ -106,7 +106,7 @@ test("toTaskDetails maps repeat settings and filters invalid json values", () =>
     },
     startDateValue: "2026-04-01",
     dueDateValue: "",
-    projectOptions: [{ id: "4", name: "Service Management" }],
+    projectOptions: [{ id: "4", name: "Service Management", workspaceName: "No workspace" }],
     parentTaskOptions: [{ id: "14", title: "Sibling task" }],
   });
 });

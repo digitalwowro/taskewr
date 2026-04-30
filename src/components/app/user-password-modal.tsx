@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ModalHeaderKicker } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type { UserAdminItem } from "@/hooks/use-user-admin-state";
 
@@ -62,7 +63,7 @@ export function UserPasswordModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-5 backdrop-blur-sm">
       <div
         className="absolute inset-0"
         onClick={() => {
@@ -80,9 +81,7 @@ export function UserPasswordModal({
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
-            <span className="rounded-full bg-[var(--surface-subtle)] px-2.5 py-1 font-mono text-[11px] tracking-[0.14em] text-[var(--ink-subtle)]">
-              USR-{user.id}
-            </span>
+            <ModalHeaderKicker code={`USR-${user.id}`} />
             <h2
               id="password-modal-title"
               className="text-[2rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink-strong)]"
@@ -90,7 +89,7 @@ export function UserPasswordModal({
               Reset password
             </h2>
             <p className="text-sm text-[var(--ink-muted)]">
-              Set a temporary password for {user.name}. The user can change it from My Profile.
+              Set a new password for {user.name}. The user can change it from My Profile.
             </p>
           </div>
         </div>
@@ -101,7 +100,7 @@ export function UserPasswordModal({
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Temporary password"
+            placeholder="New password"
             disabled={isSaving}
             className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
           />

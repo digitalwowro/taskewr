@@ -52,13 +52,48 @@ export function StatusPill({
   );
 }
 
-export type ActionButtonTone = "neutral" | "accent" | "danger";
+export function ModalHeaderKicker({
+  code,
+  label,
+  tone = "neutral",
+  children,
+}: {
+  code: ReactNode;
+  label?: ReactNode;
+  tone?: "neutral" | "danger";
+  children?: ReactNode;
+}) {
+  const codeTone =
+    tone === "danger"
+      ? "bg-[rgba(193,62,62,0.06)] text-[var(--accent-red)]"
+      : "bg-[var(--surface-subtle)] text-[var(--ink-subtle)]";
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <span
+        className={`inline-flex h-7 items-center justify-center rounded-full px-3 font-mono text-[11px] uppercase leading-none tracking-[0.14em] ${codeTone}`}
+      >
+        {code}
+      </span>
+      {label ? (
+        <span className="text-[11px] font-semibold uppercase leading-none tracking-[0.2em] text-[var(--accent-strong)]">
+          {label}
+        </span>
+      ) : null}
+      {children}
+    </div>
+  );
+}
+
+export type ActionButtonTone = "neutral" | "accent" | "blue" | "danger";
 
 const actionButtonToneClasses: Record<ActionButtonTone, string> = {
   neutral:
     "border-[var(--line-soft)] bg-white text-[var(--ink-muted)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]",
   accent:
     "border-[rgba(34,122,89,0.16)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)] hover:bg-[rgba(34,122,89,0.12)]",
+  blue:
+    "border-[rgba(37,99,235,0.16)] bg-[rgba(37,99,235,0.08)] text-[rgb(37,99,235)] hover:bg-[rgba(37,99,235,0.12)]",
   danger:
     "border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] text-[var(--accent-red)] hover:bg-[rgba(193,62,62,0.08)]",
 };
@@ -140,6 +175,14 @@ function OpenIcon() {
       <path d="M6.25 4.25H4.2a1.45 1.45 0 0 0-1.45 1.45v6.1a1.45 1.45 0 0 0 1.45 1.45h6.1a1.45 1.45 0 0 0 1.45-1.45V9.75" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M8.5 2.75h4.75V7.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="m7.25 8.75 5.8-5.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M8 3.5v9M3.5 8h9" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -693,6 +736,7 @@ export function ProjectSection({
   onEdit,
   onComplete,
   completingTaskId,
+  onNewTask,
   onOpenProject,
 }: {
   id: string;
@@ -711,6 +755,7 @@ export function ProjectSection({
   onEdit: (taskId: string) => void;
   onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
   completingTaskId?: string | null;
+  onNewTask: (projectId: string) => void;
   onOpenProject: (projectId: string) => void;
 }) {
   return (
@@ -722,15 +767,26 @@ export function ProjectSection({
           </h2>
           <span className="text-sm text-[var(--ink-subtle)]">{items.length}</span>
         </div>
-        <IconActionButton
-          label="Open project"
-          tooltipAlign="right"
-          tooltipSide="bottom"
-          tone="accent"
-          onClick={() => onOpenProject(id)}
-        >
-          <OpenIcon />
-        </IconActionButton>
+        <div className="flex items-center gap-1.5">
+          <IconActionButton
+            label="New task"
+            tooltipAlign="right"
+            tooltipSide="bottom"
+            tone="accent"
+            onClick={() => onNewTask(id)}
+          >
+            <PlusIcon />
+          </IconActionButton>
+          <IconActionButton
+            label="Open project"
+            tooltipAlign="right"
+            tooltipSide="bottom"
+            tone="blue"
+            onClick={() => onOpenProject(id)}
+          >
+            <OpenIcon />
+          </IconActionButton>
+        </div>
       </header>
       <div className="overflow-x-auto">
         {items.length > 0 ? (
@@ -784,7 +840,7 @@ export function ProjectSection({
             </tbody>
           </table>
         ) : (
-          <div className="px-5 py-6 text-sm text-[var(--ink-subtle)]">
+          <div className="px-5 py-5 text-sm text-[var(--ink-subtle)]">
             No tasks in this project match the current filters.
           </div>
         )}
@@ -833,7 +889,7 @@ export function ProjectRow({
           onOpen(project.id);
         }
       }}
-      className={`rounded-2xl border bg-white p-5 transition hover:border-[var(--line-strong)] hover:bg-[var(--surface-card)] ${
+      className={`rounded-2xl border bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)] transition hover:border-[var(--line-strong)] hover:bg-[var(--surface-card)] ${
         project.isArchived
           ? "border-[var(--line-soft)] opacity-80"
           : "border-[var(--line-soft)]"
@@ -846,6 +902,9 @@ export function ProjectRow({
               Project
             </p>
             <ProjectStatusBadge archived={project.isArchived} />
+            <span className="inline-flex h-6 items-center rounded-full border border-[rgba(34,122,89,0.12)] bg-[rgba(34,122,89,0.04)] px-2.5 text-[11px] font-medium text-[var(--accent-strong)]">
+              {project.workspaceName}
+            </span>
             <span className="inline-flex h-6 items-center rounded-full bg-[var(--surface-subtle)] px-2.5 text-[11px] font-medium text-[var(--ink-muted)]">
               {project.taskCount} tasks
             </span>
@@ -939,7 +998,7 @@ export function ProjectRow({
             label="Open project"
             tooltipAlign="right"
             disabled={isReordering}
-            tone="accent"
+            tone="blue"
             onClick={(event) => {
               event.stopPropagation();
               onOpen(project.id);

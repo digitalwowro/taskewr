@@ -44,6 +44,7 @@ async function main() {
     data: {
       ownerUserId: user.id,
       name: "Work",
+      description: "Customer, partner, service, and operations work.",
       slug: "work",
     },
   });
@@ -52,6 +53,7 @@ async function main() {
     data: {
       ownerUserId: user.id,
       name: "Personal",
+      description: "Personal routines and private tasks.",
       slug: "personal",
     },
   });

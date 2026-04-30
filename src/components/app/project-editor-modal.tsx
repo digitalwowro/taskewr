@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { AppProject, AppWorkspace } from "@/app/app-data";
+import { formatProjectCode } from "@/components/app/project-format";
+import { ModalHeaderKicker } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 const NEW_PROJECT_ID = "NEW_PROJECT";
@@ -12,6 +14,16 @@ function validateProjectEditorInput(input: { name: string }) {
   }
 
   return {};
+}
+
+function SelectChevron() {
+  return (
+    <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--ink-muted)]">
+      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <path d="m4.5 6.5 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
 }
 
 export function ProjectEditorModal({
@@ -78,7 +90,7 @@ export function ProjectEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-5 backdrop-blur-sm">
       <div
         className="absolute inset-0"
         onClick={() => {
@@ -96,14 +108,7 @@ export function ProjectEditorModal({
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
-              <span className="rounded-full bg-[var(--surface-subtle)] px-2.5 py-1 font-mono text-[11px] tracking-[0.14em] text-[var(--ink-subtle)]">
-                {isCreating ? "NEW" : project.id}
-              </span>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-                Project
-              </span>
-            </div>
+            <ModalHeaderKicker code={isCreating ? "NEW" : formatProjectCode(project.id)} label="Project" />
             <h2
               id="project-editor-title"
               className="text-[2rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink-strong)]"
@@ -114,29 +119,6 @@ export function ProjectEditorModal({
         </div>
 
         <div className="space-y-4 px-5 py-5">
-          <div className="space-y-2">
-            <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-              Workspace
-            </label>
-            <select
-              value={workspaceId}
-              onChange={(event) => setWorkspaceId(event.target.value)}
-              disabled={isSaving || !isCreating}
-              className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-            >
-              {workspaces.map((workspace) => (
-                <option key={workspace.id} value={workspace.id}>
-                  {workspace.name}
-                </option>
-              ))}
-            </select>
-            {!isCreating ? (
-              <p className="text-xs text-[var(--ink-subtle)]">
-                Existing projects stay in their current workspace.
-              </p>
-            ) : null}
-          </div>
-
           <div className="space-y-2">
             <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
               Project name
@@ -168,6 +150,37 @@ export function ProjectEditorModal({
               disabled={isSaving}
               className="w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 py-3 text-sm leading-6 text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+              Workspace
+            </label>
+            <div className="relative">
+              <select
+                value={workspaceId}
+                onChange={(event) => setWorkspaceId(event.target.value)}
+                disabled={isSaving || !isCreating}
+                style={{
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  backgroundImage: "none",
+                }}
+                className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+              >
+                {workspaces.map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))}
+              </select>
+              <SelectChevron />
+            </div>
+            {!isCreating ? (
+              <p className="text-xs text-[var(--ink-subtle)]">
+                Project moves need a separate move action; every project member must belong to the target workspace first.
+              </p>
+            ) : null}
           </div>
           {error ? (
             <p aria-live="polite" className="text-sm text-[var(--accent-red)]">

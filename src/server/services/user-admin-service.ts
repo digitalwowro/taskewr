@@ -14,6 +14,7 @@ import { UsersRepository, type UserAdminRecord } from "@/data/prisma/repositorie
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { AppContextService, type AppContext } from "@/server/services/app-context-service";
+import { personalWorkspaceName, slugifyWorkspaceName } from "@/domain/workspaces/slug";
 
 export type UserAdminItem = {
   id: number;
@@ -78,6 +79,19 @@ export class UserAdminService {
     }
   }
 
+  private async generateUniqueWorkspaceSlug(baseName: string) {
+    const baseSlug = slugifyWorkspaceName(baseName);
+    let candidate = baseSlug;
+    let suffix = 2;
+
+    while (await this.repository.workspaceSlugExists(candidate)) {
+      candidate = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+
+    return candidate;
+  }
+
   async listUsers(input: UserListQueryInput = {}) {
     await this.getAdminContext();
     const payload = userListQuerySchema.parse(input);
@@ -91,12 +105,21 @@ export class UserAdminService {
     const payload = adminUserCreateSchema.parse(input);
     await this.assertEmailAvailable(payload.email);
 
-    const user = await this.repository.create({
+    const workspaceName = personalWorkspaceName({
+      name: payload.name,
+      email: payload.email,
+    });
+    const workspaceSlug = await this.generateUniqueWorkspaceSlug(workspaceName);
+
+    const user = await this.repository.createWithPersonalWorkspace({
       name: payload.name,
       email: payload.email,
       passwordHash: hashPassword(payload.password),
       timezone: payload.timezone ?? null,
       appRole: payload.appRole,
+    }, {
+      name: workspaceName,
+      slug: workspaceSlug,
     });
 
     return toUserAdminItem(user);

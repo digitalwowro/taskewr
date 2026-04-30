@@ -107,7 +107,7 @@ export function toTaskListItem(task: AppTaskRecord, timezone: string | null): Ta
 
 export function toTaskDetails(
   task: AppTaskRecord,
-  projects: { id: number; name: string; archivedAt: Date | null }[],
+  projects: { id: number; name: string; archivedAt: Date | null; workspace?: { name: string } | null }[],
   siblingTasks: AppTaskRecord[],
 ): TaskDetails {
   return {
@@ -143,7 +143,11 @@ export function toTaskDetails(
     dueDateValue: task.dueDate ? task.dueDate.toISOString().slice(0, 10) : "",
     projectOptions: projects
       .filter((project) => project.archivedAt === null)
-      .map((project) => ({ id: String(project.id), name: project.name })),
+      .map((project) => ({
+        id: String(project.id),
+        name: project.name,
+        workspaceName: project.workspace?.name ?? "No workspace",
+      })),
     parentTaskOptions: siblingTasks
       .filter((siblingTask) => siblingTask.id !== task.id)
       .map((siblingTask) => ({ id: String(siblingTask.id), title: siblingTask.title })),

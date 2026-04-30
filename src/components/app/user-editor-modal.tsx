@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ModalHeaderKicker } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type { UserAdminItem } from "@/hooks/use-user-admin-state";
 
@@ -44,6 +45,24 @@ function SelectChevron() {
       >
         <path d="m4.5 6.5 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
+    </span>
+  );
+}
+
+function PasswordInfoTooltip() {
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        aria-label="Password help"
+        title="Password help"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[var(--line-soft)] bg-white text-[10px] font-semibold leading-none text-[var(--ink-muted)] transition hover:border-[var(--line-strong)] hover:text-[var(--ink-strong)]"
+      >
+        i
+      </button>
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-max max-w-[260px] -translate-x-1/2 rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium normal-case tracking-normal text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
+        Leave both password fields empty to keep the current password.
+      </span>
     </span>
   );
 }
@@ -116,13 +135,15 @@ export function UserEditorModal({
       return;
     }
 
-    if (isCreating && password.length < 7) {
-      setFieldError("Temporary password must be at least 7 characters.");
+    const shouldUpdatePassword = isCreating || password.length > 0 || confirmPassword.length > 0;
+
+    if (shouldUpdatePassword && password.length < 7) {
+      setFieldError("New password must be at least 7 characters.");
       return;
     }
 
-    if (isCreating && password !== confirmPassword) {
-      setFieldError("Temporary password and confirmation must match.");
+    if (shouldUpdatePassword && password !== confirmPassword) {
+      setFieldError("New password and confirmation must match.");
       return;
     }
 
@@ -133,12 +154,12 @@ export function UserEditorModal({
       timezone: timezone.trim(),
       appRole,
       isActive,
-      password,
+      password: shouldUpdatePassword ? password : undefined,
     });
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-5 backdrop-blur-sm">
       <div
         className="absolute inset-0"
         onClick={() => {
@@ -156,14 +177,7 @@ export function UserEditorModal({
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
-              <span className="rounded-full bg-[var(--surface-subtle)] px-2.5 py-1 font-mono text-[11px] tracking-[0.14em] text-[var(--ink-subtle)]">
-                {isCreating ? "NEW" : `USR-${user.id}`}
-              </span>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-                User
-              </span>
-            </div>
+            <ModalHeaderKicker code={isCreating ? "NEW" : `USR-${user.id}`} label="User" />
             <h2
               id="user-editor-title"
               className="text-[2rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink-strong)]"
@@ -268,36 +282,32 @@ export function UserEditorModal({
             </div>
           </div>
 
-          {isCreating ? (
-            <div className="space-y-3 rounded-[20px] border border-[var(--line-soft)] bg-[var(--surface-card)] p-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                  Temporary password
-                </p>
-                <p className="mt-1 text-sm text-[var(--ink-muted)]">
-                  Share this directly with the user. There is no invite email flow yet.
-                </p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Temporary password"
-                  disabled={isSaving}
-                  className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  placeholder="Confirm password"
-                  disabled={isSaving}
-                  className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                />
-              </div>
+          <div className="space-y-3 rounded-[20px] border border-[var(--line-soft)] bg-[var(--surface-card)] p-4">
+            <div>
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                New password
+                {isCreating ? null : <PasswordInfoTooltip />}
+              </p>
             </div>
-          ) : null}
+            <div className="grid gap-4 md:grid-cols-2">
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="New password"
+                disabled={isSaving}
+                className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+              />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="Confirm password"
+                disabled={isSaving}
+                className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+              />
+            </div>
+          </div>
 
           {fieldError || error ? (
             <p aria-live="polite" className="text-sm text-[var(--accent-red)]">

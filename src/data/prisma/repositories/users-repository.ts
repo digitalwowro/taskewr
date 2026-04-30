@@ -81,6 +81,46 @@ export class UsersRepository {
     });
   }
 
+  createWithPersonalWorkspace(
+    data: Prisma.UserUncheckedCreateInput,
+    workspace: { name: string; slug: string },
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data,
+        select: userSelect,
+      });
+
+      const personalWorkspace = await tx.workspace.create({
+        data: {
+          ownerUserId: user.id,
+          name: workspace.name,
+          slug: workspace.slug,
+        },
+        select: { id: true },
+      });
+
+      await tx.workspaceMember.create({
+        data: {
+          workspaceId: personalWorkspace.id,
+          userId: user.id,
+          role: "owner",
+        },
+      });
+
+      return user;
+    });
+  }
+
+  workspaceSlugExists(slug: string) {
+    return this.prisma.workspace
+      .findUnique({
+        where: { slug },
+        select: { id: true },
+      })
+      .then(Boolean);
+  }
+
   updateById(id: number, data: Prisma.UserUncheckedUpdateInput) {
     return this.prisma.user.update({
       where: { id },

@@ -54,12 +54,18 @@ test("non-admins cannot manage users", async () => {
   );
 });
 
-test("createUser normalizes email and hashes the temporary password", async () => {
+test("createUser normalizes email and hashes the new password", async () => {
   const createdData: Record<string, unknown>[] = [];
+  const createdWorkspace: Record<string, unknown>[] = [];
   const service = buildService({
     findByEmail: async () => null,
-    create: async (data: Record<string, unknown>) => {
+    workspaceSlugExists: async () => false,
+    createWithPersonalWorkspace: async (
+      data: Record<string, unknown>,
+      workspace: Record<string, unknown>,
+    ) => {
       createdData[0] = data;
+      createdWorkspace[0] = workspace;
       return buildUser({
         id: 12,
         name: data.name,
@@ -83,7 +89,44 @@ test("createUser normalizes email and hashes the temporary password", async () =
   assert.equal(user.appRole, "admin");
   assert.ok(createdData[0]);
   assert.equal(createdData[0].timezone, null);
+  assert.equal(createdWorkspace[0].name, "Example User");
+  assert.equal(createdWorkspace[0].slug, "example-user");
   assert.equal(verifyPassword("taskewr1", createdData[0].passwordHash as string), true);
+});
+
+test("createUser creates a collision-safe personal workspace slug", async () => {
+  const checkedSlugs: string[] = [];
+  const createdWorkspaces: Record<string, unknown>[] = [];
+  const service = buildService({
+    findByEmail: async () => null,
+    workspaceSlugExists: async (slug: string) => {
+      checkedSlugs.push(slug);
+      return slug === "user";
+    },
+    createWithPersonalWorkspace: async (
+      data: Record<string, unknown>,
+      workspace: Record<string, unknown>,
+    ) => {
+      createdWorkspaces.push(workspace);
+      return buildUser({
+        id: 12,
+        name: data.name,
+        email: data.email,
+        passwordHash: data.passwordHash,
+        appRole: data.appRole,
+      });
+    },
+  });
+
+  await service.createUser({
+    name: "User",
+    email: "user@taskewr.com",
+    password: "taskewr1",
+    appRole: "user",
+  });
+
+  assert.deepEqual(checkedSlugs, ["user", "user-2"]);
+  assert.equal(createdWorkspaces[0]?.slug, "user-2");
 });
 
 test("createUser rejects duplicate email addresses", async () => {

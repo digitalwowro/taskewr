@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ModalHeaderKicker } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type { UserAdminItem } from "@/hooks/use-user-admin-state";
 
@@ -37,7 +38,7 @@ export function UserDeactivateModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-5 backdrop-blur-sm">
       <div
         className="absolute inset-0"
         onClick={() => {
@@ -55,9 +56,7 @@ export function UserDeactivateModal({
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
-            <span className="rounded-full bg-[rgba(193,62,62,0.06)] px-2.5 py-1 font-mono text-[11px] tracking-[0.14em] text-[var(--accent-red)]">
-              USR-{user.id}
-            </span>
+            <ModalHeaderKicker code={`USR-${user.id}`} tone="danger" />
             <h2
               id="deactivate-user-title"
               className="text-[2rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink-strong)]"

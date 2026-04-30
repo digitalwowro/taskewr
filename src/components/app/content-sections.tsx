@@ -526,7 +526,7 @@ function DashboardTaskSubsection({
             </div>
           )
         ) : (
-          <div className="px-4 py-6 text-sm text-[var(--ink-subtle)]">
+          <div className="px-4 py-5 text-sm text-[var(--ink-subtle)]">
             {emptyMessage}
           </div>
         )
@@ -547,6 +547,7 @@ export function DashboardContent({
   onCompleteTask,
   completingTaskId,
   onOpenProjects,
+  onNewTask,
   onOpenProject,
 }: {
   visibleTaskCount: number;
@@ -560,6 +561,7 @@ export function DashboardContent({
   onCompleteTask: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
   completingTaskId: string | null;
   onOpenProjects: () => void;
+  onNewTask: (projectId: string) => void;
   onOpenProject: (projectId: string) => void;
 }) {
   const { isSectionCollapsed, toggleSection } = usePersistedCollapsedSections(
@@ -888,6 +890,7 @@ export function DashboardContent({
                     onEdit={onEditTask}
                     onComplete={onCompleteTask}
                     completingTaskId={completingTaskId}
+                    onNewTask={onNewTask}
                     onOpenProject={onOpenProject}
                   />
                 ))}
@@ -929,6 +932,34 @@ export function ProjectsContent({
   projectReorderPendingId: string | null;
   onOpenProject: (projectId: string) => void;
 }) {
+  const [projectQuery, setProjectQuery] = useState("");
+  const projectSearchFrameRef = useRef<HTMLDivElement | null>(null);
+  const normalizedProjectQuery = projectQuery.trim().toLowerCase();
+  const matchesProjectQuery = useMemo(
+    () => (project: AppProject) => {
+      if (!normalizedProjectQuery) {
+        return true;
+      }
+
+      return [
+        project.id,
+        `PRJ-${project.id}`,
+        project.name,
+        project.description,
+        project.workspaceName,
+      ].some((value) => value.toLowerCase().includes(normalizedProjectQuery));
+    },
+    [normalizedProjectQuery],
+  );
+  const visibleActiveProjects = useMemo(
+    () => activeProjects.filter(matchesProjectQuery),
+    [activeProjects, matchesProjectQuery],
+  );
+  const visibleArchivedProjects = useMemo(
+    () => archivedProjects.filter(matchesProjectQuery),
+    [archivedProjects, matchesProjectQuery],
+  );
+
   return (
     <div className="space-y-5">
       <section className="grid gap-4 lg:grid-cols-2">
@@ -946,45 +977,52 @@ export function ProjectsContent({
         />
       </section>
 
-      <section className="space-y-5">
-        <div className="flex items-end justify-between gap-4">
+      <section className="overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
+        <div className="flex flex-col gap-4 border-b border-[var(--line-soft)] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-subtle)]">
-              Projects
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+              Projects administration
             </p>
-            <h2 className="mt-1 text-lg font-semibold tracking-[-0.03em]">
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
               Active projects
             </h2>
           </div>
-          <p className="text-sm text-[var(--ink-subtle)]">
-            Reorder, edit, or archive projects without leaving the list.
-          </p>
+          <ToolbarMenuFrame menuRef={projectSearchFrameRef} label="Search">
+            <input
+              value={projectQuery}
+              onChange={(event) => setProjectQuery(event.target.value)}
+              placeholder="ID, name, workspace, or description"
+              className="h-7 min-w-[18rem] rounded-lg bg-transparent px-2 text-[12px] font-medium text-[var(--ink-muted)] outline-none placeholder:text-[var(--ink-subtle)]"
+            />
+          </ToolbarMenuFrame>
         </div>
 
-        {activeProjects.length > 0 ? (
-          <div className="space-y-5">
-            {activeProjects.map((project) => (
-              <ProjectRow
-                key={project.id}
-                project={project}
-                onEdit={onEditProject}
-                onMove={onMoveProject}
-                onArchive={onQuickArchive}
-                onUnarchive={onQuickUnarchive}
-                isReordering={projectReorderPendingId === project.id}
-                onOpen={onOpenProject}
-              />
-            ))}
-          </div>
-        ) : (
-          <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-5 py-8 text-sm text-[var(--ink-subtle)]">
-            No active projects yet. Create the first one to start organizing work.
-          </section>
-        )}
+        <div className="space-y-5 bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(248,252,250,1)_100%)] p-5">
+          {visibleActiveProjects.length > 0 ? (
+            visibleActiveProjects.map((project) => (
+                <ProjectRow
+                  key={project.id}
+                  project={project}
+                  onEdit={onEditProject}
+                  onMove={onMoveProject}
+                  onArchive={onQuickArchive}
+                  onUnarchive={onQuickUnarchive}
+                  isReordering={projectReorderPendingId === project.id}
+                  onOpen={onOpenProject}
+                />
+              ))
+          ) : (
+            <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-5 py-8 text-sm text-[var(--ink-subtle)]">
+              {normalizedProjectQuery
+                ? "No active projects match this search."
+                : "No active projects yet. Create the first one to start organizing work."}
+            </section>
+          )}
+        </div>
       </section>
 
-      <section className="space-y-5">
-        <div className="flex items-center justify-between rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-5 py-4">
+      <section className="overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
+        <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div>
             <p className="text-sm font-semibold text-[var(--ink-strong)]">
               Archived projects
@@ -1003,9 +1041,9 @@ export function ProjectsContent({
         </div>
 
         {showArchivedProjects ? (
-          archivedProjects.length > 0 ? (
-            <div className="space-y-5">
-              {archivedProjects.map((project) => (
+          <div className="space-y-5 bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(248,252,250,1)_100%)] p-5">
+            {visibleArchivedProjects.length > 0 ? (
+              visibleArchivedProjects.map((project) => (
                 <ProjectRow
                   key={project.id}
                   project={project}
@@ -1016,13 +1054,15 @@ export function ProjectsContent({
                   isReordering={projectReorderPendingId === project.id}
                   onOpen={onOpenProject}
                 />
-              ))}
-            </div>
-          ) : (
-            <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-5 py-8 text-sm text-[var(--ink-subtle)]">
-              No archived projects yet.
-            </section>
-          )
+              ))
+            ) : (
+              <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-5 py-8 text-sm text-[var(--ink-subtle)]">
+                {normalizedProjectQuery
+                  ? "No archived projects match this search."
+                  : "No archived projects yet."}
+              </section>
+            )}
+          </div>
         ) : null}
       </section>
     </div>
@@ -1269,7 +1309,7 @@ export function ProjectDetailContent({
               ) : null}
 
               {selectedProjectTasks.length === 0 ? (
-                <section className="rounded-xl border border-[var(--line-soft)] bg-white px-4 py-6 text-sm text-[var(--ink-subtle)]">
+                <section className="rounded-xl border border-[var(--line-soft)] bg-white px-4 py-5 text-sm text-[var(--ink-subtle)]">
                   No tasks match the current view and filters for this project.
                 </section>
               ) : null}

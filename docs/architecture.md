@@ -138,6 +138,18 @@ Project membership is the source of truth for project and task visibility:
 - dashboard, search, repeat sync, project detail, and task detail must filter through accessible project IDs
 - workspace owners do not implicitly see every project in the workspace unless they are also project members
 
+Workspace administration is a separate surface:
+
+- app admins can manage all workspaces administratively
+- workspace owners/admins can manage their own workspace settings and membership
+- workspace members cannot manage workspace settings or access
+- adding a user to a workspace does not expose existing projects
+- removing a user from a workspace is blocked while they still hold project membership in that workspace
+
+Newly created users get a personal workspace and owner membership automatically. The creating app admin is not automatically added to that personal workspace.
+
+Project movement between workspaces is intentionally deferred. When it is added, moving a project should preserve `ProjectMember` rows and require all current project members to already belong to the target workspace.
+
 Sharing/invite UI is intentionally deferred. The data model supports future sharing, while v1 only auto-adds the project creator as project owner.
 
 ## Search Backend Readiness
@@ -215,6 +227,8 @@ The implementation baseline is now in place:
 - real task/project mutation APIs
 - real login/session foundation
 - multi-workspace app context and project-membership policy checks
+- users administration with app roles and deactivation
+- workspace administration with owner/admin/member roles
 - search backend implemented and tested
 - Docker local development and production build flow verified
 

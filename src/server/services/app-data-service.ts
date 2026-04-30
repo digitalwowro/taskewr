@@ -174,6 +174,11 @@ export class AppDataService {
     return this.buildData(projects, tasks, timezone, workspaces, currentUser, DEFAULT_TASK_FILTERS);
   }
 
+  async getWorkspacesPageData() {
+    const { projects, tasks, timezone, workspaces, currentUser } = await this.loadBaseRecords();
+    return this.buildData(projects, tasks, timezone, workspaces, currentUser, DEFAULT_TASK_FILTERS);
+  }
+
   async getDataForProject(projectId: string, filtersInput?: Partial<TaskFilters>) {
     const { projects, tasks, timezone, workspaces, currentUser } = await this.loadBaseRecords();
     const projectExists = projects.some((project) => String(project.id) === projectId);

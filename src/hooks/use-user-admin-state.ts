@@ -223,6 +223,16 @@ export function useUserAdminState({
             isActive: input.isActive,
           }),
         });
+
+        if (input.password) {
+          await requestJson<UserAdminItem>(`/api/v1/users/${editingUser.id}/password`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ password: input.password }),
+          });
+        }
       }
 
       setEditingUserId(null);

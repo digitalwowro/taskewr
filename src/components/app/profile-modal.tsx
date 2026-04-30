@@ -2,6 +2,7 @@
 
 import type { ChangeEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import { ModalHeaderKicker } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 export function ProfileModal({
@@ -111,7 +112,7 @@ export function ProfileModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgba(15,23,42,0.42)] px-4 py-5 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       <section
         ref={dialogRef}
@@ -122,14 +123,7 @@ export function ProfileModal({
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
-              <span className="rounded-full bg-[var(--surface-subtle)] px-2.5 py-1 font-mono text-[11px] tracking-[0.14em] text-[var(--ink-subtle)]">
-                PROFILE
-              </span>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-                Account
-              </span>
-            </div>
+            <ModalHeaderKicker code="PROFILE" label="Account" />
             <h2
               id="profile-modal-title"
               className="text-[2rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink-strong)]"

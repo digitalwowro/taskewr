@@ -172,7 +172,7 @@ export function UsersContent({
 
   if (!canManageUsers) {
     return (
-      <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-6 py-10">
+      <section className="rounded-2xl border border-[var(--line-soft)] bg-white px-5 py-10">
         <p className="text-sm text-[var(--ink-subtle)]">Users are available to app admins only.</p>
       </section>
     );

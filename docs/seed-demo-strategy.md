@@ -20,6 +20,7 @@
 ## Seed Invariants
 - Stable IDs should be preserved for the main demo records where possible.
 - The seeded login account should stay documented and intentional.
+- User creation outside the seed should always create a personal workspace and owner membership for the new user.
 - The seed should always include:
   - overdue tasks
   - active tasks

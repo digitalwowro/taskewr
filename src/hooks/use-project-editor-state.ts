@@ -20,6 +20,7 @@ export function useProjectEditorState({
   refreshApp: () => void;
 }) {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [archivingProjectId, setArchivingProjectId] = useState<string | null>(null);
   const [projectMutationPending, setProjectMutationPending] = useState(false);
   const [projectMutationError, setProjectMutationError] = useState<string | null>(null);
   const [projectReorderPendingId, setProjectReorderPendingId] = useState<string | null>(null);
@@ -43,10 +44,24 @@ export function useProjectEditorState({
         : allProjects.find((project) => project.id === editingProjectId) ?? null,
     [allProjects, editingProjectId, workspaces],
   );
+  const archivingProject = useMemo(
+    () => activeProjects.find((project) => project.id === archivingProjectId) ?? null,
+    [activeProjects, archivingProjectId],
+  );
 
   const openNewProject = () => {
     setProjectMutationError(null);
     setEditingProjectId(NEW_PROJECT_ID);
+  };
+
+  const openProjectArchiveConfirm = (projectId: string) => {
+    setProjectMutationError(null);
+    setArchivingProjectId(projectId);
+  };
+
+  const closeProjectArchiveConfirm = () => {
+    setProjectMutationError(null);
+    setArchivingProjectId(null);
   };
 
   const handleProjectSave = async (input: { workspaceId: number; name: string; description: string }) => {
@@ -154,6 +169,7 @@ export function useProjectEditorState({
         method: "POST",
       });
       refreshApp();
+      setArchivingProjectId(null);
     } catch (error) {
       if (isUnauthorizedError(error)) {
         redirectToLogin();
@@ -197,7 +213,10 @@ export function useProjectEditorState({
   return {
     allProjects,
     editingProject,
+    archivingProject,
     openNewProject,
+    openProjectArchiveConfirm,
+    closeProjectArchiveConfirm,
     setEditingProjectId,
     projectMutationPending,
     projectMutationError,

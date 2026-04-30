@@ -45,6 +45,6 @@ export type TaskDetails = {
   repeat?: RepeatSettingsInput;
   startDateValue: string;
   dueDateValue: string;
-  projectOptions?: { id: string; name: string }[];
+  projectOptions?: { id: string; name: string; workspaceName?: string }[];
   parentTaskOptions?: { id: string; title: string }[];
 };

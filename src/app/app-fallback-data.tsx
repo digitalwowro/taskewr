@@ -490,6 +490,18 @@ export const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    id: "workspaces",
+    label: "Workspaces",
+    icon: (
+      <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <rect x="3.5" y="4" width="5.5" height="5.5" rx="1.2" />
+        <rect x="11" y="4" width="5.5" height="5.5" rx="1.2" />
+        <rect x="3.5" y="11" width="5.5" height="5.5" rx="1.2" />
+        <rect x="11" y="11" width="5.5" height="5.5" rx="1.2" />
+      </svg>
+    ),
+  },
+  {
     id: "search",
     label: "Search",
     icon: (

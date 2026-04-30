@@ -54,7 +54,7 @@ export function TaskCoreFields({
   title,
   titleInputRef,
 }: {
-  availableProjectOptions: { id: string; name: string }[];
+  availableProjectOptions: { id: string; name: string; workspaceName?: string }[];
   description: string;
   dueDateValue: string;
   fieldErrors: TaskEditorFieldErrors;
@@ -155,7 +155,7 @@ export function TaskCoreFields({
               >
                 {availableProjectOptions.map((option) => (
                   <option key={option.id} value={option.id}>
-                    {option.name}
+                    {option.workspaceName ? `${option.name} (${option.workspaceName})` : option.name}
                   </option>
                 ))}
               </select>

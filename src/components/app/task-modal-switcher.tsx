@@ -19,11 +19,11 @@ type TaskSaveInput = {
 };
 
 type TaskModalSwitcherProps = {
-  initialSection: "dashboard" | "projects" | "project_detail" | "task_detail" | "users";
+  initialSection: "dashboard" | "projects" | "project_detail" | "task_detail" | "users" | "workspaces";
   selectedTask: TaskListItem | null;
   taskEditorTask: TaskListItem | null;
   taskDetails: Record<string, TaskDetails>;
-  projectOptions: Array<{ id: string; name: string }>;
+  projectOptions: Array<{ id: string; name: string; workspaceName?: string }>;
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
   taskMutationPending: boolean;
   taskMutationError: string | null;
