@@ -24,6 +24,7 @@ type TaskModalSwitcherProps = {
   taskEditorTask: TaskListItem | null;
   taskDetails: Record<string, TaskDetails>;
   projectOptions: Array<{ id: string; name: string; workspaceName?: string }>;
+  availableLabels: string[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
   taskMutationPending: boolean;
   taskMutationError: string | null;
@@ -38,6 +39,7 @@ export function TaskModalSwitcher({
   taskEditorTask,
   taskDetails,
   projectOptions,
+  availableLabels,
   parentTaskOptionsByProject,
   taskMutationPending,
   taskMutationError,
@@ -52,6 +54,7 @@ export function TaskModalSwitcher({
         task={selectedTask}
         taskDetails={taskDetails}
         projectOptions={projectOptions}
+        availableLabels={availableLabels}
         parentTaskOptionsByProject={parentTaskOptionsByProject}
         onClose={onCloseTaskRoute}
         onSave={(input) =>
@@ -73,6 +76,7 @@ export function TaskModalSwitcher({
       task={taskEditorTask}
       taskDetails={taskDetails}
       projectOptions={projectOptions}
+      availableLabels={availableLabels}
       parentTaskOptionsByProject={parentTaskOptionsByProject}
       onClose={onCloseInlineTaskEditor}
       onSave={(input) => onSaveTask(taskEditorTask, input)}

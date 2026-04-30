@@ -11,7 +11,6 @@ import {
 } from "@/domain/projects/archive";
 import {
   assertProjectMoveTargetExists,
-  swapSortOrders,
 } from "@/domain/projects/ordering";
 import {
   projectMemberCreateSchema,
@@ -271,23 +270,33 @@ export class ProjectService {
       );
     }
 
-    const targetProject = await this.repository.findAdjacentActiveProject(
-      requireWorkspaceOwnership(project.workspaceId),
-      project.sortOrder,
-      payload.direction,
+    const workspaceId = requireWorkspaceOwnership(project.workspaceId);
+    const activeProjects = await this.repository.listActiveProjectsForReorder(
+      workspaceId,
       context.accessibleProjectIds,
     );
+    const currentIndex = activeProjects.findIndex((candidate) => candidate.id === project.id);
+    if (currentIndex === -1) {
+      assertProjectMoveTargetExists(null);
+    }
+
+    const targetIndex = payload.direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const targetProject = activeProjects[targetIndex] ?? null;
 
     assertProjectMoveTargetExists(targetProject?.sortOrder ?? null);
 
-    const nextSortOrders = swapSortOrders(project.sortOrder, targetProject!.sortOrder);
+    const reorderedProjects = [...activeProjects];
+    const [movedProject] = reorderedProjects.splice(currentIndex, 1);
+    reorderedProjects.splice(targetIndex, 0, movedProject);
 
-    return this.repository.swapSortOrders(
-      project.id,
-      nextSortOrders.currentSortOrder,
-      targetProject!.id,
-      nextSortOrders.targetSortOrder,
+    await this.repository.updateProjectSortOrders(
+      reorderedProjects.map((candidate, index) => ({
+        id: candidate.id,
+        sortOrder: index + 1,
+      })),
     );
+
+    return this.repository.findById(project.id);
   }
 
   async addProjectMember(id: number, input: ProjectMemberCreateInput) {

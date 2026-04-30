@@ -44,4 +44,5 @@ export type AppData = {
   activeProjects: AppProject[];
   archivedProjects: AppProject[];
   taskDetails: Record<string, TaskDetails>;
+  labels: string[];
 };

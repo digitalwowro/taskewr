@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
+import { normalizeLabelNames } from "@/domain/tasks/labels";
 import type { RepeatIncompleteBehavior, RepeatScheduleType } from "@/domain/tasks/repeat-schemas";
 import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
 import { TaskCoreFields, type TaskEditorFieldErrors } from "@/components/app/task-core-fields";
@@ -42,6 +43,7 @@ export function TaskEditorModal(props: {
   task: TaskListItem | null;
   taskDetails: Record<string, TaskDetails>;
   projectOptions: { id: string; name: string; workspaceName?: string }[];
+  availableLabels: string[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
   onClose: () => void;
   onSave: (input: {
@@ -78,6 +80,7 @@ function TaskEditorModalContent({
   task,
   taskDetails,
   projectOptions,
+  availableLabels,
   parentTaskOptionsByProject,
   onClose,
   onSave,
@@ -86,7 +89,8 @@ function TaskEditorModalContent({
 }: {
   task: TaskListItem;
   taskDetails: Record<string, TaskDetails>;
-    projectOptions: { id: string; name: string; workspaceName?: string }[];
+  projectOptions: { id: string; name: string; workspaceName?: string }[];
+  availableLabels: string[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
   onClose: () => void;
   onSave: (input: {
@@ -160,7 +164,7 @@ function TaskEditorModalContent({
   const [priority, setPriority] = useState<TaskPriority>(task.priorityValue);
   const [startDateValue, setStartDateValue] = useState(details.startDateValue);
   const [dueDateValue, setDueDateValue] = useState(details.dueDateValue);
-  const [labelsInput, setLabelsInput] = useState(details.labels.join(", "));
+  const [labels, setLabels] = useState(normalizeLabelNames(details.labels));
   const [repeatEnabled, setRepeatEnabled] = useState(repeatDetails.enabled);
   const [repeatScheduleType, setRepeatScheduleType] = useState<RepeatScheduleType>(
     repeatDetails.scheduleType,
@@ -240,10 +244,7 @@ function TaskEditorModalContent({
       priority,
       startDate: startDateValue || null,
       dueDate: dueDateValue || null,
-      labels: labelsInput
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean),
+      labels,
       repeat: {
         enabled: repeatEnabled,
         scheduleType: repeatScheduleType,
@@ -345,20 +346,23 @@ function TaskEditorModalContent({
         <div className="space-y-4 px-5 py-5">
           <section className="space-y-4">
             <TaskCoreFields
+              key={task.id}
               availableProjectOptions={availableProjectOptions}
+              availableLabels={availableLabels}
               description={description}
               dueDateValue={dueDateValue}
               fieldErrors={fieldErrors}
               isSaving={isSaving}
-              labelsInput={labelsInput}
+              labels={labels}
               parentTaskId={parentTaskId}
+              parentTaskLabel={details.parentTask ?? ""}
               parentTaskOptions={parentTaskOptions}
               priority={priority}
               projectId={projectId}
               setDescription={setDescription}
               setDueDateValue={setDueDateValue}
               setFieldErrors={setFieldErrors}
-              setLabelsInput={setLabelsInput}
+              setLabels={setLabels}
               setParentTaskId={setParentTaskId}
               setPriority={setPriority}
               setProjectId={setProjectId}

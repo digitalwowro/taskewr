@@ -149,12 +149,12 @@ async function main() {
   });
 
   const labels = await Promise.all([
-    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "migration", color: "#0f766e" } }),
-    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "rollout", color: "#b27a1a" } }),
-    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "customer", color: "#7c8b84" } }),
-    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "documentation", color: "#0f766e" } }),
-    prisma.label.create({ data: { workspaceId: workWorkspace.id, ownerUserId: user.id, name: "onboarding", color: "#227a59" } }),
-    prisma.label.create({ data: { workspaceId: personalWorkspace.id, ownerUserId: user.id, name: "operations", color: "#7c8b84" } }),
+    prisma.label.create({ data: { name: "migration", color: "#0f766e" } }),
+    prisma.label.create({ data: { name: "rollout", color: "#b27a1a" } }),
+    prisma.label.create({ data: { name: "customer", color: "#7c8b84" } }),
+    prisma.label.create({ data: { name: "documentation", color: "#0f766e" } }),
+    prisma.label.create({ data: { name: "onboarding", color: "#227a59" } }),
+    prisma.label.create({ data: { name: "operations", color: "#7c8b84" } }),
   ]);
 
   const labelByName = Object.fromEntries(labels.map((label) => [label.name, label]));

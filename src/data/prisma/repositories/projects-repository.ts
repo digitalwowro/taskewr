@@ -88,6 +88,18 @@ export class ProjectsRepository {
     });
   }
 
+  listActiveProjectsForReorder(workspaceId: number, accessibleProjectIds: number[]) {
+    if (accessibleProjectIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.prisma.project.findMany({
+      where: { id: { in: accessibleProjectIds }, workspaceId, archivedAt: null },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+      include: this.projectInclude,
+    });
+  }
+
   findAdjacentActiveProject(
     workspaceId: number,
     sortOrder: number,
@@ -122,6 +134,17 @@ export class ProjectsRepository {
       },
       include: this.projectInclude,
     });
+  }
+
+  updateProjectSortOrders(updates: Array<{ id: number; sortOrder: number }>) {
+    return this.prisma.$transaction(
+      updates.map((update) =>
+        this.prisma.project.update({
+          where: { id: update.id },
+          data: { sortOrder: update.sortOrder },
+        }),
+      ),
+    );
   }
 
   swapSortOrders(

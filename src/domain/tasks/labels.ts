@@ -7,8 +7,12 @@ const LABEL_COLOR_PALETTE = [
   "#8c6d1f",
 ] as const;
 
+export function normalizeLabelName(name: string) {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 export function normalizeLabelNames(names: string[]) {
-  return [...new Set(names.map((name) => name.trim()).filter(Boolean))];
+  return [...new Set(names.map(normalizeLabelName).filter(Boolean))];
 }
 
 export function generateLabelColor(name: string) {

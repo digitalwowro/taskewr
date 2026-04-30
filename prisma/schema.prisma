@@ -237,7 +237,7 @@ model Label {
   owner       User?       @relation("OwnedLabels", fields: [ownerUserId], references: [id], onDelete: SetNull)
   taskLabels  TaskLabel[]
 
-  @@unique([ownerUserId, name])
+  @@unique([name])
   @@index([workspaceId])
   @@map("labels")
 }

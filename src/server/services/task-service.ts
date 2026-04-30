@@ -186,10 +186,7 @@ export class TaskService {
       dueDate: payload.dueDate ? new Date(payload.dueDate) : null,
     });
 
-    await this.syncLabels(createdTask.id, payload.labels, {
-      workspaceId: targetProject.workspaceId,
-      actorUserId: context.actorUserId,
-    });
+    await this.syncLabels(createdTask.id, payload.labels);
     await this.syncRepeatSettings(createdTask.id, payload, {
       workspaceId: targetProject.workspaceId,
       actorUserId: context.actorUserId,
@@ -233,10 +230,7 @@ export class TaskService {
       },
     });
 
-    await this.syncLabels(id, payload.labels, {
-      workspaceId: targetProject.workspaceId,
-      actorUserId: context.actorUserId,
-    });
+    await this.syncLabels(id, payload.labels);
     await this.syncRepeatSettings(id, payload, {
       workspaceId: targetProject.workspaceId,
       actorUserId: context.actorUserId,
@@ -339,11 +333,7 @@ export class TaskService {
     return this.getTask(payload.taskId);
   }
 
-  private async syncLabels(
-    taskId: number,
-    labelNames: string[],
-    context: { workspaceId: number; actorUserId: number | null },
-  ) {
+  private async syncLabels(taskId: number, labelNames: string[]) {
     const normalizedNames = normalizeLabelNames(labelNames);
 
     if (normalizedNames.length === 0) {
@@ -351,7 +341,7 @@ export class TaskService {
       return;
     }
 
-    const existingLabels = await this.repository.findLabelsByNames(context.actorUserId, normalizedNames);
+    const existingLabels = await this.repository.findLabelsByNames(normalizedNames);
     const byName = new Map(existingLabels.map((label) => [label.name, label]));
 
     for (const name of normalizedNames) {
@@ -359,9 +349,9 @@ export class TaskService {
         continue;
       }
 
-      const label = await this.repository.createLabel({
-        workspaceId: context.workspaceId,
-        ownerUserId: context.actorUserId,
+      const label = await this.repository.upsertLabel({
+        workspaceId: null,
+        ownerUserId: null,
         name,
         color: generateLabelColor(name),
       });

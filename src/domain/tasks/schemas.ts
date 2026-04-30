@@ -37,7 +37,7 @@ export const taskMutationSchema = z
     priority: taskPrioritySchema,
     startDate: z.string().date().nullable().optional().default(null),
     dueDate: z.string().date().nullable().optional().default(null),
-    labels: z.array(z.string()).optional().default([]),
+    labels: z.array(z.string().trim().min(1).max(120)).max(30).optional().default([]),
     repeat: repeatSettingsSchema.optional().default({
       enabled: false,
       scheduleType: "interval_days",

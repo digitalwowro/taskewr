@@ -158,10 +158,18 @@ export class TasksRepository {
     });
   }
 
-  findLabelsByNames(ownerUserId: number | null, names: string[]) {
+  listLabels() {
+    return this.prisma.label.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        name: true,
+      },
+    });
+  }
+
+  findLabelsByNames(names: string[]) {
     return this.prisma.label.findMany({
       where: {
-        ownerUserId,
         name: {
           in: names,
         },
@@ -169,9 +177,11 @@ export class TasksRepository {
     });
   }
 
-  createLabel(data: Prisma.LabelUncheckedCreateInput) {
-    return this.prisma.label.create({
-      data,
+  upsertLabel(data: Prisma.LabelUncheckedCreateInput) {
+    return this.prisma.label.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
     });
   }
 

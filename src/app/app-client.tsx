@@ -154,6 +154,7 @@ export function TaskewrApp({
   const archivedProjects = data.archivedProjects;
   const projectTasksByProjectId = data.projectTasksByProjectId;
   const taskDetails = data.taskDetails;
+  const labels = data.labels;
   const currentTaskFilters = useMemo<TaskFilters>(
     () => ({
       sort,
@@ -949,6 +950,7 @@ export function TaskewrApp({
         taskEditorTask={taskEditorTask}
         taskDetails={taskDetails}
         projectOptions={projectOptions}
+        availableLabels={labels}
         parentTaskOptionsByProject={parentTaskOptionsByProject}
         taskMutationPending={taskMutationPending}
         taskMutationError={taskMutationError}
