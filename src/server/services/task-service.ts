@@ -22,8 +22,9 @@ import {
 } from "@/domain/tasks/schemas";
 import { getNextRepeatDueDate } from "@/domain/tasks/repeat-schedule";
 import type { RepeatSettingsInput } from "@/domain/tasks/repeat-schemas";
-import { NotFoundError, ValidationError } from "@/domain/common/errors";
+import { AuthorizationError, NotFoundError, ValidationError } from "@/domain/common/errors";
 import { AppContextService } from "@/server/services/app-context-service";
+import { TaskNotificationService } from "@/server/services/task-notification-service";
 import { db } from "@/lib/db";
 
 export class TaskService {
@@ -31,6 +32,7 @@ export class TaskService {
     private readonly repository = new TasksRepository(db),
     private readonly repeatRulesRepository = new RepeatRulesRepository(db),
     private readonly contextService = new AppContextService(),
+    private readonly notificationService = new TaskNotificationService(),
   ) {}
 
   async getTask(id: number) {
@@ -184,13 +186,16 @@ export class TaskService {
       priority: payload.priority,
       startDate: payload.startDate ? new Date(payload.startDate) : null,
       dueDate: payload.dueDate ? new Date(payload.dueDate) : null,
+      dueReminderTime: payload.dueReminderTime,
     });
 
+    await this.notificationService.subscribeTaskCreator(createdTask.id, context.actorUserId);
     await this.syncLabels(createdTask.id, payload.labels);
     await this.syncRepeatSettings(createdTask.id, payload, {
       workspaceId: targetProject.workspaceId,
       actorUserId: context.actorUserId,
     });
+    await this.notificationService.syncTaskDueReminder(createdTask.id);
     return this.getTask(createdTask.id);
   }
 
@@ -215,6 +220,19 @@ export class TaskService {
       nextStatus: payload.status,
     });
 
+    const reminderTimeChanged =
+      (currentTask.dueReminderTime ?? null) !== (payload.dueReminderTime ?? null);
+    const actorSubscribedToTask = currentTask.notificationSubscriptions.some(
+      (subscription) => subscription.userId === context.actorUserId,
+    );
+
+    if (reminderTimeChanged && !actorSubscribedToTask) {
+      throw new AuthorizationError(
+        "Subscribe to this task before changing reminder settings.",
+        "task_reminder_subscription_required",
+      );
+    }
+
     await this.repository.updateById(id, {
       projectId: payload.projectId,
       updatedByUserId: context.actorUserId,
@@ -225,6 +243,7 @@ export class TaskService {
       priority: payload.priority,
       startDate: payload.startDate ? new Date(payload.startDate) : null,
       dueDate: payload.dueDate ? new Date(payload.dueDate) : null,
+      dueReminderTime: payload.dueReminderTime,
       version: {
         increment: 1,
       },
@@ -235,6 +254,8 @@ export class TaskService {
       workspaceId: targetProject.workspaceId,
       actorUserId: context.actorUserId,
     }, currentTask.repeatRuleId);
+
+    await this.notificationService.syncTaskDueReminder(id);
     return this.getTask(id);
   }
 
@@ -257,6 +278,7 @@ export class TaskService {
       },
     });
 
+    await this.notificationService.syncTaskDueReminder(id);
     return this.getTask(id);
   }
 
@@ -276,6 +298,7 @@ export class TaskService {
       },
     });
 
+    await this.notificationService.syncTaskDueReminder(id);
     return this.getTask(id);
   }
 
@@ -330,6 +353,7 @@ export class TaskService {
       }
     });
 
+    await this.notificationService.syncTaskDueReminder(payload.taskId);
     return this.getTask(payload.taskId);
   }
 

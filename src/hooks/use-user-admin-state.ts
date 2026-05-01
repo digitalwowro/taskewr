@@ -19,6 +19,36 @@ export type UserAdminItem = {
   updatedAt: string;
 };
 
+export type UserProjectAccess = {
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  availableWorkspaces: {
+    id: number;
+    name: string;
+    slug: string;
+  }[];
+  workspaces: {
+    id: number;
+    name: string;
+    slug: string;
+    role: string;
+    availableProjects: {
+      id: number;
+      name: string;
+      isArchived: boolean;
+    }[];
+    projects: {
+      id: number;
+      name: string;
+      role: string;
+      isArchived: boolean;
+    }[];
+  }[];
+};
+
 type UserEditorInput = {
   name: string;
   email: string;
@@ -56,8 +86,14 @@ export function useUserAdminState({
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [passwordUserId, setPasswordUserId] = useState<number | null>(null);
   const [deactivatingUserId, setDeactivatingUserId] = useState<number | null>(null);
+  const [projectAccessUserId, setProjectAccessUserId] = useState<number | null>(null);
+  const [projectAccessDetails, setProjectAccessDetails] = useState<UserProjectAccess | null>(null);
+  const [projectAccessLoading, setProjectAccessLoading] = useState(false);
+  const [projectAccessError, setProjectAccessError] = useState<string | null>(null);
+  const [projectAccessMutationPending, setProjectAccessMutationPending] = useState(false);
   const [mutationPending, setMutationPending] = useState(false);
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [mutationNotice, setMutationNotice] = useState<string | null>(null);
 
   const editingUser = useMemo<UserAdminItem | null>(() => {
     if (editingUserId === NEW_USER_ID) {
@@ -85,6 +121,10 @@ export function useUserAdminState({
   const deactivatingUser = useMemo(
     () => users.find((user) => user.id === deactivatingUserId) ?? null,
     [deactivatingUserId, users],
+  );
+  const projectAccessUser = useMemo(
+    () => users.find((user) => user.id === projectAccessUserId) ?? null,
+    [projectAccessUserId, users],
   );
 
   const loadUsers = useCallback(async () => {
@@ -153,11 +193,13 @@ export function useUserAdminState({
 
   const openNewUser = () => {
     setMutationError(null);
+    setMutationNotice(null);
     setEditingUserId(NEW_USER_ID);
   };
 
   const openEditUser = (userId: number) => {
     setMutationError(null);
+    setMutationNotice(null);
     setEditingUserId(String(userId));
   };
 
@@ -168,6 +210,7 @@ export function useUserAdminState({
 
   const openPasswordReset = (userId: number) => {
     setMutationError(null);
+    setMutationNotice(null);
     setPasswordUserId(userId);
   };
 
@@ -178,12 +221,166 @@ export function useUserAdminState({
 
   const openDeactivateUser = (userId: number) => {
     setMutationError(null);
+    setMutationNotice(null);
     setDeactivatingUserId(userId);
   };
 
   const closeDeactivateUser = () => {
     setMutationError(null);
     setDeactivatingUserId(null);
+  };
+
+  const openProjectAccess = async (userId: number) => {
+    setMutationError(null);
+    setMutationNotice(null);
+    setProjectAccessUserId(userId);
+    setProjectAccessDetails(null);
+    setProjectAccessError(null);
+    setProjectAccessLoading(true);
+
+    try {
+      const details = await requestJson<UserProjectAccess>(
+        `/api/v1/users/${userId}/project-access`,
+      );
+      setProjectAccessDetails(details);
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      setProjectAccessError(toMutationError(error, "Could not load project access."));
+    } finally {
+      setProjectAccessLoading(false);
+    }
+  };
+
+  const closeProjectAccess = () => {
+    setProjectAccessUserId(null);
+    setProjectAccessDetails(null);
+    setProjectAccessError(null);
+    setProjectAccessLoading(false);
+    setProjectAccessMutationPending(false);
+  };
+
+  const removeProjectAccess = async (projectId: number) => {
+    if (!projectAccessUserId) {
+      return;
+    }
+
+    setProjectAccessMutationPending(true);
+    setProjectAccessError(null);
+
+    try {
+      const details = await requestJson<UserProjectAccess>(
+        `/api/v1/users/${projectAccessUserId}/project-access/${projectId}`,
+        {
+          method: "DELETE",
+        },
+      );
+      setProjectAccessDetails(details);
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      setProjectAccessError(toMutationError(error, "Could not remove project access."));
+    } finally {
+      setProjectAccessMutationPending(false);
+    }
+  };
+
+  const removeWorkspaceAccess = async (workspaceId: number) => {
+    if (!projectAccessUserId) {
+      return;
+    }
+
+    setProjectAccessMutationPending(true);
+    setProjectAccessError(null);
+
+    try {
+      const details = await requestJson<UserProjectAccess>(
+        `/api/v1/users/${projectAccessUserId}/workspace-access/${workspaceId}`,
+        {
+          method: "DELETE",
+        },
+      );
+      setProjectAccessDetails(details);
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      setProjectAccessError(toMutationError(error, "Could not remove workspace access."));
+    } finally {
+      setProjectAccessMutationPending(false);
+    }
+  };
+
+  const addWorkspaceAccess = async (workspaceId: number, role: string) => {
+    if (!projectAccessUserId) {
+      return;
+    }
+
+    setProjectAccessMutationPending(true);
+    setProjectAccessError(null);
+
+    try {
+      const details = await requestJson<UserProjectAccess>(
+        `/api/v1/users/${projectAccessUserId}/workspace-access`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ workspaceId, role }),
+        },
+      );
+      setProjectAccessDetails(details);
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      setProjectAccessError(toMutationError(error, "Could not add workspace access."));
+    } finally {
+      setProjectAccessMutationPending(false);
+    }
+  };
+
+  const addProjectAccess = async (projectId: number, role: string) => {
+    if (!projectAccessUserId) {
+      return;
+    }
+
+    setProjectAccessMutationPending(true);
+    setProjectAccessError(null);
+
+    try {
+      const details = await requestJson<UserProjectAccess>(
+        `/api/v1/users/${projectAccessUserId}/project-access`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ projectId, role }),
+        },
+      );
+      setProjectAccessDetails(details);
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      setProjectAccessError(toMutationError(error, "Could not add project access."));
+    } finally {
+      setProjectAccessMutationPending(false);
+    }
   };
 
   const saveUser = async (input: UserEditorInput) => {
@@ -193,6 +390,7 @@ export function useUserAdminState({
 
     setMutationPending(true);
     setMutationError(null);
+    setMutationNotice(null);
 
     try {
       if (editingUserId === NEW_USER_ID) {
@@ -256,6 +454,7 @@ export function useUserAdminState({
 
     setMutationPending(true);
     setMutationError(null);
+    setMutationNotice(null);
 
     try {
       await requestJson<UserAdminItem>(`/api/v1/users/${passwordUser.id}/password`, {
@@ -280,6 +479,32 @@ export function useUserAdminState({
     }
   };
 
+  const sendPasswordResetEmail = async (userId: number) => {
+    setMutationPending(true);
+    setMutationError(null);
+    setMutationNotice(null);
+
+    try {
+      const result = await requestJson<{ ok: boolean; message: string }>(
+        `/api/v1/users/${userId}/password-reset-email`,
+        {
+          method: "POST",
+        },
+      );
+
+      setMutationNotice(result.message || "Password reset email sent.");
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      setMutationError(toMutationError(error, "Could not send password reset email."));
+    } finally {
+      setMutationPending(false);
+    }
+  };
+
   const deactivateUser = async () => {
     if (!deactivatingUser) {
       return;
@@ -287,6 +512,7 @@ export function useUserAdminState({
 
     setMutationPending(true);
     setMutationError(null);
+    setMutationNotice(null);
 
     try {
       await requestJson<UserAdminItem>(`/api/v1/users/${deactivatingUser.id}`, {
@@ -310,6 +536,7 @@ export function useUserAdminState({
   const reactivateUser = async (userId: number) => {
     setMutationPending(true);
     setMutationError(null);
+    setMutationNotice(null);
 
     try {
       await requestJson<UserAdminItem>(`/api/v1/users/${userId}`, {
@@ -343,8 +570,14 @@ export function useUserAdminState({
     editingUser,
     passwordUser,
     deactivatingUser,
+    projectAccessUser,
+    projectAccessDetails,
+    projectAccessLoading,
+    projectAccessError,
+    projectAccessMutationPending,
     mutationPending,
     mutationError,
+    mutationNotice,
     setQuery,
     setIncludeInactive,
     openNewUser,
@@ -354,8 +587,15 @@ export function useUserAdminState({
     closePasswordReset,
     openDeactivateUser,
     closeDeactivateUser,
+    openProjectAccess,
+    closeProjectAccess,
+    addWorkspaceAccess,
+    addProjectAccess,
+    removeProjectAccess,
+    removeWorkspaceAccess,
     saveUser,
     resetPassword,
+    sendPasswordResetEmail,
     deactivateUser,
     reactivateUser,
   };

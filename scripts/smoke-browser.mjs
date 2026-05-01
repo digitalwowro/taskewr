@@ -3,8 +3,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { SMOKE_PROJECT_ID, SMOKE_TASK_ID } from "./smoke-constants.mjs";
 
 const BASE_URL = process.env.TASKEWR_BASE_URL || "http://127.0.0.1:3000";
-const EMAIL = process.env.TASKEWR_SMOKE_EMAIL || "account@taskewr.com";
-const PASSWORD = process.env.TASKEWR_SMOKE_PASSWORD || "taskewr";
+const EMAIL = process.env.TASKEWR_SMOKE_EMAIL || "admin@taskewr.com";
+const PASSWORD = process.env.TASKEWR_SMOKE_PASSWORD || "admin";
 const ARTIFACT_DIR = process.env.TASKEWR_SMOKE_ARTIFACT_DIR || "test-results/smoke-browser";
 
 async function saveFailureArtifacts(page) {

@@ -1,6 +1,14 @@
 import { assertCanManageUsers } from "@/domain/auth/policies";
 import { NotFoundError, ValidationError } from "@/domain/common/errors";
 import {
+  projectMemberUpdateSchema,
+  type ProjectMemberUpdateInput,
+} from "@/domain/projects/schemas";
+import {
+  workspaceMemberUpdateSchema,
+  type WorkspaceMemberUpdateInput,
+} from "@/domain/workspaces/schemas";
+import {
   adminUserCreateSchema,
   adminUserPasswordSchema,
   adminUserUpdateSchema,
@@ -10,7 +18,12 @@ import {
   type AdminUserUpdateInput,
   type UserListQueryInput,
 } from "@/domain/users/schemas";
-import { UsersRepository, type UserAdminRecord } from "@/data/prisma/repositories/users-repository";
+import {
+  UsersRepository,
+  type UserAvailableWorkspaceRecord,
+  type UserAdminRecord,
+  type UserProjectAccessRecord,
+} from "@/data/prisma/repositories/users-repository";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { AppContextService, type AppContext } from "@/server/services/app-context-service";
@@ -29,6 +42,36 @@ export type UserAdminItem = {
   updatedAt: Date;
 };
 
+export type UserProjectAccess = {
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  availableWorkspaces: {
+    id: number;
+    name: string;
+    slug: string;
+  }[];
+  workspaces: {
+    id: number;
+    name: string;
+    slug: string;
+    role: string;
+    availableProjects: {
+      id: number;
+      name: string;
+      isArchived: boolean;
+    }[];
+    projects: {
+      id: number;
+      name: string;
+      role: string;
+      isArchived: boolean;
+    }[];
+  }[];
+};
+
 function toUserAdminItem(user: UserAdminRecord): UserAdminItem {
   return {
     id: user.id,
@@ -42,6 +85,63 @@ function toUserAdminItem(user: UserAdminRecord): UserAdminItem {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
+}
+
+function toUserProjectAccess(
+  user: UserProjectAccessRecord,
+  availableWorkspaces: UserAvailableWorkspaceRecord[],
+): UserProjectAccess {
+  const projectsByWorkspaceId = new Map<number, UserProjectAccess["workspaces"][number]["projects"]>();
+
+  for (const membership of user.projectMemberships) {
+    const workspaceId = membership.project.workspaceId;
+
+    if (workspaceId === null) {
+      continue;
+    }
+
+    const projects = projectsByWorkspaceId.get(workspaceId) ?? [];
+    projects.push({
+      id: membership.project.id,
+      name: membership.project.name,
+      role: membership.role,
+      isArchived: membership.project.archivedAt !== null,
+    });
+    projectsByWorkspaceId.set(workspaceId, projects);
+  }
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    },
+    availableWorkspaces,
+    workspaces: user.memberships.map((membership) => ({
+      id: membership.workspace.id,
+      name: membership.workspace.name,
+      slug: membership.workspace.slug,
+      role: membership.role,
+      availableProjects: membership.workspace.projects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        isArchived: project.archivedAt !== null,
+      })),
+      projects: (projectsByWorkspaceId.get(membership.workspace.id) ?? []).sort((first, second) =>
+        first.name.localeCompare(second.name),
+      ),
+    })),
+  };
+}
+
+function parsePositiveInteger(value: unknown, label: string, code: string) {
+  const numberValue = Number(value);
+
+  if (!Number.isInteger(numberValue) || numberValue < 1) {
+    throw new ValidationError(`Invalid ${label}.`, code);
+  }
+
+  return numberValue;
 }
 
 export class UserAdminService {
@@ -98,6 +198,122 @@ export class UserAdminService {
     const users = await this.repository.listUsers(payload);
 
     return users.map(toUserAdminItem);
+  }
+
+  async getUserProjectAccess(userId: number) {
+    await this.getAdminContext();
+    const user = await this.repository.findProjectAccessById(userId);
+
+    if (!user) {
+      throw new NotFoundError("User not found.", "user_not_found");
+    }
+
+    const availableWorkspaces = await this.repository.listAvailableWorkspacesForUser(userId);
+
+    return toUserProjectAccess(user, availableWorkspaces);
+  }
+
+  async addUserProjectAccess(userId: number, input: ProjectMemberUpdateInput & { projectId: number }) {
+    await this.getAdminContext();
+    const projectId = parsePositiveInteger(input.projectId, "project id", "project_id_invalid");
+    const payload = projectMemberUpdateSchema.parse({ role: input.role });
+    const project = await this.repository.findProjectAvailableToUser(userId, projectId);
+
+    if (!project) {
+      throw new ValidationError(
+        "Project is not available for this user.",
+        "project_access_not_available",
+      );
+    }
+
+    await this.repository.addProjectMembership(userId, projectId, payload.role);
+
+    return this.getUserProjectAccess(userId);
+  }
+
+  async addUserWorkspaceAccess(userId: number, input: WorkspaceMemberUpdateInput & { workspaceId: number }) {
+    await this.getAdminContext();
+    const workspaceId = parsePositiveInteger(input.workspaceId, "workspace id", "workspace_id_invalid");
+    const payload = workspaceMemberUpdateSchema.parse({ role: input.role });
+    const workspace = await this.repository.findWorkspaceAvailableToUser(userId, workspaceId);
+
+    if (!workspace) {
+      throw new ValidationError(
+        "Workspace is not available for this user.",
+        "workspace_access_not_available",
+      );
+    }
+
+    await this.repository.addWorkspaceMembership(userId, workspaceId, payload.role);
+
+    return this.getUserProjectAccess(userId);
+  }
+
+  async removeUserWorkspaceAccess(userId: number, workspaceId: number) {
+    await this.getAdminContext();
+    const membership = await this.repository.findWorkspaceMembership(userId, workspaceId);
+
+    if (!membership) {
+      throw new NotFoundError("Workspace access not found.", "workspace_access_not_found");
+    }
+
+    const projectMemberships =
+      await this.repository.countUserProjectMembershipsInWorkspace(userId, workspaceId);
+
+    if (projectMemberships > 0) {
+      throw new ValidationError(
+        "Remove this user's project access before removing them from the workspace.",
+        "workspace_member_has_projects",
+      );
+    }
+
+    const workspaceMemberships = await this.repository.countUserWorkspaceMemberships(userId);
+
+    if (workspaceMemberships <= 1) {
+      throw new ValidationError(
+        "A user must belong to at least one workspace.",
+        "workspace_member_last_workspace",
+      );
+    }
+
+    if (membership.role === "owner" && membership.user.deactivatedAt === null) {
+      const ownerCount = await this.repository.countActiveWorkspaceOwners(workspaceId);
+
+      if (ownerCount <= 1) {
+        throw new ValidationError(
+          "At least one active workspace owner is required.",
+          "workspace_last_owner",
+        );
+      }
+    }
+
+    await this.repository.removeWorkspaceMembership(userId, workspaceId);
+
+    return this.getUserProjectAccess(userId);
+  }
+
+  async removeUserProjectAccess(userId: number, projectId: number) {
+    await this.getAdminContext();
+    const membership = await this.repository.findProjectMembership(userId, projectId);
+
+    if (!membership) {
+      throw new NotFoundError("Project access not found.", "project_access_not_found");
+    }
+
+    if (membership.role === "owner" && membership.user.deactivatedAt === null) {
+      const ownerCount = await this.repository.countActiveProjectOwners(projectId);
+
+      if (ownerCount <= 1) {
+        throw new ValidationError(
+          "At least one active project owner is required.",
+          "project_last_owner",
+        );
+      }
+    }
+
+    await this.repository.removeProjectMembership(userId, projectId);
+
+    return this.getUserProjectAccess(userId);
   }
 
   async createUser(input: AdminUserCreateInput) {
@@ -174,6 +390,9 @@ export class UserAdminService {
 
     const user = await this.repository.updateById(userId, {
       passwordHash: hashPassword(payload.password),
+      sessionVersion: {
+        increment: 1,
+      },
     });
 
     return toUserAdminItem(user);

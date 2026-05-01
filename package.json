@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 0.0.0.0",
+    "dev": "node scripts/next-dev.mjs",
+    "dev:all": "node scripts/dev-all.mjs",
     "build": "next build",
     "build:prod": "next build",
     "start": "rm -rf .next/standalone/.next/static && cp -R .next/static .next/standalone/.next/static && node .next/standalone/server.js",
@@ -14,6 +15,7 @@
     "smoke:browser": "node scripts/smoke-browser.mjs",
     "smoke:container": "node scripts/smoke-container.mjs",
     "dev:reset": "node scripts/dev-reset.mjs",
+    "worker:notifications": "tsx src/worker/notification-worker.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
@@ -25,10 +27,12 @@
     "@prisma/client": "^7.8.0",
     "dotenv": "^17.3.1",
     "next": "16.2.4",
+    "nodemailer": "^8.0.7",
     "pg": "^8.20.0",
     "prisma": "^7.8.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "tsx": "^4.21.0",
     "zod": "^4.1.12"
   },
   "prisma": {
@@ -38,13 +42,13 @@
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.12.2",
+    "@types/nodemailer": "^8.0.0",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "tailwindcss": "^4",
-    "tsx": "^4.21.0",
     "typescript": "^5"
   },
   "overrides": {

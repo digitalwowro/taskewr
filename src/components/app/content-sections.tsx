@@ -444,6 +444,8 @@ function DashboardTaskSubsection({
   onEditTask,
   onCompleteTask,
   completingTaskId,
+  subscriptionPendingTaskId,
+  onToggleTaskSubscription,
 }: {
   title: string;
   countTone: "green" | "red" | "blue";
@@ -462,6 +464,11 @@ function DashboardTaskSubsection({
   onEditTask: (taskId: string) => void;
   onCompleteTask: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
   completingTaskId: string | null;
+  subscriptionPendingTaskId: string | null;
+  onToggleTaskSubscription: (
+    task: Pick<TaskListItem, "id" | "isSubscribedToNotifications">,
+    nextSubscribed: boolean,
+  ) => void;
 }) {
   return (
     <section className={`overflow-hidden rounded-xl border bg-white ${borderClass}`}>
@@ -494,6 +501,8 @@ function DashboardTaskSubsection({
                   onEdit={onEditTask}
                   onComplete={onCompleteTask}
                   isCompleting={completingTaskId === item.id}
+                  isSubscriptionPending={subscriptionPendingTaskId === item.id}
+                  onToggleSubscription={onToggleTaskSubscription}
                 />
               ))}
             </div>
@@ -510,6 +519,8 @@ function DashboardTaskSubsection({
                         onEdit={onEditTask}
                         onComplete={onCompleteTask}
                         isCompleting={completingTaskId === item.id}
+                        isSubscriptionPending={subscriptionPendingTaskId === item.id}
+                        onToggleSubscription={onToggleTaskSubscription}
                       />
                     ) : (
                       <FocusItem
@@ -518,6 +529,8 @@ function DashboardTaskSubsection({
                         onEdit={onEditTask}
                         onComplete={onCompleteTask}
                         isCompleting={completingTaskId === item.id}
+                        isSubscriptionPending={subscriptionPendingTaskId === item.id}
+                        onToggleSubscription={onToggleTaskSubscription}
                       />
                     ),
                   )}
@@ -546,6 +559,8 @@ export function DashboardContent({
   onEditTask,
   onCompleteTask,
   completingTaskId,
+  subscriptionPendingTaskId,
+  onToggleTaskSubscription,
   onOpenProjects,
   onNewTask,
   onOpenProject,
@@ -560,6 +575,11 @@ export function DashboardContent({
   onEditTask: (taskId: string) => void;
   onCompleteTask: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
   completingTaskId: string | null;
+  subscriptionPendingTaskId: string | null;
+  onToggleTaskSubscription: (
+    task: Pick<TaskListItem, "id" | "isSubscribedToNotifications">,
+    nextSubscribed: boolean,
+  ) => void;
   onOpenProjects: () => void;
   onNewTask: (projectId: string) => void;
   onOpenProject: (projectId: string) => void;
@@ -670,6 +690,8 @@ export function DashboardContent({
             onEditTask={onEditTask}
             onCompleteTask={onCompleteTask}
             completingTaskId={completingTaskId}
+            subscriptionPendingTaskId={subscriptionPendingTaskId}
+            onToggleTaskSubscription={onToggleTaskSubscription}
           />
         ) : null}
 
@@ -691,6 +713,8 @@ export function DashboardContent({
           onEditTask={onEditTask}
           onCompleteTask={onCompleteTask}
           completingTaskId={completingTaskId}
+          subscriptionPendingTaskId={subscriptionPendingTaskId}
+          onToggleTaskSubscription={onToggleTaskSubscription}
         />
       </div>
     );
@@ -890,6 +914,8 @@ export function DashboardContent({
                     onEdit={onEditTask}
                     onComplete={onCompleteTask}
                     completingTaskId={completingTaskId}
+                    subscriptionPendingTaskId={subscriptionPendingTaskId}
+                    onToggleSubscription={onToggleTaskSubscription}
                     onNewTask={onNewTask}
                     onOpenProject={onOpenProject}
                   />
@@ -1087,6 +1113,8 @@ export function ProjectDetailContent({
   onEditTask,
   onCompleteTask,
   completingTaskId,
+  subscriptionPendingTaskId,
+  onToggleTaskSubscription,
   onMoveTask,
   onEditProject,
   onBackToProjects,
@@ -1108,6 +1136,11 @@ export function ProjectDetailContent({
   onEditTask: (taskId: string) => void;
   onCompleteTask: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
   completingTaskId: string | null;
+  subscriptionPendingTaskId: string | null;
+  onToggleTaskSubscription: (
+    task: Pick<TaskListItem, "id" | "isSubscribedToNotifications">,
+    nextSubscribed: boolean,
+  ) => void;
   onMoveTask: (taskId: string, nextStatus: TaskStatus) => void;
   onEditProject: () => void;
   onBackToProjects: () => void;
@@ -1177,6 +1210,8 @@ export function ProjectDetailContent({
                           onEdit={onEditTask}
                           onComplete={onCompleteTask}
                           isCompleting={completingTaskId === item.id}
+                          isSubscriptionPending={subscriptionPendingTaskId === item.id}
+                          onToggleSubscription={onToggleTaskSubscription}
                           showProject={false}
                         />
                       ))}
@@ -1196,6 +1231,8 @@ export function ProjectDetailContent({
                 onEdit={onEditTask}
                 onComplete={onCompleteTask}
                 completingTaskId={completingTaskId}
+                subscriptionPendingTaskId={subscriptionPendingTaskId}
+                onToggleSubscription={onToggleTaskSubscription}
                 onMoveTask={onMoveTask}
                 draggingTaskId={draggingProjectTaskId}
                 onDragTaskStart={onDragTaskStart}
@@ -1208,6 +1245,8 @@ export function ProjectDetailContent({
                 onEdit={onEditTask}
                 onComplete={onCompleteTask}
                 completingTaskId={completingTaskId}
+                subscriptionPendingTaskId={subscriptionPendingTaskId}
+                onToggleSubscription={onToggleTaskSubscription}
                 onMoveTask={onMoveTask}
                 draggingTaskId={draggingProjectTaskId}
                 onDragTaskStart={onDragTaskStart}
@@ -1220,6 +1259,8 @@ export function ProjectDetailContent({
                 onEdit={onEditTask}
                 onComplete={onCompleteTask}
                 completingTaskId={completingTaskId}
+                subscriptionPendingTaskId={subscriptionPendingTaskId}
+                onToggleSubscription={onToggleTaskSubscription}
                 onMoveTask={onMoveTask}
                 draggingTaskId={draggingProjectTaskId}
                 onDragTaskStart={onDragTaskStart}
@@ -1260,6 +1301,8 @@ export function ProjectDetailContent({
                               onEdit={onEditTask}
                               onComplete={onCompleteTask}
                               isCompleting={completingTaskId === item.id}
+                              isSubscriptionPending={subscriptionPendingTaskId === item.id}
+                              onToggleSubscription={onToggleTaskSubscription}
                               showProject={false}
                             />
                           ))}
@@ -1302,6 +1345,8 @@ export function ProjectDetailContent({
                               onEdit={onEditTask}
                               onComplete={onCompleteTask}
                               isCompleting={completingTaskId === item.id}
+                              isSubscriptionPending={subscriptionPendingTaskId === item.id}
+                              onToggleSubscription={onToggleTaskSubscription}
                               showProject={false}
                             />
                           ))}

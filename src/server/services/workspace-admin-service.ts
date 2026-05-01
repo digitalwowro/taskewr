@@ -14,14 +14,17 @@ import {
   workspaceMemberCreateSchema,
   workspaceMemberNewUserSchema,
   workspaceMemberUpdateSchema,
+  workspaceMoveSchema,
   workspaceMutationSchema,
   type WorkspaceListQueryInput,
   type WorkspaceMemberCreateInput,
   type WorkspaceMemberNewUserInput,
   type WorkspaceMemberUpdateInput,
+  type WorkspaceMoveInput,
   type WorkspaceMutationInput,
 } from "@/domain/workspaces/schemas";
 import { personalWorkspaceName, slugifyWorkspaceName } from "@/domain/workspaces/slug";
+import { assertWorkspaceMoveTargetExists } from "@/domain/workspaces/ordering";
 import {
   WorkspacesRepository,
   type WorkspaceAdminRecord,
@@ -46,6 +49,7 @@ export type WorkspaceAdminItem = {
   slug: string;
   ownerUserId: number | null;
   ownerName: string | null;
+  sortOrder: number;
   actorCanManage: boolean;
   actorCanManageOwners: boolean;
   actorCanDelete: boolean;
@@ -138,6 +142,7 @@ function toWorkspaceAdminItem(
     slug: workspace.slug,
     ownerUserId: workspace.ownerUserId,
     ownerName: workspace.owner?.name ?? null,
+    sortOrder: workspace.sortOrder,
     actorCanManage: canManageWorkspace(actor, workspace.id),
     actorCanManageOwners: canManageWorkspaceOwners(actor, workspace.id),
     actorCanDelete: canDeleteWorkspace(actor, workspace.id),
@@ -356,11 +361,13 @@ export class WorkspaceAdminService {
     }
 
     const slug = await this.generateUniqueWorkspaceSlug(payload.name);
+    const aggregate = await this.repository.maxSortOrder();
     const workspace = await this.repository.createWithOwner({
       ownerUserId,
       name: payload.name,
       description: payload.description ?? null,
       slug,
+      sortOrder: (aggregate._max.sortOrder ?? 0) + 1,
     });
     const actorAlreadyHasMembership = actor.workspaceMemberships.some(
       (membership) => membership.workspaceId === workspace.id,
@@ -382,6 +389,52 @@ export class WorkspaceAdminService {
     };
 
     return toWorkspaceAdminItem(workspace, nextActor);
+  }
+
+  async moveWorkspace(id: number, input: WorkspaceMoveInput) {
+    const payload = workspaceMoveSchema.parse(input);
+    const { context, actor } = await this.getContext();
+    const workspace = await this.repository.findById(id);
+
+    if (!workspace) {
+      throw new NotFoundError("Workspace not found.", "workspace_not_found");
+    }
+
+    assertCanManageWorkspace(actor, id);
+
+    const visibleWorkspaces = await this.repository.listWorkspacesForReorder({
+      isAppAdmin: context.appRole === "admin",
+      visibleWorkspaceIds: context.accessibleWorkspaceIds,
+    });
+    const currentIndex = visibleWorkspaces.findIndex((candidate) => candidate.id === workspace.id);
+
+    if (currentIndex === -1) {
+      assertWorkspaceMoveTargetExists(null);
+    }
+
+    const targetIndex = payload.direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const targetWorkspace = visibleWorkspaces[targetIndex] ?? null;
+
+    assertWorkspaceMoveTargetExists(targetWorkspace?.sortOrder ?? null);
+
+    const reorderedWorkspaces = [...visibleWorkspaces];
+    const [movedWorkspace] = reorderedWorkspaces.splice(currentIndex, 1);
+    reorderedWorkspaces.splice(targetIndex, 0, movedWorkspace);
+
+    await this.repository.updateWorkspaceSortOrders(
+      reorderedWorkspaces.map((candidate, index) => ({
+        id: candidate.id,
+        sortOrder: index + 1,
+      })),
+    );
+
+    const updatedWorkspace = await this.repository.findById(workspace.id);
+
+    if (!updatedWorkspace) {
+      throw new NotFoundError("Workspace not found.", "workspace_not_found");
+    }
+
+    return toWorkspaceAdminItem(updatedWorkspace, actor);
   }
 
   async updateWorkspace(workspaceId: number, input: WorkspaceMutationInput) {

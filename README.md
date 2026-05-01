@@ -63,10 +63,11 @@ Open:
 http://YOUR_SERVER:3000
 ```
 
-Default login:
+Default logins:
 
 ```
-account@taskewr.com / taskewr
+admin@taskewr.com / admin
+user@taskewr.com / user
 ```
 
 ---
@@ -163,52 +164,9 @@ Recreate the container with the latest image.
 
 ---
 
-## 🧪 Local Development
-
-In development, run Postgres in Docker and run the Next.js app locally with Node.
-
-Requirements:
-
-* Node.js 22+
-* Docker Engine 24+
-* Docker Compose v2
-
-```bash
-cp .env.dev.example .env.dev
-docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
-set -a; source .env.dev; set +a
-npm ci
-npm run prisma:generate
-npm run prisma:migrate:dev
-npm run prisma:seed
-npm run dev
-```
-
-Open:
-
-```
-http://localhost:3000
-```
-
-Useful commands:
-
-```bash
-docker compose --env-file .env.dev -f docker-compose.dev.yml logs -f db
-docker compose --env-file .env.dev -f docker-compose.dev.yml down
-set -a; source .env.dev; set +a
-npm run lint
-npm test
-npm run build
-npm run dev:reset
-npm run smoke:container
-npm run clean:macos
-```
-
----
-
 ## 📚 Documentation
 
-Project documentation lives in [`docs/`](./docs/).
+Project documentation lives in [`docs/`](./docs/). For local development, see [`docs/development.md`](./docs/development.md).
 
 ---
 

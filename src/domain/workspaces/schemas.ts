@@ -54,6 +54,10 @@ export const workspaceMemberUpdateSchema = z.object({
   role: z.enum(MANAGEABLE_WORKSPACE_ROLES),
 });
 
+export const workspaceMoveSchema = z.object({
+  direction: z.enum(["up", "down"]),
+});
+
 export const workspaceMemberNewUserSchema = z.object({
   name: z.string().trim().min(1).max(120),
   email: normalizedEmailSchema,
@@ -66,4 +70,5 @@ export type WorkspaceListQueryInput = z.input<typeof workspaceListQuerySchema>;
 export type WorkspaceMutationInput = z.input<typeof workspaceMutationSchema>;
 export type WorkspaceMemberCreateInput = z.input<typeof workspaceMemberCreateSchema>;
 export type WorkspaceMemberUpdateInput = z.input<typeof workspaceMemberUpdateSchema>;
+export type WorkspaceMoveInput = z.input<typeof workspaceMoveSchema>;
 export type WorkspaceMemberNewUserInput = z.input<typeof workspaceMemberNewUserSchema>;

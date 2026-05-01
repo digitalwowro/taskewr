@@ -19,6 +19,7 @@ export type TaskMutationInput = {
   priority: TaskPriority;
   startDate: string | null;
   dueDate: string | null;
+  dueReminderTime: string | null;
   labels: string[];
   repeat: RepeatSettingsInput;
 };
@@ -74,6 +75,8 @@ export function useTaskEditorState({
       statusValue: "todo",
       due: "",
       dueDate: null,
+      dueReminderTime: null,
+      isSubscribedToNotifications: true,
       priority: "Medium",
       priorityValue: "medium",
       startDate: null,

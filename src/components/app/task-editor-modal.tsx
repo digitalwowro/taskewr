@@ -7,16 +7,41 @@ import type { RepeatIncompleteBehavior, RepeatScheduleType } from "@/domain/task
 import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
 import { TaskCoreFields, type TaskEditorFieldErrors } from "@/components/app/task-core-fields";
 import { TaskRepeatSettings } from "@/components/app/task-repeat-settings";
-import { ModalHeaderKicker } from "@/components/app/ui";
+import { IconTooltip, ModalHeaderKicker, TaskSubscriptionButton } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 const NEW_TASK_ID = "NEW_TASK";
+
+async function copyTextToClipboard(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = value;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  textArea.style.top = "0";
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  try {
+    if (!document.execCommand("copy")) {
+      throw new Error("Clipboard copy failed.");
+    }
+  } finally {
+    document.body.removeChild(textArea);
+  }
+}
 
 function validateTaskEditorInput(input: {
   projectId: string;
   title: string;
   startDateValue: string;
   dueDateValue: string;
+  dueReminderTimeValue: string;
 }) {
   const errors: TaskEditorFieldErrors = {};
 
@@ -34,6 +59,10 @@ function validateTaskEditorInput(input: {
     input.dueDateValue < input.startDateValue
   ) {
     errors.dueDate = "Due date must be on or after start date.";
+  }
+
+  if (input.dueReminderTimeValue && !input.dueDateValue) {
+    errors.dueReminderTime = "Choose a due date before adding a reminder.";
   }
 
   return errors;
@@ -55,6 +84,7 @@ export function TaskEditorModal(props: {
     priority: TaskPriority;
     startDate: string | null;
     dueDate: string | null;
+    dueReminderTime: string | null;
     labels: string[];
     repeat: {
       enabled: boolean;
@@ -66,6 +96,7 @@ export function TaskEditorModal(props: {
       incompleteBehavior: RepeatIncompleteBehavior;
     };
   }) => Promise<void>;
+  onToggleSubscription: (nextSubscribed: boolean) => Promise<void>;
   isSaving: boolean;
   error: string | null;
 }) {
@@ -84,6 +115,7 @@ function TaskEditorModalContent({
   parentTaskOptionsByProject,
   onClose,
   onSave,
+  onToggleSubscription,
   isSaving,
   error,
 }: {
@@ -102,6 +134,7 @@ function TaskEditorModalContent({
     priority: TaskPriority;
     startDate: string | null;
     dueDate: string | null;
+    dueReminderTime: string | null;
     labels: string[];
     repeat: {
       enabled: boolean;
@@ -113,10 +146,13 @@ function TaskEditorModalContent({
       incompleteBehavior: RepeatIncompleteBehavior;
     };
   }) => Promise<void>;
+  onToggleSubscription: (nextSubscribed: boolean) => Promise<void>;
   isSaving: boolean;
   error: string | null;
 }) {
   const [copied, setCopied] = useState(false);
+  const [subscriptionPending, setSubscriptionPending] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
 
   const isCreating = task.id === NEW_TASK_ID;
 
@@ -137,6 +173,7 @@ function TaskEditorModalContent({
     },
     startDateValue: "",
     dueDateValue: "",
+    dueReminderTime: "",
     projectOptions,
     parentTaskOptions: [],
   };
@@ -164,6 +201,7 @@ function TaskEditorModalContent({
   const [priority, setPriority] = useState<TaskPriority>(task.priorityValue);
   const [startDateValue, setStartDateValue] = useState(details.startDateValue);
   const [dueDateValue, setDueDateValue] = useState(details.dueDateValue);
+  const [dueReminderTimeValue, setDueReminderTimeValue] = useState(details.dueReminderTime ?? "");
   const [labels, setLabels] = useState(normalizeLabelNames(details.labels));
   const [repeatEnabled, setRepeatEnabled] = useState(repeatDetails.enabled);
   const [repeatScheduleType, setRepeatScheduleType] = useState<RepeatScheduleType>(
@@ -208,8 +246,9 @@ function TaskEditorModalContent({
         title,
         startDateValue,
         dueDateValue,
+        dueReminderTimeValue,
       }),
-    [dueDateValue, projectId, startDateValue, title],
+    [dueDateValue, dueReminderTimeValue, projectId, startDateValue, title],
   );
 
   const handleShare = async () => {
@@ -220,11 +259,28 @@ function TaskEditorModalContent({
     const taskUrl = `${window.location.origin}/tasks/${task.id.replace("TSK-", "")}`;
 
     try {
-      await navigator.clipboard.writeText(taskUrl);
+      await copyTextToClipboard(taskUrl);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
       setCopied(false);
+    }
+  };
+
+  const handleSubscriptionToggle = async (nextSubscribed: boolean) => {
+    if (isCreating || subscriptionPending) {
+      return;
+    }
+
+    setSubscriptionPending(true);
+    setSubscriptionError(null);
+
+    try {
+      await onToggleSubscription(nextSubscribed);
+    } catch (error) {
+      setSubscriptionError(error instanceof Error ? error.message : "Could not update notification subscription.");
+    } finally {
+      setSubscriptionPending(false);
     }
   };
 
@@ -244,6 +300,7 @@ function TaskEditorModalContent({
       priority,
       startDate: startDateValue || null,
       dueDate: dueDateValue || null,
+      dueReminderTime: dueReminderTimeValue || null,
       labels,
       repeat: {
         enabled: repeatEnabled,
@@ -288,46 +345,60 @@ function TaskEditorModalContent({
         <div className="sticky top-0 z-10 border-b border-[var(--line-soft)] bg-white/95 px-5 py-4 backdrop-blur">
           <div className="flex items-start gap-4">
             <div className="space-y-1.5">
-              <ModalHeaderKicker code={isCreating ? "NEW" : task.id} label={isCreating ? "New task" : "Edit task"} />
-              <div className="flex items-center gap-3">
-                <h2
-                  id="task-editor-title"
-                  className="text-[2rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink-strong)]"
-                >
-                  {isCreating ? "Create task" : task.title}
-                </h2>
-                {!isCreating ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      aria-label="Share task"
-                      title="Share task"
-                      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
-                        copied
-                          ? "border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
-                          : "border-[var(--line-strong)] bg-white text-[var(--ink-subtle)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
-                      }`}
-                    >
-                      <svg
-                        viewBox="0 0 20 20"
-                        className="h-4.5 w-4.5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.7"
+	              <ModalHeaderKicker code={isCreating ? "NEW" : task.id} label={isCreating ? "New task" : "Edit task"} />
+	              <div className="flex items-center gap-3">
+	                {!isCreating ? (
+	                  <TaskSubscriptionButton
+	                    task={task}
+	                    isPending={subscriptionPending}
+	                    size="toolbar"
+	                    tooltipAlign="left"
+	                    tooltipSide="bottom"
+	                    onToggleSubscription={(_targetTask, nextSubscribed) =>
+	                      handleSubscriptionToggle(nextSubscribed)
+	                    }
+	                  />
+	                ) : null}
+	                <h2
+	                  id="task-editor-title"
+	                  className="text-[2rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink-strong)]"
+	                >
+	                  {isCreating ? "Create task" : task.title}
+	                </h2>
+	                {!isCreating ? (
+	                  <>
+	                    <IconTooltip label="Get link" tooltipSide="bottom">
+                      <button
+                        type="button"
+                        onClick={handleShare}
+                        aria-label="Get link"
+                        title="Get link"
+                        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
+                          copied
+                            ? "border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
+                            : "border-[var(--line-strong)] bg-white text-[var(--ink-subtle)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+                        }`}
                       >
-                        <path
-                          d="M7.5 10.5a2.5 2.5 0 0 1 0-3.5l2-2a2.5 2.5 0 1 1 3.5 3.5l-.75.75"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M12.5 9.5a2.5 2.5 0 0 1 0 3.5l-2 2A2.5 2.5 0 1 1 7 11.5l.75-.75"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
+                        <svg
+                          viewBox="0 0 20 20"
+                          className="h-4.5 w-4.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                        >
+                          <path
+                            d="M7.5 10.5a2.5 2.5 0 0 1 0-3.5l2-2a2.5 2.5 0 1 1 3.5 3.5l-.75.75"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M12.5 9.5a2.5 2.5 0 0 1 0 3.5l-2 2A2.5 2.5 0 1 1 7 11.5l.75-.75"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    </IconTooltip>
                     {copied ? (
                       <span
                         aria-live="polite"
@@ -349,6 +420,7 @@ function TaskEditorModalContent({
               key={task.id}
               availableProjectOptions={availableProjectOptions}
               availableLabels={availableLabels}
+              canEditReminder={isCreating || Boolean(task.isSubscribedToNotifications)}
               description={description}
               dueDateValue={dueDateValue}
               fieldErrors={fieldErrors}
@@ -361,6 +433,7 @@ function TaskEditorModalContent({
               projectId={projectId}
               setDescription={setDescription}
               setDueDateValue={setDueDateValue}
+              setDueReminderTimeValue={setDueReminderTimeValue}
               setFieldErrors={setFieldErrors}
               setLabels={setLabels}
               setParentTaskId={setParentTaskId}
@@ -370,6 +443,7 @@ function TaskEditorModalContent({
               setStatus={setStatus}
               setTitle={setTitle}
               startDateValue={startDateValue}
+              dueReminderTimeValue={dueReminderTimeValue}
               status={status}
               taskId={task.id}
               title={title}
@@ -395,6 +469,11 @@ function TaskEditorModalContent({
             {error ? (
               <p aria-live="polite" className="text-sm text-[var(--accent-red)]">
                 {error}
+              </p>
+            ) : null}
+            {subscriptionError ? (
+              <p aria-live="polite" className="text-sm text-[var(--accent-red)]">
+                {subscriptionError}
               </p>
             ) : null}
           </section>

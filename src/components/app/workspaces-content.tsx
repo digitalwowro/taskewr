@@ -3,12 +3,9 @@
 import { useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 
-import { accessRoleTone, workspaceRoleLabel } from "@/components/app/access-role-format";
 import { ToolbarMenuFrame } from "@/components/app/filter-toolbar";
-import { MetricCard, StatusPill as AppStatusPill } from "@/components/app/ui";
-import type {
-  WorkspaceAdminItem,
-} from "@/hooks/use-workspace-admin-state";
+import { MetricCard } from "@/components/app/ui";
+import type { WorkspaceAdminItem } from "@/hooks/use-workspace-admin-state";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -43,10 +40,9 @@ function WorkspaceMetaRail({ workspace }: { workspace: WorkspaceAdminItem }) {
   return (
     <dl className="flex max-w-full flex-wrap gap-1.5">
       <WorkspaceMetaItem label="ID" value={`WKS-${workspace.id}`} />
-      <WorkspaceMetaItem label="Members" value={pluralize(workspace.memberCount, "member")} />
       <WorkspaceMetaItem label="Workspace Owner" value={workspace.ownerName ?? "Unassigned"} />
+      <WorkspaceMetaItem label="Workspace Members" value={pluralize(workspace.memberCount, "member")} />
       <WorkspaceMetaItem label="Projects" value={String(workspace.projectCount)} />
-      <WorkspaceMetaItem label="Labels" value={String(workspace.labelCount)} />
       <WorkspaceMetaItem label="Updated" value={formatDate(workspace.updatedAt)} />
     </dl>
   );
@@ -116,31 +112,60 @@ function DeleteIcon() {
   );
 }
 
-function RemoveIcon() {
+function UsersIcon() {
   return (
     <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <circle cx="8" cy="8" r="5.6" />
-      <path d="M5.25 8h5.5" strokeLinecap="round" />
+      <path d="M6.4 7.15a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+      <path d="M2.35 13.15c.35-2.25 1.95-3.65 4.05-3.65 1 0 1.88.32 2.55.9" strokeLinecap="round" />
+      <path d="M11.4 7.55a1.8 1.8 0 1 0 0-3.6" strokeLinecap="round" />
+      <path d="M10.65 13.1c.45-.9 1.2-1.45 2.15-1.45.52 0 1 .12 1.45.38" strokeLinecap="round" />
     </svg>
   );
 }
 
-function MemberEditIcon() {
+function MoveUpIcon() {
   return (
-    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <path d="M6.7 7.45a2.55 2.55 0 1 0 0-5.1 2.55 2.55 0 0 0 0 5.1Z" />
-      <path d="M2.6 13.3c.4-2.1 2.02-3.45 4.1-3.45.9 0 1.7.25 2.35.72" strokeLinecap="round" />
-      <path d="M10.3 12.9 11 10.95l2.2-2.2a.88.88 0 0 1 1.25 0l.3.3a.88.88 0 0 1 0 1.25l-2.2 2.2-1.95.7h-.3Z" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-function PlusIcon() {
+function MoveDownIcon() {
   return (
-    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <path d="M8 3.5v9" strokeLinecap="round" />
-      <path d="M3.5 8h9" strokeLinecap="round" />
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M8 3.5v9M4.5 9 8 12.5 11.5 9" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+function WorkspaceMoveButton({
+  label,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
+        aria-label={label}
+        title={label}
+      >
+        {children}
+      </button>
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
+        {label}
+      </span>
+    </span>
   );
 }
 
@@ -151,12 +176,12 @@ export function WorkspacesContent({
   loadError,
   mutationError,
   mutationPending,
+  workspaceReorderPendingId,
   onSearch,
   onEditWorkspace,
   onDeleteWorkspace,
-  onAddMember,
-  onRemoveMember,
-  onEditMember,
+  onManageMembers,
+  onMoveWorkspace,
 }: {
   workspaces: WorkspaceAdminItem[];
   query: string;
@@ -164,12 +189,12 @@ export function WorkspacesContent({
   loadError: string | null;
   mutationError: string | null;
   mutationPending: boolean;
+  workspaceReorderPendingId: number | null;
   onSearch: (query: string) => void;
   onEditWorkspace: (workspaceId: number) => void;
   onDeleteWorkspace: (workspaceId: number) => void;
-  onAddMember: (workspaceId: number) => void;
-  onRemoveMember: (workspaceId: number, userId: number) => void;
-  onEditMember: (workspaceId: number, userId: number) => void;
+  onManageMembers: (workspaceId: number) => void;
+  onMoveWorkspace: (workspaceId: number, direction: "up" | "down") => void;
 }) {
   const searchFrameRef = useRef<HTMLDivElement | null>(null);
   const totalMembers = useMemo(
@@ -254,7 +279,7 @@ export function WorkspacesContent({
                             Workspace
                           </p>
                           <h3 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
-                          {workspace.name}
+                            {workspace.name}
                           </h3>
                           <p className="max-w-3xl text-sm leading-6 text-[var(--ink-muted)]">
                             {workspace.description || "No description yet."}
@@ -272,6 +297,13 @@ export function WorkspacesContent({
                           <EditIcon />
                         </IconActionButton>
                         <IconActionButton
+                          label="Manage workspace users"
+                          onClick={() => onManageMembers(workspace.id)}
+                          disabled={mutationPending}
+                        >
+                          <UsersIcon />
+                        </IconActionButton>
+                        <IconActionButton
                           label={
                             !workspace.actorCanDelete
                               ? "Only Workspace Owners can delete workspaces"
@@ -286,103 +318,32 @@ export function WorkspacesContent({
                         >
                           <DeleteIcon />
                         </IconActionButton>
-                      </div>
-                    </header>
-
-                    <section className="overflow-visible rounded-2xl border border-[var(--line-soft)] bg-white">
-                    <header className="flex flex-col gap-3 border-b border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="flex items-center gap-3">
-                        <h4 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-                          Members
-                        </h4>
-                        <span className="text-xs text-[var(--ink-subtle)]">
-                          {workspace.activeMemberCount} active
-                        </span>
-                      </div>
-                      {workspace.actorCanManage ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <IconActionButton
-                            label="Add member"
-                            tone="accent"
-                            tooltipAlign="right"
-                            disabled={mutationPending}
-                            onClick={() => onAddMember(workspace.id)}
+                        <div className="flex h-8 items-center gap-0.5 rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-0.5">
+                          <WorkspaceMoveButton
+                            label="Move workspace up"
+                            onClick={() => onMoveWorkspace(workspace.id, "up")}
+                            disabled={
+                              mutationPending ||
+                              workspaceReorderPendingId === workspace.id ||
+                              !workspace.actorCanManage
+                            }
                           >
-                            <PlusIcon />
-                          </IconActionButton>
+                            <MoveUpIcon />
+                          </WorkspaceMoveButton>
+                          <WorkspaceMoveButton
+                            label="Move workspace down"
+                            onClick={() => onMoveWorkspace(workspace.id, "down")}
+                            disabled={
+                              mutationPending ||
+                              workspaceReorderPendingId === workspace.id ||
+                              !workspace.actorCanManage
+                            }
+                          >
+                            <MoveDownIcon />
+                          </WorkspaceMoveButton>
                         </div>
-                      ) : null}
+                      </div>
                     </header>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left">
-                        <thead>
-                          <tr className="bg-[var(--surface-subtle)]/60 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-                            <th className="px-4 py-2">User</th>
-                            <th className="px-4 py-2">Email</th>
-                            <th className="px-4 py-2">Workspace Role</th>
-                            <th className="px-4 py-2">Status</th>
-                            <th className="px-4 py-2">Joined</th>
-                            <th className="px-4 py-2 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--line-soft)]">
-                          {workspace.members.map((member) => (
-                            <tr
-                              key={member.userId}
-                              className={`text-sm transition hover:bg-[var(--surface-card)] ${
-                                member.isActive ? "text-[var(--ink-strong)]" : "bg-[rgba(193,62,62,0.025)] text-[var(--ink-muted)]"
-                              }`}
-                            >
-                              <td className="px-4 py-3 font-medium">{member.name}</td>
-                              <td className="px-4 py-3 text-[var(--ink-muted)]">{member.email}</td>
-                              <td className="px-4 py-3">
-                                <AppStatusPill tone={accessRoleTone(member.role)}>
-                                  {workspaceRoleLabel(member.role)}
-                                </AppStatusPill>
-                              </td>
-                              <td className="px-4 py-3">
-                                <AppStatusPill tone={member.isActive ? "green" : "red"}>
-                                  {member.isActive ? "Active" : "Inactive"}
-                                </AppStatusPill>
-                              </td>
-                              <td className="px-4 py-3 text-[var(--ink-muted)]">
-                                {formatDate(member.joinedAt)}
-                              </td>
-                          <td className="px-4 py-3">
-                            <div className="flex justify-end gap-1.5">
-                              <IconActionButton
-                                label="Edit member"
-                                disabled={
-                                  mutationPending ||
-                                  !workspace.actorCanManage ||
-                                  (member.role === "owner" && !workspace.actorCanManageOwners)
-                                }
-                                onClick={() => onEditMember(workspace.id, member.userId)}
-                              >
-                                <MemberEditIcon />
-                              </IconActionButton>
-                              <IconActionButton
-                                label="Remove member"
-                                tooltipAlign="right"
-                                tone="danger"
-                                disabled={
-                                  mutationPending ||
-                                  !workspace.actorCanManage ||
-                                  (member.role === "owner" && !workspace.actorCanManageOwners)
-                                }
-                                onClick={() => onRemoveMember(workspace.id, member.userId)}
-                              >
-                                    <RemoveIcon />
-                                  </IconActionButton>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    </section>
                   </div>
                 </article>
               );

@@ -14,30 +14,36 @@ docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
 Prepare the app:
 
 ```bash
-set -a; source .env.dev; set +a
 npm ci
-npm run prisma:generate
-npm run prisma:migrate:dev
-npm run prisma:seed
+DOTENV_CONFIG_PATH=.env.dev npm run prisma:generate
+DOTENV_CONFIG_PATH=.env.dev npm run prisma:migrate:dev
+DOTENV_CONFIG_PATH=.env.dev npm run prisma:seed
 ```
 
-Start the local app:
+Start the local app and notification worker:
 
 ```bash
-npm run dev
+DOTENV_CONFIG_PATH=.env.dev npm run dev:all
+```
+
+Run them separately only when you need isolated logs:
+
+```bash
+DOTENV_CONFIG_PATH=.env.dev npm run dev
+DOTENV_CONFIG_PATH=.env.dev npm run worker:notifications
 ```
 
 Open `http://localhost:3000` and log in with:
 
 ```text
-account@taskewr.com / taskewr
+admin@taskewr.com / admin
+user@taskewr.com / user
 ```
 
 Reset local data when the database or browser session gets messy:
 
 ```bash
-set -a; source .env.dev; set +a
-npm run dev:reset
+DOTENV_CONFIG_PATH=.env.dev npm run dev:reset
 ```
 
 After a reset, clear cookies for `localhost` if the browser still has an old session.
@@ -47,10 +53,9 @@ After a reset, clear cookies for `localhost` if the browser still has an old ses
 Run the baseline checks before treating changes as ready:
 
 ```bash
-set -a; source .env.dev; set +a
 npm run lint
-npm test
-npm run build:prod
+DOTENV_CONFIG_PATH=.env.dev npm test
+DOTENV_CONFIG_PATH=.env.dev npm run build:prod
 ```
 
 When the local app is running, run:
@@ -99,6 +104,20 @@ POSTGRES_PASSWORD="choose-a-strong-password"
 
 DATABASE_URL="postgresql://taskewr:choose-a-strong-password@db:5432/taskewr?schema=public"
 SESSION_SECRET="replace-with-a-long-random-secret"
+
+SMTP_HOST="smtp.example.com"
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_REQUIRE_TLS=true
+SMTP_USER="smtp-username"
+SMTP_PASSWORD="smtp-password"
+SMTP_FROM="Taskewr <no-reply@your-domain.com>"
+SMTP_REPLY_TO="support@your-domain.com"
+
+NOTIFICATION_WORKER_POLL_INTERVAL_MS=60000
+NOTIFICATION_WORKER_BATCH_SIZE=50
+NOTIFICATION_WORKER_MAX_ATTEMPTS=3
+NOTIFICATION_WORKER_CLAIM_TIMEOUT_MS=300000
 ```
 
 Generate `SESSION_SECRET` with:
@@ -114,6 +133,8 @@ Before exposing a deployment publicly, confirm:
 - `/api/v1/auth/login` rate limiting is enabled with appropriate production settings.
 - Mutation rate limiting is enabled with appropriate production settings.
 - `APP_URL` matches the public origin.
+- SMTP settings point at the intended mail server and `SMTP_FROM` is allowed by that server.
+- The notification worker service is running if task due reminder emails are enabled.
 
 Optional production rate-limit tuning:
 
@@ -122,6 +143,8 @@ LOGIN_RATE_LIMIT_MAX_ATTEMPTS=5
 LOGIN_RATE_LIMIT_WINDOW_MS=900000
 MUTATION_RATE_LIMIT_MAX_REQUESTS=300
 MUTATION_RATE_LIMIT_WINDOW_MS=300000
+PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS=3
+PASSWORD_RESET_RATE_LIMIT_WINDOW_MS=900000
 ```
 
 ## Production Update
@@ -134,7 +157,7 @@ docker compose up -d
 docker compose ps
 ```
 
-The app container runs Prisma migrations on startup through `docker/entrypoint.sh`.
+The app container runs Prisma migrations on startup through `docker/entrypoint.sh`. The worker container waits for the app health check and then polls pending task due reminder deliveries.
 
 ## Production Verification
 
@@ -142,6 +165,7 @@ Check app logs:
 
 ```bash
 docker compose logs --tail=100 app
+docker compose logs --tail=100 worker
 ```
 
 Check health:

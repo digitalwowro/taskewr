@@ -12,11 +12,12 @@ export class ProjectsRepository {
 
   private readonly projectInclude = {
     workspace: true,
-    _count: {
-      select: {
-        tasks: true,
-      },
-    },
+	    _count: {
+	      select: {
+	        tasks: true,
+	        members: true,
+	      },
+	    },
   } as const;
 
   private readonly projectMemberInclude = {
@@ -38,7 +39,12 @@ export class ProjectsRepository {
     if (!includeArchived) {
       return this.prisma.project.findMany({
         where: { id: { in: projectIds }, archivedAt: null },
-        orderBy: [{ workspaceId: "asc" }, { sortOrder: "asc" }],
+        orderBy: [
+          { workspace: { sortOrder: "asc" } },
+          { workspaceId: "asc" },
+          { sortOrder: "asc" },
+          { id: "asc" },
+        ],
         include: this.projectInclude,
       });
     }
@@ -47,12 +53,22 @@ export class ProjectsRepository {
       const [active, archived] = await Promise.all([
         tx.project.findMany({
           where: { id: { in: projectIds }, archivedAt: null },
-          orderBy: [{ workspaceId: "asc" }, { sortOrder: "asc" }],
+          orderBy: [
+            { workspace: { sortOrder: "asc" } },
+            { workspaceId: "asc" },
+            { sortOrder: "asc" },
+            { id: "asc" },
+          ],
           include: this.projectInclude,
         }),
         tx.project.findMany({
           where: { id: { in: projectIds }, archivedAt: { not: null } },
-          orderBy: [{ workspaceId: "asc" }, { sortOrder: "asc" }],
+          orderBy: [
+            { workspace: { sortOrder: "asc" } },
+            { workspaceId: "asc" },
+            { sortOrder: "asc" },
+            { id: "asc" },
+          ],
           include: this.projectInclude,
         }),
       ]);

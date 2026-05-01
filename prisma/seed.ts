@@ -22,6 +22,9 @@ async function syncAutoincrementSequences() {
   await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('workspace_members', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "workspace_members"`;
   await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('project_members', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "project_members"`;
   await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('auth_accounts', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "auth_accounts"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('password_reset_tokens', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "password_reset_tokens"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('task_notification_subscriptions', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "task_notification_subscriptions"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('task_notification_deliveries', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "task_notification_deliveries"`;
   await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('projects', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "projects"`;
   await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('tasks', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "tasks"`;
   await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('task_repeat_rules', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "task_repeat_rules"`;
@@ -33,6 +36,8 @@ async function syncAutoincrementSequences() {
 
 async function main() {
   await prisma.taskLabel.deleteMany();
+  await prisma.taskNotificationDelivery.deleteMany();
+  await prisma.taskNotificationSubscription.deleteMany();
   await prisma.task.deleteMany();
   await prisma.taskRepeatRule.deleteMany();
   await prisma.label.deleteMany();
@@ -41,35 +46,48 @@ async function main() {
   await prisma.project.deleteMany();
   await prisma.workspaceMember.deleteMany();
   await prisma.authAccount.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.workspace.deleteMany();
   await prisma.user.deleteMany();
 
-  const user = await prisma.user.create({
+  const adminUser = await prisma.user.create({
     data: {
-      name: "Taskewr",
-      email: "account@taskewr.com",
-      passwordHash: hashPassword("taskewr"),
+      name: "Taskewr Admin",
+      email: "admin@taskewr.com",
+      passwordHash: hashPassword("admin"),
       timezone: "Europe/Bucharest",
       appRole: "admin",
     },
   });
 
+  const regularUser = await prisma.user.create({
+    data: {
+      name: "Taskewr User",
+      email: "user@taskewr.com",
+      passwordHash: hashPassword("user"),
+      timezone: "Europe/Bucharest",
+      appRole: "user",
+    },
+  });
+
   const workWorkspace = await prisma.workspace.create({
     data: {
-      ownerUserId: user.id,
+      ownerUserId: adminUser.id,
       name: "Work",
       description: "Customer, partner, service, and operations work.",
       slug: "work",
+      sortOrder: 1,
     },
   });
 
   const personalWorkspace = await prisma.workspace.create({
     data: {
-      ownerUserId: user.id,
+      ownerUserId: adminUser.id,
       name: "Personal",
       description: "Personal routines and private tasks.",
       slug: "personal",
+      sortOrder: 2,
     },
   });
 
@@ -77,13 +95,18 @@ async function main() {
     data: [
       {
         workspaceId: workWorkspace.id,
-        userId: user.id,
+        userId: adminUser.id,
         role: "owner",
       },
       {
         workspaceId: personalWorkspace.id,
-        userId: user.id,
+        userId: adminUser.id,
         role: "owner",
+      },
+      {
+        workspaceId: workWorkspace.id,
+        userId: regularUser.id,
+        role: "member",
       },
     ],
   });
@@ -93,7 +116,7 @@ async function main() {
       data: {
         id: 1,
         workspaceId: workWorkspace.id,
-        ownerUserId: user.id,
+        ownerUserId: adminUser.id,
         name: "Channel Sales",
         description: "Partner-facing onboarding, quoting, and documentation work for the sales channel.",
         sortOrder: 1,
@@ -103,7 +126,7 @@ async function main() {
       data: {
         id: 2,
         workspaceId: workWorkspace.id,
-        ownerUserId: user.id,
+        ownerUserId: adminUser.id,
         name: "Partner Portal",
         description: "Packaging, migration guidance, and partner communication assets for the portal refresh.",
         sortOrder: 2,
@@ -113,7 +136,7 @@ async function main() {
       data: {
         id: 3,
         workspaceId: personalWorkspace.id,
-        ownerUserId: user.id,
+        ownerUserId: adminUser.id,
         name: "Internal Ops",
         description: "Internal workflow cleanup, status updates, and coordination tasks across operations.",
         sortOrder: 3,
@@ -123,7 +146,7 @@ async function main() {
       data: {
         id: 4,
         workspaceId: workWorkspace.id,
-        ownerUserId: user.id,
+        ownerUserId: adminUser.id,
         name: "Service Management",
         description: "Customer rollout stabilization, service handoff notes, and migration coordination.",
         sortOrder: 4,
@@ -133,7 +156,7 @@ async function main() {
       data: {
         id: 5,
         workspaceId: workWorkspace.id,
-        ownerUserId: user.id,
+        ownerUserId: adminUser.id,
         name: "Partner Training",
         description: "Archived enablement project preserved for historical reference and task lookup.",
         sortOrder: 5,
@@ -144,7 +167,7 @@ async function main() {
       data: {
         id: 6,
         workspaceId: personalWorkspace.id,
-        ownerUserId: user.id,
+        ownerUserId: adminUser.id,
         name: "Legacy Rollout Notes",
         description: "Older rollout planning work no longer active on the current dashboard.",
         sortOrder: 6,
@@ -156,11 +179,20 @@ async function main() {
   const byProject = Object.fromEntries(projects.map((project) => [project.name, project]));
 
   await prisma.projectMember.createMany({
-    data: projects.map((project) => ({
-      projectId: project.id,
-      userId: user.id,
-      role: "owner",
-    })),
+    data: [
+      ...projects.map((project) => ({
+        projectId: project.id,
+        userId: adminUser.id,
+        role: "owner",
+      })),
+      ...projects
+        .filter((project) => project.workspaceId === workWorkspace.id)
+        .map((project) => ({
+          projectId: project.id,
+          userId: regularUser.id,
+          role: "member",
+        })),
+    ],
   });
 
   const labels = await Promise.all([
@@ -194,8 +226,8 @@ async function main() {
       data: {
         id: input.code,
         projectId: project.id,
-        createdByUserId: user.id,
-        updatedByUserId: user.id,
+        createdByUserId: adminUser.id,
+        updatedByUserId: adminUser.id,
         parentTaskId: input.parentCode ? createdTasks.get(String(input.parentCode)) ?? null : null,
         title: input.title,
         description: input.description,

@@ -150,12 +150,17 @@ export function IconTooltip({
   children,
 }: {
   label: string;
-  tooltipAlign?: "center" | "right";
+  tooltipAlign?: "center" | "left" | "right";
   tooltipSide?: "top" | "bottom";
   children: ReactNode;
 }) {
   const verticalClass = tooltipSide === "bottom" ? "top-full mt-2" : "bottom-full mb-2";
-  const horizontalClass = tooltipAlign === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
+  const horizontalClass =
+    tooltipAlign === "right"
+      ? "right-0"
+      : tooltipAlign === "left"
+        ? "left-0"
+        : "left-1/2 -translate-x-1/2";
 
   return (
     <span className="group relative inline-flex">
@@ -432,6 +437,105 @@ function TaskCompleteButton({
   );
 }
 
+type TaskSubscriptionTarget = Pick<TaskListItem, "id" | "isSubscribedToNotifications">;
+type TaskSubscriptionToggle = (
+  task: TaskSubscriptionTarget,
+  nextSubscribed: boolean,
+) => void | Promise<void>;
+
+function SubscribeIcon({
+  subscribed,
+  className = "h-3.5 w-3.5",
+}: {
+  subscribed: boolean;
+  className?: string;
+}) {
+  if (subscribed) {
+    return (
+      <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.7">
+        <path d="M4.4 7.15c0-2.3 1.25-3.85 3.6-3.85s3.6 1.55 3.6 3.85v1.65l1.15 1.55H3.25L4.4 8.8V7.15Z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6.65 12.2a1.55 1.55 0 0 0 2.7 0" strokeLinecap="round" />
+        <path d="M2.8 2.8 13.2 13.2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M4.4 7.15c0-2.3 1.25-3.85 3.6-3.85s3.6 1.55 3.6 3.85v1.65l1.15 1.55H3.25L4.4 8.8V7.15Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6.65 12.2a1.55 1.55 0 0 0 2.7 0" strokeLinecap="round" />
+      <path d="M12.15 2.65v3" strokeLinecap="round" />
+      <path d="M10.65 4.15h3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function TaskSubscriptionButton({
+  task,
+  isPending,
+  size = "compact",
+  tooltipAlign = "center",
+  tooltipSide = "top",
+  onToggleSubscription,
+}: {
+  task: TaskSubscriptionTarget;
+  isPending?: boolean;
+  size?: "compact" | "toolbar";
+  tooltipAlign?: "center" | "left" | "right";
+  tooltipSide?: "top" | "bottom";
+  onToggleSubscription?: TaskSubscriptionToggle;
+}) {
+  if (!onToggleSubscription) {
+    return null;
+  }
+
+  const subscribed = Boolean(task.isSubscribedToNotifications);
+  const label = subscribed
+    ? "Unsubscribe from this task"
+    : "Subscribe to this task";
+  const sizeClass =
+    size === "toolbar"
+      ? "h-9 w-9 rounded-xl"
+      : "h-6 w-6 rounded-full";
+  const spinnerClass =
+    size === "toolbar"
+      ? "h-3.5 w-3.5"
+      : "h-2.5 w-2.5";
+  const iconClass =
+    size === "toolbar"
+      ? "h-4.5 w-4.5"
+      : "h-3.5 w-3.5";
+
+  return (
+    <IconTooltip label={label} tooltipAlign={tooltipAlign} tooltipSide={tooltipSide}>
+      <button
+        type="button"
+        disabled={isPending}
+        aria-label={label}
+        aria-pressed={subscribed}
+        title={label}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          event.stopPropagation();
+          void onToggleSubscription(task, !subscribed);
+          event.currentTarget.blur();
+        }}
+        className={`inline-flex shrink-0 items-center justify-center border transition disabled:cursor-wait disabled:opacity-60 ${sizeClass} ${
+          subscribed
+            ? "border-[rgba(34,122,89,0.2)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)] hover:bg-[rgba(34,122,89,0.12)]"
+            : "border-[var(--line-strong)] bg-white text-[var(--ink-subtle)] hover:border-[rgba(34,122,89,0.22)] hover:bg-[rgba(34,122,89,0.06)] hover:text-[var(--accent-strong)]"
+        }`}
+      >
+        {isPending ? (
+          <span className={`${spinnerClass} animate-spin rounded-full border-2 border-[rgba(34,122,89,0.22)] border-t-[var(--accent-strong)]`} />
+        ) : (
+          <SubscribeIcon subscribed={subscribed} className={iconClass} />
+        )}
+      </button>
+    </IconTooltip>
+  );
+}
+
 export function CountPill({
   tone,
   children,
@@ -529,6 +633,9 @@ export function FocusItem({
   isCompleting,
   repeatRuleId,
   repeatCarryCount,
+  isSubscribedToNotifications,
+  isSubscriptionPending,
+  onToggleSubscription,
   showProject = true,
 }: {
   id: string;
@@ -543,6 +650,9 @@ export function FocusItem({
   isCompleting?: boolean;
   repeatRuleId?: string | null;
   repeatCarryCount?: number;
+  isSubscribedToNotifications?: boolean;
+  isSubscriptionPending?: boolean;
+  onToggleSubscription?: TaskSubscriptionToggle;
   showProject?: boolean;
 }) {
   const statusTone = getStatusTone(status);
@@ -564,6 +674,11 @@ export function FocusItem({
       </td>
       <td className={`${taskTableCellClass} min-w-0`}>
         <span className="flex min-w-0 items-center gap-2">
+          <TaskSubscriptionButton
+            task={{ id, isSubscribedToNotifications }}
+            isPending={isSubscriptionPending}
+            onToggleSubscription={onToggleSubscription}
+          />
           <button
             type="button"
             onClick={() => onEdit(id)}
@@ -609,6 +724,9 @@ export function HorizontalListRow({
   isCompleting,
   repeatRuleId,
   repeatCarryCount,
+  isSubscribedToNotifications,
+  isSubscriptionPending,
+  onToggleSubscription,
   showProject = true,
 }: {
   id: string;
@@ -623,6 +741,9 @@ export function HorizontalListRow({
   isCompleting?: boolean;
   repeatRuleId?: string | null;
   repeatCarryCount?: number;
+  isSubscribedToNotifications?: boolean;
+  isSubscriptionPending?: boolean;
+  onToggleSubscription?: TaskSubscriptionToggle;
   showProject?: boolean;
 }) {
   const statusTone = getStatusTone(status ?? "Todo");
@@ -644,6 +765,11 @@ export function HorizontalListRow({
       </td>
       <td className={`${taskTableCellClass} min-w-0`}>
         <span className="flex min-w-0 items-center gap-2">
+          <TaskSubscriptionButton
+            task={{ id, isSubscribedToNotifications }}
+            isPending={isSubscriptionPending}
+            onToggleSubscription={onToggleSubscription}
+          />
           <button
             type="button"
             onClick={() => onEdit(id)}
@@ -689,6 +815,9 @@ export function DashboardCompactTaskRow({
   isCompleting,
   repeatRuleId,
   repeatCarryCount,
+  isSubscribedToNotifications,
+  isSubscriptionPending,
+  onToggleSubscription,
 }: {
   id: string;
   title: string;
@@ -702,6 +831,9 @@ export function DashboardCompactTaskRow({
   isCompleting?: boolean;
   repeatRuleId?: string | null;
   repeatCarryCount?: number;
+  isSubscribedToNotifications?: boolean;
+  isSubscriptionPending?: boolean;
+  onToggleSubscription?: TaskSubscriptionToggle;
 }) {
   const statusLabel = status ?? "Todo";
   const priorityLabel = priority ?? "Low";
@@ -724,6 +856,11 @@ export function DashboardCompactTaskRow({
             <span className="shrink-0 pt-1 font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
               {id}
             </span>
+            <TaskSubscriptionButton
+              task={{ id, isSubscribedToNotifications }}
+              isPending={isSubscriptionPending}
+              onToggleSubscription={onToggleSubscription}
+            />
             <button
               type="button"
               onClick={() => onEdit(id)}
@@ -756,6 +893,8 @@ export function ProjectSection({
   onEdit,
   onComplete,
   completingTaskId,
+  subscriptionPendingTaskId,
+  onToggleSubscription,
   onNewTask,
   onOpenProject,
 }: {
@@ -771,10 +910,13 @@ export function ProjectSection({
     statusValue: TaskListItem["statusValue"];
     repeatRuleId?: string | null;
     repeatCarryCount?: number;
+    isSubscribedToNotifications?: boolean;
   }[];
   onEdit: (taskId: string) => void;
   onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
   completingTaskId?: string | null;
+  subscriptionPendingTaskId?: string | null;
+  onToggleSubscription?: TaskSubscriptionToggle;
   onNewTask: (projectId: string) => void;
   onOpenProject: (projectId: string) => void;
 }) {
@@ -833,6 +975,11 @@ export function ProjectSection({
                     </td>
                     <td className={`${taskTableCellClass} min-w-0`}>
                       <span className="flex min-w-0 items-center gap-2">
+                        <TaskSubscriptionButton
+                          task={item}
+                          isPending={subscriptionPendingTaskId === item.id}
+                          onToggleSubscription={onToggleSubscription}
+                        />
                         <button
                           type="button"
                           onClick={() => onEdit(item.id)}
@@ -881,6 +1028,52 @@ export function ProjectStatusBadge({ archived }: { archived?: boolean }) {
   );
 }
 
+function pluralize(value: number, singular: string, plural = `${singular}s`) {
+  return `${value} ${value === 1 ? singular : plural}`;
+}
+
+function projectActivityValue(project: AppProject) {
+  const prefix = project.isArchived ? "Archived " : "Updated ";
+
+  if (project.updatedLabel.startsWith(prefix)) {
+    return project.updatedLabel.slice(prefix.length);
+  }
+
+  return project.updatedLabel;
+}
+
+function ProjectMetaItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex min-w-fit items-center gap-2 rounded-xl border border-[var(--line-soft)] bg-white px-3 py-2">
+      <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+        {label}
+      </dt>
+      <dd className="text-xs font-medium text-[var(--ink-muted)]">{value}</dd>
+    </div>
+  );
+}
+
+function ProjectMetaRail({ project }: { project: AppProject }) {
+	  return (
+	    <dl className="flex max-w-full flex-wrap gap-1.5">
+	      <ProjectMetaItem label="ID" value={`PRJ-${project.id}`} />
+	      <ProjectMetaItem label="Workspace" value={project.workspaceName} />
+	      <ProjectMetaItem label="Project Members" value={pluralize(project.memberCount, "member")} />
+	      <ProjectMetaItem label="Tasks" value={pluralize(project.taskCount, "task")} />
+	      <ProjectMetaItem
+        label={project.isArchived ? "Archived" : "Updated"}
+        value={projectActivityValue(project)}
+      />
+    </dl>
+  );
+}
+
 export function ProjectRow({
   project,
   onEdit,
@@ -919,68 +1112,21 @@ export function ProjectRow({
     >
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1 space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--ink-subtle)]">
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
               Project
             </p>
-            <ProjectStatusBadge archived={project.isArchived} />
-            <span className="inline-flex h-6 items-center rounded-full border border-[rgba(34,122,89,0.12)] bg-[rgba(34,122,89,0.04)] px-2.5 text-[11px] font-medium text-[var(--accent-strong)]">
-              {project.workspaceName}
-            </span>
-            <span className="inline-flex h-6 items-center rounded-full bg-[var(--surface-subtle)] px-2.5 text-[11px] font-medium text-[var(--ink-muted)]">
-              {project.taskCount} tasks
-            </span>
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-[1.15rem] font-semibold tracking-[-0.03em] text-[var(--ink-strong)]">
+            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
               {project.name}
             </h2>
             <p className="max-w-3xl text-sm leading-6 text-[var(--ink-muted)]">
               {project.description}
             </p>
           </div>
-          <p className="text-xs text-[var(--ink-subtle)]">{project.updatedLabel}</p>
+          <ProjectMetaRail project={project} />
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-1.5 xl:max-w-[24rem]">
-          {!project.isArchived ? (
-            <div className="flex h-8 items-center gap-0.5 rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-0.5">
-              <IconTooltip label="Move project up">
-                <button
-                  type="button"
-                  disabled={isReordering}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onMove(project.id, "up");
-                  }}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
-                  aria-label="Move project up"
-                  title="Move project up"
-                >
-                  <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
-                    <path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              </IconTooltip>
-              <IconTooltip label="Move project down">
-                <button
-                  type="button"
-                  disabled={isReordering}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onMove(project.id, "down");
-                  }}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
-                  aria-label="Move project down"
-                  title="Move project down"
-                >
-                  <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
-                    <path d="M8 3.5v9M4.5 9 8 12.5 11.5 9" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              </IconTooltip>
-            </div>
-          ) : null}
           <IconActionButton
             label="Edit project"
             disabled={isReordering}
@@ -1038,6 +1184,44 @@ export function ProjectRow({
           >
             <OpenIcon />
           </IconActionButton>
+          {!project.isArchived ? (
+            <div className="flex h-8 items-center gap-0.5 rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-0.5">
+              <IconTooltip label="Move project up">
+                <button
+                  type="button"
+                  disabled={isReordering}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onMove(project.id, "up");
+                  }}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
+                  aria-label="Move project up"
+                  title="Move project up"
+                >
+                  <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </IconTooltip>
+              <IconTooltip label="Move project down">
+                <button
+                  type="button"
+                  disabled={isReordering}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onMove(project.id, "down");
+                  }}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
+                  aria-label="Move project down"
+                  title="Move project down"
+                >
+                  <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <path d="M8 3.5v9M4.5 9 8 12.5 11.5 9" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </IconTooltip>
+            </div>
+          ) : null}
         </div>
       </div>
     </article>
@@ -1051,6 +1235,8 @@ export function ProjectBoardLane({
   onEdit,
   onComplete,
   completingTaskId,
+  subscriptionPendingTaskId,
+  onToggleSubscription,
   onMoveTask,
   draggingTaskId,
   onDragTaskStart,
@@ -1062,6 +1248,8 @@ export function ProjectBoardLane({
   onEdit: (taskId: string) => void;
   onComplete?: (task: Pick<TaskListItem, "id" | "statusValue">) => void;
   completingTaskId?: string | null;
+  subscriptionPendingTaskId?: string | null;
+  onToggleSubscription?: TaskSubscriptionToggle;
   onMoveTask: (taskId: string, nextStatus: TaskStatus) => void;
   draggingTaskId: string | null;
   onDragTaskStart: (taskId: string) => void;
@@ -1131,13 +1319,20 @@ export function ProjectBoardLane({
                   <DueDisplay due={item.due} />
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => onEdit(item.id)}
-                className="mt-2 block text-left text-sm font-medium leading-6 text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
-              >
-                {item.title}
-              </button>
+              <div className="mt-2 flex min-w-0 items-start gap-2">
+                <TaskSubscriptionButton
+                  task={item}
+                  isPending={subscriptionPendingTaskId === item.id}
+                  onToggleSubscription={onToggleSubscription}
+                />
+                <button
+                  type="button"
+                  onClick={() => onEdit(item.id)}
+                  className="min-w-0 flex-1 text-left text-sm font-medium leading-6 text-[var(--ink-strong)] transition hover:text-[var(--accent-strong)]"
+                >
+                  {item.title}
+                </button>
+              </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <StatusPill tone={statusTone}>{item.status}</StatusPill>
                 <StatusPill tone={priorityTone}>{item.priority}</StatusPill>

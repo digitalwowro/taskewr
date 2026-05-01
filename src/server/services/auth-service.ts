@@ -24,6 +24,7 @@ type AuthDatabase = {
 type LoginUserRecord = {
   id: number;
   passwordHash: string | null;
+  sessionVersion: number;
   timezone: string | null;
   appRole: string;
   deactivatedAt: Date | null;
@@ -34,6 +35,7 @@ type LoginUserRecord = {
 };
 
 type ActorUserRecord = {
+  sessionVersion: number;
   timezone: string | null;
   appRole: string;
   deactivatedAt: Date | null;
@@ -55,6 +57,7 @@ type ProfileUserRecord = {
   timezone: string | null;
   appRole?: string;
   passwordHash?: string | null;
+  sessionVersion?: number;
 };
 
 export class AuthService {
@@ -67,7 +70,7 @@ export class AuthService {
       where: { email: payload.email },
       include: {
         memberships: {
-          orderBy: { id: "asc" },
+          orderBy: [{ workspace: { sortOrder: "asc" } }, { id: "asc" }],
           include: {
             workspace: true,
           },
@@ -92,6 +95,7 @@ export class AuthService {
       appRole: user.appRole,
       timezone: user.timezone,
       issuedAt: Date.now(),
+      sessionVersion: user.sessionVersion ?? 1,
     };
   }
 
@@ -132,6 +136,7 @@ export class AuthService {
     const user = (await this.database.user.findUnique({
       where: { id: session.userId },
       select: {
+        sessionVersion: true,
         timezone: true,
         appRole: true,
         deactivatedAt: true,
@@ -146,13 +151,18 @@ export class AuthService {
               },
             },
           },
-          orderBy: { id: "asc" },
+          orderBy: [{ workspace: { sortOrder: "asc" } }, { id: "asc" }],
         },
       },
     })) as ActorUserRecord | null;
     const membership = user?.memberships.find((item) => item.workspaceId === session.workspaceId);
 
-    if (!user || user.deactivatedAt || !membership) {
+    if (
+      !user ||
+      user.deactivatedAt ||
+      !membership ||
+      (session.sessionVersion ?? 1) !== (user.sessionVersion ?? 1)
+    ) {
       return null;
     }
 
@@ -236,8 +246,10 @@ export class AuthService {
       }
     }
 
+    const newPassword = payload.newPassword ?? "";
+    const passwordChanged = newPassword.length > 0;
     const passwordData =
-      payload.newPassword && payload.newPassword.length > 0
+      passwordChanged
         ? (() => {
             if (!verifyPassword(payload.currentPassword ?? "", user.passwordHash)) {
               throw new ValidationError(
@@ -246,7 +258,12 @@ export class AuthService {
               );
             }
 
-            return { passwordHash: hashPassword(payload.newPassword) };
+            return {
+              passwordHash: hashPassword(newPassword),
+              sessionVersion: {
+                increment: 1,
+              },
+            };
           })()
         : {};
 
@@ -265,11 +282,24 @@ export class AuthService {
         avatarUrl: true,
         timezone: true,
         appRole: true,
+        sessionVersion: true,
       },
     })) as ProfileUserRecord | undefined;
 
     if (!updatedUser) {
       throw new NotFoundError("User not found.", "user_not_found");
+    }
+
+    if (passwordChanged) {
+      await this.setSessionCookie({
+        userId: actor.userId,
+        workspaceId: actor.workspaceId,
+        workspaceRole: actor.workspaceRole,
+        appRole: updatedUser.appRole ?? actor.appRole,
+        timezone: updatedUser.timezone,
+        issuedAt: Date.now(),
+        sessionVersion: updatedUser.sessionVersion ?? 1,
+      });
     }
 
     return {

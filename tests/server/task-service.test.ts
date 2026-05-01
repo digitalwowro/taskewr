@@ -32,7 +32,9 @@ function buildTask(overrides: Record<string, unknown> = {}) {
     projectId: 1,
     parentTaskId: null,
     status: "todo",
+    dueReminderTime: null,
     repeatRuleId: null,
+    notificationSubscriptions: [],
     project: {
       workspaceId: 1,
     },
@@ -42,7 +44,10 @@ function buildTask(overrides: Record<string, unknown> = {}) {
 }
 
 function buildTaskService(repository: Record<string, unknown>) {
-  return new TaskService(repository as never, {} as never, contextService as never);
+  return new TaskService(repository as never, {} as never, contextService as never, {
+    subscribeTaskCreator: async () => {},
+    syncTaskDueReminder: async () => {},
+  } as never);
 }
 
 const validTaskInput = {
@@ -125,6 +130,9 @@ test("createTask rejects target projects without workspace ownership", async () 
       ...appContext,
       accessibleProjectIds: [1, 2],
     }),
+  } as never, {
+    subscribeTaskCreator: async () => {},
+    syncTaskDueReminder: async () => {},
   } as never);
 
   await assert.rejects(
@@ -145,12 +153,175 @@ test("createTask rejects archived target projects", async () => {
       ...appContext,
       accessibleProjectIds: [1, 2],
     }),
+  } as never, {
+    subscribeTaskCreator: async () => {},
+    syncTaskDueReminder: async () => {},
   } as never);
 
   await assert.rejects(
     () => service.createTask(validTaskInput as never),
     (error) => error instanceof ValidationError && error.code === "task_project_archived",
   );
+});
+
+test("createTask auto-subscribes creator and syncs due reminder delivery", async () => {
+  const notificationCalls: string[] = [];
+  const service = new TaskService({
+    findProjectById: async () => ({
+      id: 2,
+      workspaceId: 1,
+      archivedAt: null,
+    }),
+    listTasksForHierarchy: async () => [],
+    create: async () => buildTask({ id: 44, projectId: 2 }),
+    replaceTaskLabels: async () => {},
+    updateById: async () => buildTask({ id: 44, projectId: 2 }),
+    findById: async () => buildTask({ id: 44, projectId: 2 }),
+  } as never, {
+    deactivateForSourceTask: async () => {},
+  } as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never, {
+    subscribeTaskCreator: async (taskId: number, userId: number) => {
+      notificationCalls.push(`subscribe:${taskId}:${userId}`);
+    },
+    syncTaskDueReminder: async (taskId: number) => {
+      notificationCalls.push(`sync:${taskId}`);
+    },
+  } as never);
+
+  await service.createTask({
+    ...validTaskInput,
+    projectId: 2,
+    dueDate: "2026-05-01",
+    dueReminderTime: "09:30",
+  } as never);
+
+  assert.deepEqual(notificationCalls, ["subscribe:44:7", "sync:44"]);
+});
+
+test("updateTask rejects reminder changes from unsubscribed editors", async () => {
+  const service = new TaskService({
+    findProjectById: async () => ({
+      id: 2,
+      workspaceId: 1,
+      archivedAt: null,
+    }),
+    findById: async () => buildTask({ id: 44, projectId: 2 }),
+    listTasksForHierarchy: async () => [],
+  } as never, {
+    deactivateForSourceTask: async () => {},
+  } as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never, {
+    subscribeTaskCreator: async () => {},
+    syncTaskDueReminder: async () => {},
+  } as never);
+
+  await assert.rejects(
+    () =>
+      service.updateTask(44, {
+        ...validTaskInput,
+        projectId: 2,
+        dueDate: "2026-05-01",
+        dueReminderTime: "09:30",
+      } as never),
+    (error) =>
+      error instanceof AuthorizationError &&
+      error.code === "task_reminder_subscription_required",
+  );
+});
+
+test("updateTask allows subscribed editors to change reminders without auto-subscribing", async () => {
+  const notificationCalls: string[] = [];
+  const service = new TaskService({
+    findProjectById: async () => ({
+      id: 2,
+      workspaceId: 1,
+      archivedAt: null,
+    }),
+    findById: async () =>
+      buildTask({
+        id: 44,
+        projectId: 2,
+        notificationSubscriptions: [{ userId: 7 }],
+      }),
+    listTasksForHierarchy: async () => [],
+    updateById: async () => buildTask({ id: 44, projectId: 2 }),
+    replaceTaskLabels: async () => {},
+  } as never, {
+    deactivateForSourceTask: async () => {},
+  } as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never, {
+    subscribeTaskCreator: async (taskId: number, userId: number) => {
+      notificationCalls.push(`subscribe:${taskId}:${userId}`);
+    },
+    syncTaskDueReminder: async (taskId: number) => {
+      notificationCalls.push(`sync:${taskId}`);
+    },
+  } as never);
+
+  await service.updateTask(44, {
+    ...validTaskInput,
+    projectId: 2,
+    dueDate: "2026-05-01",
+    dueReminderTime: "09:30",
+  } as never);
+
+  assert.deepEqual(notificationCalls, ["sync:44"]);
+});
+
+test("updateTask allows unsubscribed editors to save unchanged reminder values", async () => {
+  const notificationCalls: string[] = [];
+  const service = new TaskService({
+    findProjectById: async () => ({
+      id: 2,
+      workspaceId: 1,
+      archivedAt: null,
+    }),
+    findById: async () =>
+      buildTask({
+        id: 44,
+        projectId: 2,
+        dueReminderTime: "09:30",
+      }),
+    listTasksForHierarchy: async () => [],
+    updateById: async () => buildTask({ id: 44, projectId: 2 }),
+    replaceTaskLabels: async () => {},
+  } as never, {
+    deactivateForSourceTask: async () => {},
+  } as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never, {
+    subscribeTaskCreator: async (taskId: number, userId: number) => {
+      notificationCalls.push(`subscribe:${taskId}:${userId}`);
+    },
+    syncTaskDueReminder: async (taskId: number) => {
+      notificationCalls.push(`sync:${taskId}`);
+    },
+  } as never);
+
+  await service.updateTask(44, {
+    ...validTaskInput,
+    projectId: 2,
+    dueDate: "2026-05-01",
+    dueReminderTime: "09:30",
+  } as never);
+
+  assert.deepEqual(notificationCalls, ["sync:44"]);
 });
 
 test("board moves reject lane task IDs from another project", async () => {

@@ -83,7 +83,7 @@ export class WorkspacesRepository {
     return this.prisma.workspace.findMany({
       where,
       include: workspaceAdminInclude,
-      orderBy: [{ name: "asc" }, { id: "asc" }],
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }, { id: "asc" }],
     });
   }
 
@@ -92,6 +92,38 @@ export class WorkspacesRepository {
       where: { id },
       include: workspaceAdminInclude,
     });
+  }
+
+  maxSortOrder() {
+    return this.prisma.workspace.aggregate({
+      _max: { sortOrder: true },
+    });
+  }
+
+  listWorkspacesForReorder(input: {
+    isAppAdmin: boolean;
+    visibleWorkspaceIds: number[];
+  }) {
+    if (!input.isAppAdmin && input.visibleWorkspaceIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.prisma.workspace.findMany({
+      where: input.isAppAdmin ? {} : { id: { in: input.visibleWorkspaceIds } },
+      include: workspaceAdminInclude,
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }, { id: "asc" }],
+    });
+  }
+
+  updateWorkspaceSortOrders(updates: Array<{ id: number; sortOrder: number }>) {
+    return this.prisma.$transaction(
+      updates.map((update) =>
+        this.prisma.workspace.update({
+          where: { id: update.id },
+          data: { sortOrder: update.sortOrder },
+        }),
+      ),
+    );
   }
 
   findActiveUserById(id: number) {
@@ -151,6 +183,7 @@ export class WorkspacesRepository {
     name: string;
     description: string | null;
     slug: string;
+    sortOrder: number;
   }) {
     return this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.create({
@@ -159,6 +192,7 @@ export class WorkspacesRepository {
           name: data.name,
           description: data.description,
           slug: data.slug,
+          sortOrder: data.sortOrder,
         },
         include: workspaceAdminInclude,
       });
@@ -239,11 +273,15 @@ export class WorkspacesRepository {
         },
       });
 
+      const aggregate = await tx.workspace.aggregate({
+        _max: { sortOrder: true },
+      });
       const personalWorkspace = await tx.workspace.create({
         data: {
           ownerUserId: user.id,
           name: data.personalWorkspace.name,
           slug: data.personalWorkspace.slug,
+          sortOrder: (aggregate._max.sortOrder ?? 0) + 1,
         },
         select: { id: true },
       });
@@ -361,7 +399,11 @@ export class WorkspacesRepository {
               },
             },
           },
-          orderBy: [{ workspace: { name: "asc" } }, { workspaceId: "asc" }],
+          orderBy: [
+            { workspace: { sortOrder: "asc" } },
+            { workspace: { name: "asc" } },
+            { workspaceId: "asc" },
+          ],
         },
         projectMemberships: {
           where: projectWhere,

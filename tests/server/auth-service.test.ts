@@ -174,6 +174,62 @@ test("getAuthenticatedActor rejects stale sessions without workspace membership"
   assert.equal(await authService.getAuthenticatedActor(), null);
 });
 
+test("getAuthenticatedActor rejects sessions from an old password version", async () => {
+  const authService = new TestAuthService(
+    {
+      user: {
+        findUnique: async () => ({
+          sessionVersion: 2,
+          timezone: "Europe/Bucharest",
+          appRole: "admin",
+          deactivatedAt: null,
+          memberships: [
+            {
+              workspaceId: 3,
+              role: "owner",
+              workspace: {
+                name: "Work",
+                slug: "work",
+              },
+            },
+          ],
+        }),
+      },
+    },
+    buildSession({ sessionVersion: 1 }),
+  );
+
+  assert.equal(await authService.getAuthenticatedActor(), null);
+});
+
+test("getAuthenticatedActor accepts legacy sessions while the user is still on version 1", async () => {
+  const authService = new TestAuthService(
+    {
+      user: {
+        findUnique: async () => ({
+          sessionVersion: 1,
+          timezone: "UTC",
+          appRole: "admin",
+          deactivatedAt: null,
+          memberships: [
+            {
+              workspaceId: 3,
+              role: "owner",
+              workspace: {
+                name: "Work",
+                slug: "work",
+              },
+            },
+          ],
+        }),
+      },
+    },
+    buildSession(),
+  );
+
+  assert.equal((await authService.getAuthenticatedActor())?.userId, 7);
+});
+
 test("getAuthenticatedActor returns current user and membership data", async () => {
   const authService = new TestAuthService(
     {

@@ -159,8 +159,7 @@ export function ProjectMembersModal({
             </h2>
             {details ? (
               <p className="text-sm leading-6 text-[var(--ink-muted)]">
-                Manage users who can access this project. Users must belong to{" "}
-                {details.workspaceName} before they can be added here.
+                Manage users who can access this project.
               </p>
             ) : null}
           </div>
@@ -185,7 +184,11 @@ export function ProjectMembersModal({
                         Add user
                       </h3>
                       <p className="mt-1 text-xs text-[var(--ink-subtle)]">
-                        Add an existing workspace user to this project.
+                        If a user isn&apos;t listed below, ensure they have access to the{" "}
+                        <strong className="font-semibold text-[var(--accent-strong)]">
+                          {details.workspaceName}
+                        </strong>{" "}
+                        workspace.
                       </p>
                     </div>
                   </div>

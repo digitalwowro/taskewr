@@ -14,6 +14,7 @@ type TaskSaveInput = {
   priority: TaskPriority;
   startDate: string | null;
   dueDate: string | null;
+  dueReminderTime: string | null;
   labels: string[];
   repeat: RepeatSettingsInput;
 };
@@ -31,6 +32,7 @@ type TaskModalSwitcherProps = {
   onCloseTaskRoute: () => void;
   onCloseInlineTaskEditor: () => void;
   onSaveTask: (targetTask: TaskListItem, input: TaskSaveInput) => Promise<void>;
+  onToggleTaskSubscription: (targetTask: TaskListItem, nextSubscribed: boolean) => Promise<void>;
 };
 
 export function TaskModalSwitcher({
@@ -46,6 +48,7 @@ export function TaskModalSwitcher({
   onCloseTaskRoute,
   onCloseInlineTaskEditor,
   onSaveTask,
+  onToggleTaskSubscription,
 }: TaskModalSwitcherProps) {
   if (initialSection === "task_detail") {
     return (
@@ -59,6 +62,9 @@ export function TaskModalSwitcher({
         onClose={onCloseTaskRoute}
         onSave={(input) =>
           selectedTask ? onSaveTask(selectedTask, input) : Promise.resolve()
+        }
+        onToggleSubscription={(nextSubscribed) =>
+          selectedTask ? onToggleTaskSubscription(selectedTask, nextSubscribed) : Promise.resolve()
         }
         isSaving={taskMutationPending}
         error={taskMutationError}
@@ -80,6 +86,9 @@ export function TaskModalSwitcher({
       parentTaskOptionsByProject={parentTaskOptionsByProject}
       onClose={onCloseInlineTaskEditor}
       onSave={(input) => onSaveTask(taskEditorTask, input)}
+      onToggleSubscription={(nextSubscribed) =>
+        onToggleTaskSubscription(taskEditorTask, nextSubscribed)
+      }
       isSaving={taskMutationPending}
       error={taskMutationError}
     />

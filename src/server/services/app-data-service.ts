@@ -58,7 +58,7 @@ export class AppDataService {
     filtersInput?: Partial<TaskFilters>,
   ): AppData {
     const filters = normalizeTaskFilters(filtersInput ?? DEFAULT_TASK_FILTERS);
-    const taskItems = tasks.map((task) => toTaskListItem(task, timezone));
+    const taskItems = tasks.map((task) => toTaskListItem(task, timezone, currentUser.id));
     const projectTasksByProjectId = Object.fromEntries(
       projects.map((project) => [
         String(project.id),
@@ -88,7 +88,7 @@ export class AppDataService {
       (task) => task.project.archivedAt === null && !DONE_STATUSES.has(task.status),
     );
 
-    const activeTaskItems = activeTasks.map((task) => toTaskListItem(task, timezone));
+    const activeTaskItems = activeTasks.map((task) => toTaskListItem(task, timezone, currentUser.id));
     const dashboardBuckets = bucketDashboardTasks(activeTaskItems, new Date(), timezone);
     const overdueItems = dashboardBuckets.focusOverdueItems;
     const filteredOverdueItems = sortTaskItems(
@@ -109,7 +109,6 @@ export class AppDataService {
       filters,
     );
 
-    const projectById = new Map(projects.map((project) => [String(project.id), project]));
     const projectGroupsMap = new Map<string, TaskListItem[]>();
 
     for (const item of dashboardBuckets.projectItems) {
@@ -123,19 +122,23 @@ export class AppDataService {
       projectGroupsMap.set(projectId, groupItems);
     }
 
-    const groupedProjects: ProjectGroup[] = [...projectGroupsMap.entries()].map(([projectId, items]) => {
-      const filteredItems = sortTaskItems(filterTaskItems(items, filters), filters);
-      const project = projectById.get(projectId);
+    const groupedProjects: ProjectGroup[] = projects
+      .filter((project) => project.archivedAt === null)
+      .map((project) => {
+        const projectId = String(project.id);
+        const items = projectGroupsMap.get(projectId) ?? [];
+        const filteredItems = sortTaskItems(filterTaskItems(items, filters), filters);
 
-      return {
-        id: projectId,
-        name: project?.name ?? items[0]?.project ?? "Project",
-        workspaceId: project?.workspaceId ? String(project.workspaceId) : null,
-        workspaceName: project?.workspace?.name ?? "No workspace",
-        count: filteredItems.length,
-        items: filteredItems,
-      };
-    });
+        return {
+          id: projectId,
+          name: project.name,
+          workspaceId: project.workspaceId ? String(project.workspaceId) : null,
+          workspaceName: project.workspace?.name ?? "No workspace",
+          count: filteredItems.length,
+          items: filteredItems,
+        };
+      })
+      .filter((project) => project.count > 0);
 
     return {
       currentUser,

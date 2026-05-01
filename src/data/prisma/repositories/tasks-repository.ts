@@ -18,6 +18,11 @@ export class TasksRepository {
         label: true,
       },
     },
+    notificationSubscriptions: {
+      select: {
+        userId: true,
+      },
+    },
   } as const;
 
   private readonly taskListInclude = {
@@ -31,6 +36,11 @@ export class TasksRepository {
     taskLabels: {
       include: {
         label: true,
+      },
+    },
+    notificationSubscriptions: {
+      select: {
+        userId: true,
       },
     },
   } as const;

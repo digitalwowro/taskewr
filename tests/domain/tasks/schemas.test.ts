@@ -27,3 +27,42 @@ test("taskMutationSchema rejects due dates before the start date", () => {
     /Due date must be on or after start date\./,
   );
 });
+
+test("taskMutationSchema validates due reminder time", () => {
+  assert.equal(
+    taskMutationSchema.parse({
+      projectId: 1,
+      title: "Review rollout notes",
+      status: "todo",
+      priority: "medium",
+      dueDate: "2026-04-10",
+      dueReminderTime: "09:30",
+    }).dueReminderTime,
+    "09:30",
+  );
+
+  assert.throws(
+    () =>
+      taskMutationSchema.parse({
+        projectId: 1,
+        title: "Review rollout notes",
+        status: "todo",
+        priority: "medium",
+        dueReminderTime: "09:30",
+      }),
+    /Reminder time requires a due date\./,
+  );
+
+  assert.throws(
+    () =>
+      taskMutationSchema.parse({
+        projectId: 1,
+        title: "Review rollout notes",
+        status: "todo",
+        priority: "medium",
+        dueDate: "2026-04-10",
+        dueReminderTime: "24:00",
+      }),
+    /Reminder time must use HH:mm format\./,
+  );
+});

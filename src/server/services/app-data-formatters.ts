@@ -18,6 +18,11 @@ export type AppTaskRecord = Prisma.TaskGetPayload<{
         label: true;
       };
     };
+    notificationSubscriptions: {
+      select: {
+        userId: true;
+      };
+    };
   };
 }>;
 
@@ -31,10 +36,11 @@ export type AppProjectRecord = {
   } | null;
   archivedAt: Date | null;
   updatedAt: Date;
-  _count: {
-    tasks: number;
-  };
-};
+	  _count: {
+	    tasks: number;
+	    members: number;
+	  };
+	};
 
 export function formatUpdatedLabel(date: Date, referenceDate = new Date()) {
   const diffMs = referenceDate.getTime() - date.getTime();
@@ -75,13 +81,18 @@ export function formatArchivedLabel(date: Date | null, referenceDate = new Date(
   return `Archived ${diffMonths} month${diffMonths === 1 ? "" : "s"} ago`;
 }
 
-export function toTaskListItem(task: AppTaskRecord, timezone: string | null): TaskListItem {
+export function toTaskListItem(
+  task: AppTaskRecord,
+  timezone: string | null,
+  currentUserId?: number,
+): TaskListItem {
   const statusLabel =
     TASK_STATUS_LABELS[task.status as keyof typeof TASK_STATUS_LABELS] ??
     task.status.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
   const priorityLabel =
     TASK_PRIORITY_LABELS[task.priority as keyof typeof TASK_PRIORITY_LABELS] ??
     task.priority.replace(/\b\w/g, (char) => char.toUpperCase());
+  const notificationSubscriptions = task.notificationSubscriptions ?? [];
 
   return {
     id: `TSK-${task.id}`,
@@ -94,6 +105,11 @@ export function toTaskListItem(task: AppTaskRecord, timezone: string | null): Ta
     statusValue: task.status as TaskListItem["statusValue"],
     due: formatDashboardDueLabel(task.dueDate, new Date(), timezone),
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    dueReminderTime: task.dueReminderTime,
+    isSubscribedToNotifications:
+      currentUserId !== undefined
+        ? notificationSubscriptions.some((subscription) => subscription.userId === currentUserId)
+        : false,
     priority: priorityLabel,
     priorityValue: task.priority as TaskListItem["priorityValue"],
     startDate: task.startDate ? task.startDate.toISOString() : null,
@@ -141,6 +157,7 @@ export function toTaskDetails(
         },
     startDateValue: task.startDate ? task.startDate.toISOString().slice(0, 10) : "",
     dueDateValue: task.dueDate ? task.dueDate.toISOString().slice(0, 10) : "",
+    dueReminderTime: task.dueReminderTime ?? "",
     projectOptions: projects
       .filter((project) => project.archivedAt === null)
       .map((project) => ({
@@ -160,11 +177,12 @@ export function toActiveProjectCard(project: AppProjectRecord, referenceDate = n
     workspaceId: project.workspaceId ? String(project.workspaceId) : null,
     workspaceName: project.workspace?.name ?? "No workspace",
     name: project.name,
-    description: project.description ?? "",
-    taskCount: project._count.tasks,
-    updatedLabel: formatUpdatedLabel(project.updatedAt, referenceDate),
-  };
-}
+	    description: project.description ?? "",
+	    taskCount: project._count.tasks,
+	    memberCount: project._count.members,
+	    updatedLabel: formatUpdatedLabel(project.updatedAt, referenceDate),
+	  };
+	}
 
 export function toArchivedProjectCard(project: AppProjectRecord, referenceDate = new Date()): AppProject {
   return {
@@ -172,9 +190,10 @@ export function toArchivedProjectCard(project: AppProjectRecord, referenceDate =
     workspaceId: project.workspaceId ? String(project.workspaceId) : null,
     workspaceName: project.workspace?.name ?? "No workspace",
     name: project.name,
-    description: project.description ?? "",
-    taskCount: project._count.tasks,
-    isArchived: true,
-    updatedLabel: formatArchivedLabel(project.archivedAt, referenceDate),
-  };
+	    description: project.description ?? "",
+	    taskCount: project._count.tasks,
+	    memberCount: project._count.members,
+	    isArchived: true,
+	    updatedLabel: formatArchivedLabel(project.archivedAt, referenceDate),
+	  };
 }

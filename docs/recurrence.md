@@ -26,13 +26,10 @@ Repeat sync runs opportunistically when app data is loaded. The app calls `Repea
 
 This is enough for task creation because the user sees updated repeated tasks when the app or API is opened.
 
-## Future Worker
+## Notification Worker
 
-Notifications will need background work because a user may not open the app before a reminder time. When notification support is added:
+Notifications use background work because a user may not open the app before a reminder time.
 
-- keep the repeat calculation inside `RepeatTaskService`
-- add a worker process that calls the same sync service with an explicit project scope
-- add notification sending after sync
-- run `app` and `worker` as separate containers from the same Docker image
+Task due reminder email is scheduled through database-backed delivery rows and sent by the notification worker. In local development, `DOTENV_CONFIG_PATH=.env.dev npm run dev:all` starts the app and worker together. Production runs `app` and `worker` as separate containers from the same Docker image.
 
-The worker should not introduce a parallel repeat implementation.
+The worker should not introduce a parallel repeat implementation. Repeat calculation remains inside `RepeatTaskService`; any future recurring-task notification behavior should reuse that service and then sync notification delivery rows.

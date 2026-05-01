@@ -25,12 +25,13 @@ export type AppProject = {
   id: string;
   workspaceId: string | null;
   workspaceName: string;
-  name: string;
-  description: string;
-  taskCount: number;
-  isArchived?: boolean;
-  updatedLabel: string;
-};
+	  name: string;
+	  description: string;
+	  taskCount: number;
+	  memberCount: number;
+	  isArchived?: boolean;
+	  updatedLabel: string;
+	};
 
 export type AppData = {
   currentUser: AppCurrentUser;

@@ -10,7 +10,16 @@ export type TaskEditorFieldErrors = {
   title?: string;
   projectId?: string;
   dueDate?: string;
+  dueReminderTime?: string;
 };
+
+const REMINDER_TIME_OPTIONS = Array.from({ length: 24 * 4 }, (_, index) => {
+  const hour = Math.floor(index / 4);
+  const minute = (index % 4) * 15;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+});
+const REMINDER_SUBSCRIPTION_TOOLTIP =
+  "To receive reminders for this task, you must subscribe to it.";
 
 function SelectChevron() {
   return (
@@ -31,8 +40,10 @@ function SelectChevron() {
 export function TaskCoreFields({
   availableProjectOptions,
   availableLabels,
+  canEditReminder = true,
   description,
   dueDateValue,
+  dueReminderTimeValue,
   fieldErrors,
   isSaving,
   labels,
@@ -43,6 +54,7 @@ export function TaskCoreFields({
   projectId,
   setDescription,
   setDueDateValue,
+  setDueReminderTimeValue,
   setFieldErrors,
   setLabels,
   setParentTaskId,
@@ -59,8 +71,10 @@ export function TaskCoreFields({
 }: {
   availableProjectOptions: { id: string; name: string; workspaceName?: string }[];
   availableLabels: string[];
+  canEditReminder?: boolean;
   description: string;
   dueDateValue: string;
+  dueReminderTimeValue: string;
   fieldErrors: TaskEditorFieldErrors;
   isSaving: boolean;
   labels: string[];
@@ -71,6 +85,7 @@ export function TaskCoreFields({
   projectId: string;
   setDescription: (value: string) => void;
   setDueDateValue: (value: string) => void;
+  setDueReminderTimeValue: (value: string) => void;
   setFieldErrors: (updater: (current: TaskEditorFieldErrors) => TaskEditorFieldErrors) => void;
   setLabels: (value: string[]) => void;
   setParentTaskId: (value: string) => void;
@@ -137,6 +152,14 @@ export function TaskCoreFields({
       )
       .slice(0, 8);
   }, [normalizedParentTaskQuery, selectableParentTaskOptions]);
+  const reminderTimeOptions = useMemo(() => {
+    if (!dueReminderTimeValue || REMINDER_TIME_OPTIONS.includes(dueReminderTimeValue)) {
+      return REMINDER_TIME_OPTIONS;
+    }
+
+    return [...REMINDER_TIME_OPTIONS, dueReminderTimeValue].sort();
+  }, [dueReminderTimeValue]);
+  const reminderLocked = !canEditReminder;
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -342,7 +365,7 @@ export function TaskCoreFields({
       </div>
 
       <div className="rounded-[20px] border border-[var(--line-soft)] bg-[var(--surface-subtle)]/55 p-3">
-        <div className="grid gap-3 xl:grid-cols-[1.1fr_1.1fr_0.95fr_0.95fr_0.8fr_0.8fr]">
+        <div className="grid gap-3 xl:grid-cols-[1.1fr_1.1fr_0.95fr_0.95fr_0.8fr_0.8fr_0.8fr]">
           <div className="space-y-2">
             <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
               Project
@@ -528,6 +551,9 @@ export function TaskCoreFields({
               value={dueDateValue}
               onChange={(event) => {
                 setDueDateValue(event.target.value);
+                if (!event.target.value && canEditReminder) {
+                  setDueReminderTimeValue("");
+                }
                 setFieldErrors((current) => ({ ...current, dueDate: undefined }));
               }}
               disabled={isSaving}
@@ -540,6 +566,66 @@ export function TaskCoreFields({
             />
             {fieldErrors.dueDate ? (
               <p className="text-xs text-[var(--accent-red)]">{fieldErrors.dueDate}</p>
+            ) : null}
+          </div>
+
+          <div
+            className={`group relative space-y-2 ${
+              reminderLocked ? "cursor-help" : ""
+            }`}
+            tabIndex={reminderLocked ? 0 : undefined}
+            title={reminderLocked ? REMINDER_SUBSCRIPTION_TOOLTIP : undefined}
+          >
+            <label
+              className={`text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)] ${
+                reminderLocked ? "opacity-60" : ""
+              }`}
+            >
+              Reminder
+            </label>
+            <div className={`relative ${reminderLocked ? "opacity-60" : ""}`}>
+              <select
+                value={dueReminderTimeValue}
+                onChange={(event) => {
+                  setDueReminderTimeValue(event.target.value);
+                  setFieldErrors((current) => ({ ...current, dueReminderTime: undefined }));
+                }}
+                disabled={isSaving || !dueDateValue || reminderLocked}
+                aria-invalid={Boolean(fieldErrors.dueReminderTime)}
+                aria-describedby={reminderLocked ? `${taskId}-reminder-subscription-help` : undefined}
+                aria-label="Reminder time"
+                style={{
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  backgroundImage: "none",
+                }}
+                className={`h-9 w-full appearance-none rounded-[14px] border bg-white px-3 pr-8 text-[13px] text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)] ${
+                  fieldErrors.dueReminderTime
+                    ? "border-[rgba(193,62,62,0.35)]"
+                    : "border-[var(--line-strong)]"
+                }`}
+              >
+                <option value="">--:--</option>
+                {reminderTimeOptions.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+              <SelectChevron />
+            </div>
+            {reminderLocked ? (
+              <>
+                <span id={`${taskId}-reminder-subscription-help`} className="sr-only">
+                  {REMINDER_SUBSCRIPTION_TOOLTIP}
+                </span>
+                <span className="pointer-events-none absolute bottom-full right-0 z-30 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white opacity-100 shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus:block">
+                  {REMINDER_SUBSCRIPTION_TOOLTIP}
+                </span>
+              </>
+            ) : null}
+            {fieldErrors.dueReminderTime ? (
+              <p className="text-xs text-[var(--accent-red)]">{fieldErrors.dueReminderTime}</p>
             ) : null}
           </div>
         </div>

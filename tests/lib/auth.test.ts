@@ -7,6 +7,12 @@ import {
   parseSessionToken,
   verifyPassword,
 } from "@/lib/auth";
+import {
+  PASSWORD_RESET_TOKEN_TTL_MS,
+  createPasswordResetToken,
+  getPasswordResetExpiry,
+  hashPasswordResetToken,
+} from "@/lib/password-reset-tokens";
 import type { SessionPayload } from "@/types/auth";
 
 test("session tokens round-trip valid payloads", () => {
@@ -83,4 +89,22 @@ test("password verification rejects malformed hashes", () => {
   assert.equal(verifyPassword("anything", null), false);
   assert.equal(verifyPassword("anything", ""), false);
   assert.equal(verifyPassword("anything", "bad-format"), false);
+});
+
+test("password reset tokens are random and stored as sha256 hashes", () => {
+  const token = createPasswordResetToken();
+  const otherToken = createPasswordResetToken();
+  const hash = hashPasswordResetToken(token);
+
+  assert.notEqual(token, otherToken);
+  assert.equal(hash.length, 64);
+  assert.notEqual(hash, token);
+  assert.equal(hashPasswordResetToken(token), hash);
+});
+
+test("password reset expiry uses the configured token lifetime", () => {
+  const now = new Date("2026-05-01T10:00:00.000Z");
+  const expiresAt = getPasswordResetExpiry(now);
+
+  assert.equal(expiresAt.getTime() - now.getTime(), PASSWORD_RESET_TOKEN_TTL_MS);
 });

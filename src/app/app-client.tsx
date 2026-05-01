@@ -30,12 +30,11 @@ import { TaskProjectRequiredModal } from "@/components/app/task-project-required
 import { UserDeactivateModal } from "@/components/app/user-deactivate-modal";
 import { UserEditorModal } from "@/components/app/user-editor-modal";
 import { UserPasswordModal } from "@/components/app/user-password-modal";
+import { UserProjectAccessModal } from "@/components/app/user-project-access-modal";
 import { UsersContent } from "@/components/app/users-content";
 import { WorkspaceDeleteModal } from "@/components/app/workspace-delete-modal";
 import { WorkspaceEditorModal } from "@/components/app/workspace-editor-modal";
-import { WorkspaceMemberAddModal } from "@/components/app/workspace-member-add-modal";
-import { WorkspaceMemberEditorModal } from "@/components/app/workspace-member-editor-modal";
-import { WorkspaceMemberRemoveModal } from "@/components/app/workspace-member-remove-modal";
+import { WorkspaceMembersModal } from "@/components/app/workspace-members-modal";
 import { WorkspacesContent } from "@/components/app/workspaces-content";
 import { useClickOutside } from "@/hooks/use-click-outside";
 import { useDashboardTaskGroups } from "@/hooks/use-dashboard-task-groups";
@@ -50,7 +49,7 @@ import { NEW_TASK_ID, useTaskEditorState } from "@/hooks/use-task-editor-state";
 import { useTaskFilterToolbarState } from "@/hooks/use-task-filter-toolbar-state";
 import { useUserAdminState } from "@/hooks/use-user-admin-state";
 import { useWorkspaceAdminState } from "@/hooks/use-workspace-admin-state";
-import { requestJson } from "@/lib/api-client";
+import { isUnauthorizedError, requestJson } from "@/lib/api-client";
 import type { ProjectView } from "@/domain/projects/constants";
 import {
   PRIORITY_OPTIONS,
@@ -107,6 +106,7 @@ export function TaskewrApp({
   );
   const [showArchivedProjects, setShowArchivedProjects] = useState(false);
   const [draggingProjectTaskId, setDraggingProjectTaskId] = useState<string | null>(null);
+  const [subscriptionPendingTaskId, setSubscriptionPendingTaskId] = useState<string | null>(null);
   const [newTaskProjectId, setNewTaskProjectId] = useState<string | null>(null);
   const [taskProjectRequiredOpen, setTaskProjectRequiredOpen] = useState(false);
   const {
@@ -232,8 +232,14 @@ export function TaskewrApp({
     editingUser,
     passwordUser,
     deactivatingUser,
+    projectAccessUser,
+    projectAccessDetails,
+    projectAccessLoading,
+    projectAccessError,
+    projectAccessMutationPending,
     mutationPending: userMutationPending,
     mutationError: userMutationError,
+    mutationNotice: userMutationNotice,
     setQuery: setUserQuery,
     setIncludeInactive: setIncludeInactiveUsers,
     openNewUser,
@@ -243,8 +249,15 @@ export function TaskewrApp({
     closePasswordReset,
     openDeactivateUser,
     closeDeactivateUser,
+    openProjectAccess,
+    closeProjectAccess,
+    addWorkspaceAccess,
+    addProjectAccess,
+    removeProjectAccess,
+    removeWorkspaceAccess,
     saveUser,
     resetPassword,
+    sendPasswordResetEmail,
     deactivateUser,
     reactivateUser,
   } = useUserAdminState({
@@ -260,11 +273,9 @@ export function TaskewrApp({
     loadError: workspacesLoadError,
     editingWorkspace,
     deletingWorkspace,
-    addingMemberWorkspace,
-    removingMemberDetails: removingWorkspaceMemberDetails,
-    memberDetails: workspaceMemberDetails,
-    memberDetailsLoading: workspaceMemberDetailsLoading,
+    managingMembersWorkspace,
     mutationPending: workspaceMutationPending,
+    workspaceReorderPendingId,
     mutationError: workspaceMutationError,
     setQuery: setWorkspaceQuery,
     openNewWorkspace,
@@ -272,18 +283,15 @@ export function TaskewrApp({
     closeWorkspaceEditor,
     openDeleteWorkspace,
     closeDeleteWorkspace,
-    openAddMember: openWorkspaceMemberAdd,
-    closeAddMember: closeWorkspaceMemberAdd,
-    openRemoveMember: openWorkspaceMemberRemove,
-    closeRemoveMember: closeWorkspaceMemberRemove,
-    openEditMember: openWorkspaceMemberEditor,
-    closeMemberEditor: closeWorkspaceMemberEditor,
+    openManageMembers,
+    closeManageMembers,
     saveWorkspace,
     deleteWorkspace,
+    moveWorkspace,
     addMember: addWorkspaceMember,
     createAndAddMember: createAndAddWorkspaceMember,
-    saveEditingMemberRole: saveWorkspaceMemberRole,
-    removeMember: removeWorkspaceMember,
+    updateMemberRole: updateWorkspaceMemberRole,
+    removeMemberById: removeWorkspaceMemberById,
   } = useWorkspaceAdminState({
     enabled: initialSection === "workspaces",
     redirectToLogin,
@@ -447,6 +455,31 @@ export function TaskewrApp({
     redirectToLogin,
     refreshApp: () => router.refresh(),
   });
+  const toggleTaskSubscription = useCallback(
+    async (
+      targetTask: Pick<TaskListItem, "id" | "isSubscribedToNotifications">,
+      nextSubscribed: boolean,
+    ) => {
+      setSubscriptionPendingTaskId(targetTask.id);
+
+      try {
+        await requestJson(`/api/v1/tasks/${targetTask.id.replace("TSK-", "")}/subscription`, {
+          method: nextSubscribed ? "POST" : "DELETE",
+        });
+        router.refresh();
+      } catch (error) {
+        if (isUnauthorizedError(error)) {
+          redirectToLogin();
+          return;
+        }
+
+        throw error;
+      } finally {
+        setSubscriptionPendingTaskId((current) => (current === targetTask.id ? null : current));
+      }
+    },
+    [redirectToLogin, router],
+  );
   const {
     projectBoardGroups,
     selectedProjectActiveTasks,
@@ -684,6 +717,8 @@ export function TaskewrApp({
                       onEditTask={setEditingTaskId}
                       onCompleteTask={completeTask}
                       completingTaskId={completingTaskId}
+                      subscriptionPendingTaskId={subscriptionPendingTaskId}
+                      onToggleTaskSubscription={toggleTaskSubscription}
                       onOpenProjects={() => router.push("/projects")}
                       onNewTask={openNewTask}
                       onOpenProject={(projectId) => router.push(`/projects/${projectId}`)}
@@ -713,12 +748,15 @@ export function TaskewrApp({
                   loading={usersLoading}
                   loadError={usersLoadError}
                   mutationError={userMutationError}
+                  mutationNotice={userMutationNotice}
                   mutationPending={userMutationPending}
                   canManageUsers={canManageUsers}
                   onSearch={setUserQuery}
                   onToggleInactive={setIncludeInactiveUsers}
                   onEditUser={openEditUser}
                   onResetPassword={openPasswordReset}
+                  onListProjects={openProjectAccess}
+                  onSendPasswordResetEmail={sendPasswordResetEmail}
                   onDeactivateUser={openDeactivateUser}
                   onReactivateUser={reactivateUser}
                 />
@@ -730,12 +768,12 @@ export function TaskewrApp({
                   loadError={workspacesLoadError}
                   mutationError={workspaceMutationError}
                   mutationPending={workspaceMutationPending}
+                  workspaceReorderPendingId={workspaceReorderPendingId}
                   onSearch={setWorkspaceQuery}
                   onEditWorkspace={openEditWorkspace}
                   onDeleteWorkspace={openDeleteWorkspace}
-                  onAddMember={openWorkspaceMemberAdd}
-                  onRemoveMember={openWorkspaceMemberRemove}
-                  onEditMember={openWorkspaceMemberEditor}
+                  onManageMembers={openManageMembers}
+                  onMoveWorkspace={moveWorkspace}
                 />
               ) : (initialSection === "project_detail" || initialSection === "task_detail") && selectedProject ? (
                 <div className="space-y-5">
@@ -816,6 +854,8 @@ export function TaskewrApp({
                     onEditTask={openTask}
                     onCompleteTask={completeTask}
                     completingTaskId={completingTaskId}
+                    subscriptionPendingTaskId={subscriptionPendingTaskId}
+                    onToggleTaskSubscription={toggleTaskSubscription}
                     onMoveTask={moveProjectTaskToStatus}
                     onEditProject={() => setEditingProjectId(selectedProject.id)}
                     onBackToProjects={() => router.push("/projects")}
@@ -879,6 +919,19 @@ export function TaskewrApp({
         isSaving={userMutationPending}
         error={userMutationError}
       />
+      <UserProjectAccessModal
+        key={projectAccessUser ? `user-project-access-${projectAccessUser.id}` : "user-project-access-empty"}
+        user={projectAccessUser}
+        details={projectAccessDetails}
+        loading={projectAccessLoading}
+        isSaving={projectAccessMutationPending}
+        error={projectAccessError}
+        onClose={closeProjectAccess}
+        onAddWorkspace={addWorkspaceAccess}
+        onAddProject={addProjectAccess}
+        onRemoveProject={removeProjectAccess}
+        onRemoveWorkspace={removeWorkspaceAccess}
+      />
       <UserDeactivateModal
         key={deactivatingUser ? `user-deactivate-${deactivatingUser.id}` : "user-deactivate-empty"}
         user={deactivatingUser}
@@ -909,38 +962,19 @@ export function TaskewrApp({
         isSaving={workspaceMutationPending}
         error={workspaceMutationError}
       />
-      <WorkspaceMemberAddModal
-        key={addingMemberWorkspace ? `workspace-member-add-${addingMemberWorkspace.id}` : "workspace-member-add-empty"}
-        workspace={addingMemberWorkspace}
+      <WorkspaceMembersModal
+        key={
+          managingMembersWorkspace
+            ? `workspace-members-${managingMembersWorkspace.id}`
+            : "workspace-members-empty"
+        }
+        workspace={managingMembersWorkspace}
         userCandidates={workspaceUserCandidates}
-        onClose={closeWorkspaceMemberAdd}
+        onClose={closeManageMembers}
         onAddMember={addWorkspaceMember}
         onCreateAndAddMember={createAndAddWorkspaceMember}
-        isSaving={workspaceMutationPending}
-        error={workspaceMutationError}
-      />
-      <WorkspaceMemberEditorModal
-        key={
-          workspaceMemberDetails
-            ? `workspace-member-${workspaceMemberDetails.currentWorkspace.id}-${workspaceMemberDetails.userId}`
-            : "workspace-member-empty"
-        }
-        member={workspaceMemberDetails}
-        loading={workspaceMemberDetailsLoading}
-        onClose={closeWorkspaceMemberEditor}
-        onSaveRole={saveWorkspaceMemberRole}
-        isSaving={workspaceMutationPending}
-        error={workspaceMutationError}
-      />
-      <WorkspaceMemberRemoveModal
-        key={
-          removingWorkspaceMemberDetails
-            ? `workspace-member-remove-${removingWorkspaceMemberDetails.workspace.id}-${removingWorkspaceMemberDetails.member.userId}`
-            : "workspace-member-remove-empty"
-        }
-        target={removingWorkspaceMemberDetails}
-        onClose={closeWorkspaceMemberRemove}
-        onConfirm={removeWorkspaceMember}
+        onUpdateRole={updateWorkspaceMemberRole}
+        onRemoveMember={removeWorkspaceMemberById}
         isSaving={workspaceMutationPending}
         error={workspaceMutationError}
       />
@@ -957,6 +991,7 @@ export function TaskewrApp({
         onCloseTaskRoute={closeTaskRoute}
         onCloseInlineTaskEditor={closeInlineTaskEditor}
         onSaveTask={handleTaskSave}
+        onToggleTaskSubscription={toggleTaskSubscription}
       />
       <TaskProjectRequiredModal
         open={taskProjectRequiredOpen}

@@ -36,11 +36,12 @@ export function useProjectEditorState({
             id: NEW_PROJECT_ID,
             workspaceId: workspaces[0]?.id ?? null,
             workspaceName: workspaces[0]?.name ?? "Workspace",
-            name: "",
-            description: "",
-            taskCount: 0,
-            updatedLabel: "Will appear in active projects",
-          }
+	            name: "",
+	            description: "",
+	            taskCount: 0,
+	            memberCount: 0,
+	            updatedLabel: "Will appear in active projects",
+	          }
         : allProjects.find((project) => project.id === editingProjectId) ?? null,
     [allProjects, editingProjectId, workspaces],
   );

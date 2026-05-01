@@ -12,6 +12,19 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+export const passwordResetRequestSchema = z.object({
+  email: normalizedEmailSchema,
+});
+
+export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
+
+export const passwordResetConfirmSchema = z.object({
+  token: z.string().trim().min(32).max(500),
+  password: z.string().min(7).max(200),
+});
+
+export type PasswordResetConfirmInput = z.infer<typeof passwordResetConfirmSchema>;
+
 export const profileUpdateSchema = z
   .object({
     name: z.string().trim().min(1).max(120),

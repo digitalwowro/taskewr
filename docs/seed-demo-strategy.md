@@ -8,7 +8,7 @@
 ## Seed Layers
 - **Runtime demo seed**: populated by [prisma/seed.ts](../prisma/seed.ts)
   - Work and Personal workspaces
-  - one owner user
+  - admin and regular demo users
   - explicit project memberships for every seeded project
   - realistic active and archived projects
   - realistic tasks across statuses and priorities
@@ -19,7 +19,7 @@
 
 ## Seed Invariants
 - Stable IDs should be preserved for the main demo records where possible.
-- The seeded login account should stay documented and intentional.
+- The seeded login accounts should stay documented and intentional.
 - User creation outside the seed should always create a personal workspace and owner membership for the new user.
 - The seed should always include:
   - overdue tasks
@@ -27,6 +27,7 @@
   - archived projects
   - projects split across more than one workspace
   - project membership rows that match seeded project owners
+  - a non-admin project member account for role/access checks
   - parent/subtask relationships
   - labels that exercise auto-create and existing-label behavior
 
@@ -38,11 +39,9 @@
 
 ## Local Workflow
 - Rebuild schema changes with:
-  - `set -a; source .env.dev; set +a`
-  - `npm run prisma:migrate:dev`
+  - `DOTENV_CONFIG_PATH=.env.dev npm run prisma:migrate:dev`
 - Reseed demo data with:
-  - `set -a; source .env.dev; set +a`
-  - `npm run prisma:seed`
+  - `DOTENV_CONFIG_PATH=.env.dev npm run prisma:seed`
 
 ## Production Safety
 - Production must never depend on seed data.

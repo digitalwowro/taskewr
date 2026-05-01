@@ -26,6 +26,8 @@ export type TaskListItem = {
   statusValue: TaskStatus;
   due: string;
   dueDate: string | null;
+  dueReminderTime?: string | null;
+  isSubscribedToNotifications?: boolean;
   priority: string;
   priorityValue: TaskPriority;
   startDate: string | null;
@@ -45,6 +47,7 @@ export type TaskDetails = {
   repeat?: RepeatSettingsInput;
   startDateValue: string;
   dueDateValue: string;
+  dueReminderTime?: string;
   projectOptions?: { id: string; name: string; workspaceName?: string }[];
   parentTaskOptions?: { id: string; title: string }[];
 };

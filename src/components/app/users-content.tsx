@@ -96,6 +96,28 @@ function PasswordIcon() {
   );
 }
 
+function MailIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <rect x="2.25" y="3.75" width="11.5" height="8.5" rx="1.4" />
+      <path d="m3 5 5 3.75L13 5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ProjectListIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M3.25 3.75h9.5" strokeLinecap="round" />
+      <path d="M3.25 8h9.5" strokeLinecap="round" />
+      <path d="M3.25 12.25h9.5" strokeLinecap="round" />
+      <path d="M1.75 3.75h.1" strokeLinecap="round" />
+      <path d="M1.75 8h.1" strokeLinecap="round" />
+      <path d="M1.75 12.25h.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function DeactivateIcon() {
   return (
     <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
@@ -123,12 +145,15 @@ export function UsersContent({
   loading,
   loadError,
   mutationError,
+  mutationNotice,
   mutationPending,
   canManageUsers,
   onSearch,
   onToggleInactive,
   onEditUser,
   onResetPassword,
+  onListProjects,
+  onSendPasswordResetEmail,
   onDeactivateUser,
   onReactivateUser,
 }: {
@@ -138,12 +163,15 @@ export function UsersContent({
   loading: boolean;
   loadError: string | null;
   mutationError: string | null;
+  mutationNotice: string | null;
   mutationPending: boolean;
   canManageUsers: boolean;
   onSearch: (query: string) => void;
   onToggleInactive: (includeInactive: boolean) => void;
   onEditUser: (userId: number) => void;
   onResetPassword: (userId: number) => void;
+  onListProjects: (userId: number) => void;
+  onSendPasswordResetEmail: (userId: number) => void;
   onDeactivateUser: (userId: number) => void;
   onReactivateUser: (userId: number) => void;
 }) {
@@ -260,9 +288,15 @@ export function UsersContent({
           </div>
         </div>
 
-        {loadError || mutationError ? (
-          <div className="border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-5 py-3 text-sm text-[var(--accent-red)]">
-            {loadError ?? mutationError}
+        {loadError || mutationError || mutationNotice ? (
+          <div
+            className={`border-b px-5 py-3 text-sm ${
+              loadError || mutationError
+                ? "border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] text-[var(--accent-red)]"
+                : "border-[rgba(34,122,89,0.14)] bg-[rgba(34,122,89,0.04)] text-[var(--accent-strong)]"
+            }`}
+          >
+            {loadError ?? mutationError ?? mutationNotice}
           </div>
         ) : null}
 
@@ -331,6 +365,20 @@ export function UsersContent({
                           disabled={mutationPending}
                         >
                           <PasswordIcon />
+                        </IconActionButton>
+                        <IconActionButton
+                          label="List projects"
+                          onClick={() => onListProjects(user.id)}
+                          disabled={mutationPending}
+                        >
+                          <ProjectListIcon />
+                        </IconActionButton>
+                        <IconActionButton
+                          label="Send reset email"
+                          onClick={() => onSendPasswordResetEmail(user.id)}
+                          disabled={mutationPending || !user.isActive}
+                        >
+                          <MailIcon />
                         </IconActionButton>
                         {user.isActive ? (
                           <IconActionButton

@@ -10,6 +10,7 @@ import {
   TASK_SORT_OPTIONS,
   TASK_STATUSES,
 } from "./constants";
+import { isDueReminderTime, normalizeDueReminderTime } from "./notification-schedule";
 import { repeatSettingsSchema } from "./repeat-schemas";
 
 export const taskStatusSchema = z.enum(TASK_STATUSES);
@@ -37,6 +38,15 @@ export const taskMutationSchema = z
     priority: taskPrioritySchema,
     startDate: z.string().date().nullable().optional().default(null),
     dueDate: z.string().date().nullable().optional().default(null),
+    dueReminderTime: z
+      .preprocess((value) => {
+        if (typeof value !== "string") {
+          return value;
+        }
+
+        return normalizeDueReminderTime(value);
+      }, z.string().refine(isDueReminderTime, "Reminder time must use HH:mm format.").nullable().optional())
+      .default(null),
     labels: z.array(z.string().trim().min(1).max(120)).max(30).optional().default([]),
     repeat: repeatSettingsSchema.optional().default({
       enabled: false,
@@ -54,6 +64,14 @@ export const taskMutationSchema = z
         code: z.ZodIssueCode.custom,
         path: ["dueDate"],
         message: "Due date must be on or after start date.",
+      });
+    }
+
+    if (value.dueReminderTime && !value.dueDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["dueReminderTime"],
+        message: "Reminder time requires a due date.",
       });
     }
   });

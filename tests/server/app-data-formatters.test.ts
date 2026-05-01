@@ -24,6 +24,7 @@ function buildTask(overrides: Record<string, unknown> = {}) {
     priority: "urgent",
     startDate: new Date("2026-04-01T00:00:00.000Z"),
     dueDate: null,
+    dueReminderTime: "09:30",
     repeatRuleId: 3,
     repeatScheduledFor: new Date("2026-04-02T00:00:00.000Z"),
     repeatCarryCount: 2,
@@ -52,12 +53,13 @@ function buildTask(overrides: Record<string, unknown> = {}) {
         },
       },
     ],
+    notificationSubscriptions: [{ userId: 7 }],
     ...overrides,
   };
 }
 
 test("toTaskListItem maps task records into app task rows", () => {
-  assert.deepEqual(toTaskListItem(buildTask() as never, "UTC"), {
+  assert.deepEqual(toTaskListItem(buildTask() as never, "UTC", 7), {
     id: "TSK-12",
     projectId: "4",
     workspaceId: "1",
@@ -68,6 +70,8 @@ test("toTaskListItem maps task records into app task rows", () => {
     statusValue: "in_progress",
     due: "No due date",
     dueDate: null,
+    dueReminderTime: "09:30",
+    isSubscribedToNotifications: true,
     priority: "Urgent",
     priorityValue: "urgent",
     startDate: "2026-04-01T00:00:00.000Z",
@@ -106,6 +110,7 @@ test("toTaskDetails maps repeat settings and filters invalid json values", () =>
     },
     startDateValue: "2026-04-01",
     dueDateValue: "",
+    dueReminderTime: "09:30",
     projectOptions: [{ id: "4", name: "Service Management", workspaceName: "No workspace" }],
     parentTaskOptions: [{ id: "14", title: "Sibling task" }],
   });
@@ -129,7 +134,7 @@ test("project card helpers preserve display labels", () => {
       },
       archivedAt: null,
       updatedAt: referenceDate,
-      _count: { tasks: 3 },
+      _count: { tasks: 3, members: 2 },
     }, referenceDate),
     {
       id: "1",
@@ -138,6 +143,7 @@ test("project card helpers preserve display labels", () => {
       name: "Active",
       description: "",
       taskCount: 3,
+      memberCount: 2,
       updatedLabel: "Updated just now",
     },
   );
@@ -153,7 +159,7 @@ test("project card helpers preserve display labels", () => {
       },
       archivedAt: new Date("2026-04-01T00:00:00.000Z"),
       updatedAt: referenceDate,
-      _count: { tasks: 1 },
+      _count: { tasks: 1, members: 1 },
     }, referenceDate),
     {
       id: "2",
@@ -162,6 +168,7 @@ test("project card helpers preserve display labels", () => {
       name: "Archived",
       description: "Done",
       taskCount: 1,
+      memberCount: 1,
       isArchived: true,
       updatedLabel: "Archived this month",
     },

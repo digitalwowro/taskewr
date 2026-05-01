@@ -39,6 +39,7 @@ function buildWorkspace(overrides: Record<string, unknown> = {}) {
     name: "Work",
     description: "Work space",
     slug: "work",
+    sortOrder: 1,
     createdAt,
     updatedAt: createdAt,
     owner: {
@@ -247,6 +248,7 @@ test("createWorkspace creates an owner workspace with a unique slug", async () =
       email: "admin@taskewr.com",
       deactivatedAt: null,
     }),
+    maxSortOrder: async () => ({ _max: { sortOrder: 2 } }),
     createWithOwner: async (data: Record<string, unknown>) => {
       createdData.push(data);
       return buildWorkspace({
@@ -267,6 +269,7 @@ test("createWorkspace creates an owner workspace with a unique slug", async () =
   assert.equal(workspace.name, "Team");
   assert.equal(createdData[0].ownerUserId, 7);
   assert.equal(createdData[0].slug, "team-2");
+  assert.equal(createdData[0].sortOrder, 3);
 });
 
 test("app admins can choose the owner when creating a workspace", async () => {
@@ -280,6 +283,7 @@ test("app admins can choose the owner when creating a workspace", async () => {
         email: "owner@taskewr.com",
         deactivatedAt: null,
       }),
+      maxSortOrder: async () => ({ _max: { sortOrder: 3 } }),
       createWithOwner: async (data: Record<string, unknown>) => {
         createdData.push(data);
         return buildWorkspace({
@@ -302,6 +306,7 @@ test("app admins can choose the owner when creating a workspace", async () => {
 
   assert.equal(workspace.name, "Client");
   assert.equal(createdData[0].ownerUserId, 12);
+  assert.equal(createdData[0].sortOrder, 4);
 });
 
 test("plain workspace members can create their own workspace", async () => {
@@ -315,6 +320,7 @@ test("plain workspace members can create their own workspace", async () => {
         email: "member@taskewr.com",
         deactivatedAt: null,
       }),
+      maxSortOrder: async () => ({ _max: { sortOrder: null } }),
       createWithOwner: async (data: Record<string, unknown>) => {
         createdData.push(data);
         return buildWorkspace({
@@ -340,6 +346,52 @@ test("plain workspace members can create their own workspace", async () => {
   });
 
   assert.equal(createdData[0].ownerUserId, 12);
+  assert.equal(createdData[0].sortOrder, 1);
+});
+
+test("moveWorkspace reorders the visible workspace list and renumbers it", async () => {
+  const updates: Array<{ id: number; sortOrder: number }> = [];
+  const service = buildService({
+    findById: async (id: number) => buildWorkspace({ id, sortOrder: 1 }),
+    listWorkspacesForReorder: async () => [
+      buildWorkspace({ id: 1, name: "Personal", sortOrder: 1 }),
+      buildWorkspace({ id: 2, name: "Work", sortOrder: 2 }),
+      buildWorkspace({ id: 3, name: "Team", sortOrder: 3 }),
+    ],
+    updateWorkspaceSortOrders: async (nextUpdates: Array<{ id: number; sortOrder: number }>) => {
+      updates.push(...nextUpdates);
+    },
+  });
+
+  const workspace = await service.moveWorkspace(1, { direction: "down" });
+
+  assert.equal(workspace.id, 1);
+  assert.deepEqual(updates, [
+    { id: 2, sortOrder: 1 },
+    { id: 1, sortOrder: 2 },
+    { id: 3, sortOrder: 3 },
+  ]);
+});
+
+test("moveWorkspace rejects moving past the visible list edge", async () => {
+  const updates: Array<{ id: number; sortOrder: number }> = [];
+  const service = buildService({
+    findById: async (id: number) => buildWorkspace({ id, sortOrder: 1 }),
+    listWorkspacesForReorder: async () => [
+      buildWorkspace({ id: 1, name: "Personal", sortOrder: 1 }),
+      buildWorkspace({ id: 2, name: "Work", sortOrder: 2 }),
+    ],
+    updateWorkspaceSortOrders: async (nextUpdates: Array<{ id: number; sortOrder: number }>) => {
+      updates.push(...nextUpdates);
+    },
+  });
+
+  await assert.rejects(
+    () => service.moveWorkspace(1, { direction: "up" }),
+    (error) =>
+      error instanceof ValidationError && error.code === "workspace_move_target_missing",
+  );
+  assert.deepEqual(updates, []);
 });
 
 test("workspace owner selection requires an active user", async () => {

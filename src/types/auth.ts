@@ -5,6 +5,7 @@ export type SessionPayload = {
   appRole: string;
   timezone: string | null;
   issuedAt: number;
+  sessionVersion?: number;
 };
 
 export type AuthenticatedWorkspaceMembership = {

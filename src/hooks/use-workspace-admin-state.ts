@@ -22,6 +22,7 @@ export type WorkspaceAdminItem = {
   slug: string;
   ownerUserId: number | null;
   ownerName: string | null;
+  sortOrder: number;
   actorCanManage: boolean;
   actorCanManageOwners: boolean;
   actorCanDelete: boolean;
@@ -107,6 +108,7 @@ export function useWorkspaceAdminState({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
   const [deletingWorkspaceId, setDeletingWorkspaceId] = useState<number | null>(null);
+  const [managingMembersWorkspaceId, setManagingMembersWorkspaceId] = useState<number | null>(null);
   const [addingMemberWorkspaceId, setAddingMemberWorkspaceId] = useState<number | null>(null);
   const [removingMember, setRemovingMember] = useState<{
     workspaceId: number;
@@ -119,6 +121,7 @@ export function useWorkspaceAdminState({
   const [memberDetails, setMemberDetails] = useState<WorkspaceMemberAccessDetails | null>(null);
   const [memberDetailsLoading, setMemberDetailsLoading] = useState(false);
   const [mutationPending, setMutationPending] = useState(false);
+  const [workspaceReorderPendingId, setWorkspaceReorderPendingId] = useState<number | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
 
   const editingWorkspace = useMemo<WorkspaceAdminItem | null>(() => {
@@ -130,6 +133,7 @@ export function useWorkspaceAdminState({
         slug: "",
         ownerUserId: null,
         ownerName: null,
+        sortOrder: 0,
         actorCanManage: true,
         actorCanManageOwners: true,
         actorCanDelete: true,
@@ -157,6 +161,10 @@ export function useWorkspaceAdminState({
   const addingMemberWorkspace = useMemo(
     () => workspaces.find((workspace) => workspace.id === addingMemberWorkspaceId) ?? null,
     [addingMemberWorkspaceId, workspaces],
+  );
+  const managingMembersWorkspace = useMemo(
+    () => workspaces.find((workspace) => workspace.id === managingMembersWorkspaceId) ?? null,
+    [managingMembersWorkspaceId, workspaces],
   );
   const removingMemberDetails = useMemo(() => {
     if (!removingMember) {
@@ -258,6 +266,16 @@ export function useWorkspaceAdminState({
   const closeDeleteWorkspace = () => {
     setMutationError(null);
     setDeletingWorkspaceId(null);
+  };
+
+  const openManageMembers = (workspaceId: number) => {
+    setMutationError(null);
+    setManagingMembersWorkspaceId(workspaceId);
+  };
+
+  const closeManageMembers = () => {
+    setMutationError(null);
+    setManagingMembersWorkspaceId(null);
   };
 
   const openAddMember = (workspaceId: number) => {
@@ -381,6 +399,32 @@ export function useWorkspaceAdminState({
       setMutationError(toMutationError(error, "Could not delete workspace."));
     } finally {
       setMutationPending(false);
+    }
+  };
+
+  const moveWorkspace = async (workspaceId: number, direction: "up" | "down") => {
+    setWorkspaceReorderPendingId(workspaceId);
+    setMutationError(null);
+
+    try {
+      await requestJson<WorkspaceAdminItem>(`/api/v1/workspaces/${workspaceId}/move`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ direction }),
+      });
+
+      await loadWorkspaces();
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      setMutationError(toMutationError(error, "Could not reorder workspace."));
+    } finally {
+      setWorkspaceReorderPendingId(null);
     }
   };
 
@@ -527,6 +571,28 @@ export function useWorkspaceAdminState({
     }
   };
 
+  const removeMemberById = async (workspaceId: number, userId: number) => {
+    setMutationPending(true);
+    setMutationError(null);
+
+    try {
+      await requestJson<WorkspaceAdminItem>(`/api/v1/workspaces/${workspaceId}/members/${userId}`, {
+        method: "DELETE",
+      });
+
+      await loadWorkspaces();
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      setMutationError(toMutationError(error, "Could not remove workspace member."));
+    } finally {
+      setMutationPending(false);
+    }
+  };
+
   return {
     workspaces,
     userCandidates,
@@ -536,12 +602,14 @@ export function useWorkspaceAdminState({
     loadError,
     editingWorkspace,
     deletingWorkspace,
+    managingMembersWorkspace,
     addingMemberWorkspace,
     removingMemberDetails,
     editingMember,
     memberDetails,
     memberDetailsLoading,
     mutationPending,
+    workspaceReorderPendingId,
     mutationError,
     setQuery,
     openNewWorkspace,
@@ -549,6 +617,8 @@ export function useWorkspaceAdminState({
     closeWorkspaceEditor,
     openDeleteWorkspace,
     closeDeleteWorkspace,
+    openManageMembers,
+    closeManageMembers,
     openAddMember,
     closeAddMember,
     openRemoveMember,
@@ -557,10 +627,12 @@ export function useWorkspaceAdminState({
     closeMemberEditor,
     saveWorkspace,
     deleteWorkspace,
+    moveWorkspace,
     addMember,
     createAndAddMember,
     updateMemberRole,
     saveEditingMemberRole,
     removeMember,
+    removeMemberById,
   };
 }

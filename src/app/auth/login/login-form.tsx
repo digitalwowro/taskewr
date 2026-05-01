@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -103,13 +104,21 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
         </div>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={state.pending}
-        className="inline-flex h-10 items-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-70"
-      >
-        {state.pending ? "Logging in..." : "Log In"}
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href="/auth/forgot-password"
+          className="text-sm font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink-strong)]"
+        >
+          Forgot password?
+        </Link>
+        <button
+          type="submit"
+          disabled={state.pending}
+          className="inline-flex h-10 items-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {state.pending ? "Logging in..." : "Log In"}
+        </button>
+      </div>
     </form>
   );
 }
