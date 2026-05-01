@@ -16,6 +16,21 @@ function hashPassword(password: string) {
   return `${salt}:${hash}`;
 }
 
+async function syncAutoincrementSequences() {
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "users"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('workspaces', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "workspaces"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('workspace_members', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "workspace_members"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('project_members', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "project_members"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('auth_accounts', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "auth_accounts"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('projects', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "projects"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('tasks', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "tasks"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('task_repeat_rules', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "task_repeat_rules"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('cycles', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "cycles"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('labels', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "labels"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('label_task', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "label_task"`;
+  await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('audit_logs', 'id'), COALESCE(MAX("id"), 1), COUNT(*) > 0) FROM "audit_logs"`;
+}
+
 async function main() {
   await prisma.taskLabel.deleteMany();
   await prisma.task.deleteMany();
@@ -402,6 +417,8 @@ async function main() {
     sortOrder: 3,
     labels: ["rollout", "customer"],
   });
+
+  await syncAutoincrementSequences();
 }
 
 main()
