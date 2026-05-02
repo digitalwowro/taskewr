@@ -74,6 +74,8 @@ Responsibilities:
 - filter controls
 - board/list presentation
 
+Styling conventions for these components live in [Design System](./design-system.md). Shared UI primitives in `src/components/app/ui.tsx` should be preferred before creating local styling for new modules.
+
 ### `src/domain`
 
 Pure business logic and validation.

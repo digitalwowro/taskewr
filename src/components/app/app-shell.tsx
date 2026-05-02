@@ -95,7 +95,7 @@ export function AppSidebar({
       onClick={() => onOpenSection(item.id)}
       title={item.label}
       aria-current={isNavItemActive(item) ? "page" : undefined}
-      className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+      className={`flex h-10 w-10 items-center justify-center rounded-lg border transition ${
         isNavItemActive(item)
           ? "border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
           : "border-transparent text-[var(--ink-subtle)] hover:border-[var(--line-soft)] hover:bg-white"
@@ -111,7 +111,7 @@ export function AppSidebar({
       type="button"
       onClick={() => onOpenSection(item.id)}
       aria-current={isNavItemActive(item) ? "page" : undefined}
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${
         isNavItemActive(item)
           ? "bg-[var(--surface-subtle)] font-medium text-[var(--ink-strong)]"
           : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
@@ -131,13 +131,13 @@ export function AppSidebar({
       <div className="flex h-full">
         <div className="relative flex w-[72px] shrink-0 flex-col border-r border-[var(--line-soft)] bg-[var(--surface-sidebar)] px-3 py-4">
           <div className="flex flex-col items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--ink-strong)] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--ink-strong)] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)]">
               T
             </div>
             <button
               type="button"
               onClick={onToggleSidebar}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-[var(--ink-subtle)] transition hover:border-[var(--line-soft)] hover:bg-white"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-transparent text-[var(--ink-subtle)] transition hover:border-[var(--line-soft)] hover:bg-white"
               aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
             >
               <svg
@@ -169,14 +169,14 @@ export function AppSidebar({
             className="absolute bottom-4 left-1/2 flex -translate-x-1/2 flex-col items-center justify-center gap-2"
           >
             {avatarMenuOpen ? (
-              <div className="absolute bottom-0 left-[calc(100%+0.75rem)] w-[152px] overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white p-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+              <div className="absolute bottom-0 left-[calc(100%+0.75rem)] w-[152px] overflow-hidden rounded-lg border border-[var(--line-soft)] bg-white p-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
                 <button
                   type="button"
                   onClick={() => {
                     setAvatarMenuOpen(false);
                     onOpenProfile?.();
                   }}
-                  className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-[var(--ink-strong)] transition hover:bg-[var(--surface-subtle)]"
+                  className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-[var(--ink-strong)] transition hover:bg-[var(--surface-subtle)]"
                 >
                   My Profile
                 </button>
@@ -186,7 +186,7 @@ export function AppSidebar({
                     setAvatarMenuOpen(false);
                     onLogout?.();
                   }}
-                  className="mt-1 flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-[var(--danger-strong)] transition hover:bg-[rgba(186,73,73,0.06)]"
+                  className="mt-1 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-[var(--danger-strong)] transition hover:bg-[rgba(186,73,73,0.06)]"
                 >
                   Logout
                 </button>
@@ -222,7 +222,7 @@ export function AppSidebar({
                     <button
                       type="button"
                       onClick={onNewTask}
-                      className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-[var(--accent-strong)] px-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
+                      className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-[var(--accent-strong)] px-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
                     >
                       {primaryActionLabel}
                     </button>
@@ -261,7 +261,7 @@ export function AppSidebar({
                               ? "page"
                               : undefined
                           }
-                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition ${
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left transition ${
                             (initialSection === "project_detail" ||
                               initialSection === "task_detail") &&
                             selectedProjectId === project.id
@@ -275,7 +275,7 @@ export function AppSidebar({
                       ))}
                     </div>
                   ) : (
-                    <p className="rounded-xl border border-dashed border-[var(--line-soft)] px-3 py-4 text-sm text-[var(--ink-subtle)]">
+                    <p className="rounded-lg border border-dashed border-[var(--line-soft)] px-3 py-4 text-sm text-[var(--ink-subtle)]">
                       No active projects yet.
                     </p>
                   )}
@@ -291,12 +291,7 @@ export function AppSidebar({
 
 type AppHeaderProps = {
   initialSection: AppSection;
-  visibleTaskCount: number;
-  activeProjectCount: number;
-  userCount: number;
-  workspaceCount: number;
   selectedProjectName: string;
-  selectedProjectTaskCount: number;
   searchHrefBase: string;
   showPrimaryAction?: boolean;
   onOpenTask: (taskId: string) => void;
@@ -395,7 +390,7 @@ function HeaderSearch({
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="flex h-10 min-w-[320px] items-center rounded-xl border border-[var(--line-strong)] bg-[var(--surface-card)] px-3 text-sm text-[var(--ink-subtle)]">
+      <div className="flex h-10 min-w-[320px] items-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-3 text-sm text-[var(--ink-subtle)]">
         <svg
           viewBox="0 0 20 20"
           className="mr-2 h-4 w-4 text-[var(--ink-subtle)]"
@@ -463,11 +458,11 @@ function HeaderSearch({
       </div>
       {open ? (
         <div
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[420px] overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[420px] overflow-hidden rounded-lg border border-[var(--line-soft)] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
           role="listbox"
           id={resultListId}
         >
-          <div className="border-b border-[var(--line-soft)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+          <div className="border-b border-[var(--line-soft)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
             {pending ? "Searching" : error ? "Search error" : "Search"}
           </div>
           {error ? (
@@ -491,7 +486,7 @@ function HeaderSearch({
                 >
                   <span className="text-sm font-medium text-[var(--ink-strong)]">{result.title}</span>
                   <span className="text-xs text-[var(--ink-subtle)]">{formatSearchMeta(result)}</span>
-                  <span className="text-[11px] text-[var(--accent-strong)]">{searchHrefBase}/tasks/{result.id}</span>
+                  <span className="text-xs text-[var(--accent-strong)]">{searchHrefBase}/tasks/{result.id}</span>
                 </button>
               ))}
             </div>
@@ -508,77 +503,44 @@ function HeaderSearch({
 
 export function AppHeader({
   initialSection,
-  visibleTaskCount,
-  activeProjectCount,
-  userCount,
-  workspaceCount,
   selectedProjectName,
-  selectedProjectTaskCount,
   searchHrefBase,
   showPrimaryAction = true,
   onOpenTask,
   onPrimaryAction,
 }: AppHeaderProps) {
-  const searchPlaceholder =
-    initialSection === "dashboard"
-      ? "Search tasks and project work"
-      : initialSection === "projects"
-        ? "Search tasks across projects"
-        : initialSection === "project_detail" || initialSection === "task_detail"
-          ? `Search in ${selectedProjectName}`
-          : "Search tasks";
-  const showTaskSearch =
-    initialSection !== "users" &&
-    initialSection !== "workspaces" &&
-    initialSection !== "projects";
+  const searchPlaceholder = "Search tasks and project work";
 
   return (
     <header className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-[-0.04em]">
-              {initialSection === "dashboard"
-                ? "Dashboard"
-                : initialSection === "projects"
-                  ? "Projects"
-                  : initialSection === "workspaces"
-                    ? "Workspaces"
-                  : initialSection === "users"
-                    ? "Users"
-                  : initialSection === "project_detail" || initialSection === "task_detail"
-                    ? selectedProjectName
-                    : "Task"}
-            </h1>
-            <span className="rounded-full bg-[rgba(34,122,89,0.08)] px-2.5 py-1 text-xs font-medium text-[var(--accent-strong)]">
-              {initialSection === "dashboard"
-                ? `${visibleTaskCount} active`
-                : initialSection === "projects"
-                  ? `${activeProjectCount} active`
-                  : initialSection === "workspaces"
-                    ? `${workspaceCount} visible`
-                  : initialSection === "users"
-                    ? `${userCount} active`
-                  : initialSection === "project_detail" || initialSection === "task_detail"
-                    ? `${selectedProjectTaskCount} tasks`
-                    : "Task"}
-            </span>
-          </div>
+          <h1 className="text-2xl font-semibold tracking-[-0.04em]">
+            {initialSection === "dashboard"
+              ? "Dashboard"
+              : initialSection === "projects"
+                ? "Projects"
+                : initialSection === "workspaces"
+                  ? "Workspaces"
+                : initialSection === "users"
+                  ? "Users"
+                : initialSection === "project_detail" || initialSection === "task_detail"
+                  ? selectedProjectName
+                  : "Task"}
+          </h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {showTaskSearch ? (
-            <HeaderSearch
-              placeholder={searchPlaceholder}
-              searchHrefBase={searchHrefBase}
-              onOpenTask={onOpenTask}
-            />
-          ) : null}
+          <HeaderSearch
+            placeholder={searchPlaceholder}
+            searchHrefBase={searchHrefBase}
+            onOpenTask={onOpenTask}
+          />
           {showPrimaryAction ? (
             <button
               type="button"
               onClick={onPrimaryAction}
-              className="inline-flex h-10 items-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
+              className="inline-flex h-10 items-center rounded-lg bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
             >
               {initialSection === "projects"
                 ? "New Project"

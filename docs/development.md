@@ -4,6 +4,8 @@
 
 In development, Postgres runs in Docker and the app runs locally with Node.
 
+For UI styling conventions when building or changing app modules, use the [Design System](./design-system.md).
+
 1. Check if a .env.dev is already existing on location. If it exists, don't overwrite it.
 
 2. If a .env.dev file is not on location, create a local env file:

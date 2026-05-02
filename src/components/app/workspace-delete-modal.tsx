@@ -53,7 +53,7 @@ export function WorkspaceDeleteModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-workspace-title"
-        className="relative z-[121] w-full max-w-xl overflow-hidden rounded-[24px] border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
+        className="relative z-[121] w-full max-w-xl overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
@@ -82,7 +82,7 @@ export function WorkspaceDeleteModal({
             type="button"
             disabled={isSaving}
             onClick={onClose}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -91,7 +91,7 @@ export function WorkspaceDeleteModal({
             disabled={isSaving}
             onClick={() => void onConfirm()}
             aria-busy={isSaving}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-[rgba(193,62,62,0.16)] bg-[rgba(193,62,62,0.08)] px-4 text-sm font-semibold text-[var(--accent-red)] transition hover:bg-[rgba(193,62,62,0.12)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-[rgba(193,62,62,0.16)] bg-[rgba(193,62,62,0.08)] px-4 text-sm font-semibold text-[var(--accent-red)] transition hover:bg-[rgba(193,62,62,0.12)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Deleting..." : "Delete workspace"}
           </button>

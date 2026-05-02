@@ -1,7 +1,379 @@
-import type { MouseEvent, ReactNode } from "react";
+"use client";
+
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import type { AppProject } from "@/app/app-data";
 import type { TaskStatus } from "@/domain/tasks/constants";
 import type { TaskListItem } from "@/domain/tasks/types";
+
+// Shared UI primitives follow docs/design-system.md.
+const DROPDOWN_PANEL_MAX_HEIGHT = 448;
+const DROPDOWN_PANEL_MIN_HEIGHT = 176;
+const DROPDOWN_PANEL_BOTTOM_GUTTER = 96;
+
+export const searchableSelectPanelClassName =
+  "absolute left-0 right-0 top-full z-50 mt-2 overflow-auto rounded-lg border border-[var(--line-strong)] bg-white p-1 shadow-[0_18px_40px_rgba(15,23,42,0.18)]";
+
+export type SearchableSelectOption = {
+  value: string;
+  label: string;
+  searchText?: string;
+  meta?: string;
+  disabled?: boolean;
+};
+
+export function useDropdownPanelMaxHeight(
+  isOpen: boolean,
+  anchorRef: RefObject<HTMLElement | null>,
+) {
+  const [maxHeight, setMaxHeight] = useState(DROPDOWN_PANEL_MAX_HEIGHT);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const updateMaxHeight = () => {
+      const anchor = anchorRef.current;
+
+      if (!anchor) {
+        return;
+      }
+
+      const anchorRect = anchor.getBoundingClientRect();
+      const dialog = anchor.closest('[role="dialog"]') as HTMLElement | null;
+      const boundaryBottom = dialog?.getBoundingClientRect().bottom ?? window.innerHeight;
+      const availableBelow = boundaryBottom - anchorRect.bottom - DROPDOWN_PANEL_BOTTOM_GUTTER;
+      const nextMaxHeight = Math.round(
+        Math.min(
+          DROPDOWN_PANEL_MAX_HEIGHT,
+          Math.max(DROPDOWN_PANEL_MIN_HEIGHT, availableBelow),
+        ),
+      );
+
+      setMaxHeight(nextMaxHeight);
+    };
+
+    updateMaxHeight();
+
+    const dialog = anchorRef.current?.closest('[role="dialog"]');
+
+    window.addEventListener("resize", updateMaxHeight);
+    dialog?.addEventListener("scroll", updateMaxHeight, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", updateMaxHeight);
+      dialog?.removeEventListener("scroll", updateMaxHeight);
+    };
+  }, [anchorRef, isOpen]);
+
+  return maxHeight;
+}
+
+function SearchableSelectChevron() {
+  return (
+    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[var(--ink-muted)]">
+      <svg
+        viewBox="0 0 16 16"
+        className="h-3.5 w-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      >
+        <path d="m4.5 6.5 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
+function findNextEnabledOption(
+  options: SearchableSelectOption[],
+  currentIndex: number,
+  direction: 1 | -1,
+) {
+  if (options.length === 0) {
+    return -1;
+  }
+
+  for (let offset = 1; offset <= options.length; offset += 1) {
+    const nextIndex = (currentIndex + offset * direction + options.length) % options.length;
+
+    if (!options[nextIndex]?.disabled) {
+      return nextIndex;
+    }
+  }
+
+  return -1;
+}
+
+export function SearchableSelect({
+  value,
+  options,
+  onChange,
+  placeholder = "Select",
+  disabled = false,
+  ariaLabel,
+  ariaDescribedBy,
+  ariaInvalid,
+  renderOption,
+  emptyMessage = "No matching options.",
+  className = "",
+  inputClassName = "",
+}: {
+  value: string;
+  options: SearchableSelectOption[];
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  ariaLabel: string;
+  ariaDescribedBy?: string;
+  ariaInvalid?: boolean;
+  renderOption?: (
+    option: SearchableSelectOption,
+    state: { selected: boolean; active: boolean },
+  ) => ReactNode;
+  emptyMessage?: string;
+  className?: string;
+  inputClassName?: string;
+}) {
+  const id = useId();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [hasEditedSearch, setHasEditedSearch] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label ?? "";
+  const query = hasEditedSearch ? searchValue.trim().toLowerCase() : "";
+  const panelMaxHeight = useDropdownPanelMaxHeight(open, rootRef);
+  const filteredOptions = useMemo(() => {
+    if (!query) {
+      return options;
+    }
+
+    return options.filter((option) => {
+      const searchableValue = [
+        option.label,
+        option.meta,
+        option.searchText,
+        option.value,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchableValue.includes(query);
+    });
+  }, [options, query]);
+  const selectedFilteredIndex = filteredOptions.findIndex(
+    (option) => option.value === value && !option.disabled,
+  );
+  const fallbackFilteredIndex = filteredOptions.findIndex((option) => !option.disabled);
+  const effectiveActiveIndex =
+    open &&
+    activeIndex >= 0 &&
+    activeIndex < filteredOptions.length &&
+    !filteredOptions[activeIndex]?.disabled
+      ? activeIndex
+      : selectedFilteredIndex >= 0
+        ? selectedFilteredIndex
+        : fallbackFilteredIndex;
+
+  const openDropdown = () => {
+    if (disabled) {
+      return;
+    }
+
+    setSearchValue(selectedLabel);
+    setHasEditedSearch(false);
+    setActiveIndex(-1);
+    setOpen(true);
+
+    window.requestAnimationFrame(() => {
+      inputRef.current?.select();
+    });
+  };
+
+  const closeDropdown = () => {
+    setOpen(false);
+    setSearchValue("");
+    setHasEditedSearch(false);
+    setActiveIndex(-1);
+  };
+
+  const selectOption = (option: SearchableSelectOption | undefined) => {
+    if (!option || option.disabled) {
+      return;
+    }
+
+    onChange(option.value);
+    closeDropdown();
+    inputRef.current?.blur();
+  };
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeDropdown();
+      inputRef.current?.blur();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+
+      if (!open) {
+        openDropdown();
+        return;
+      }
+
+      setActiveIndex((currentIndex) =>
+        findNextEnabledOption(
+          filteredOptions,
+          currentIndex >= 0 ? currentIndex : effectiveActiveIndex,
+          1,
+        ),
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+
+      if (!open) {
+        openDropdown();
+        return;
+      }
+
+      setActiveIndex((currentIndex) =>
+        findNextEnabledOption(
+          filteredOptions,
+          currentIndex >= 0 ? currentIndex : effectiveActiveIndex,
+          -1,
+        ),
+      );
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+
+      if (!open) {
+        openDropdown();
+        return;
+      }
+
+      selectOption(filteredOptions[effectiveActiveIndex]);
+    }
+  };
+
+  return (
+    <div ref={rootRef} className={`relative ${className}`}>
+      <input
+        ref={inputRef}
+        type="search"
+        value={open ? searchValue : selectedLabel}
+        onFocus={openDropdown}
+        onChange={(event) => {
+          setSearchValue(event.target.value);
+          setHasEditedSearch(true);
+          setActiveIndex(-1);
+          setOpen(true);
+        }}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        placeholder={placeholder}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={`${id}-options`}
+        aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
+        autoComplete="off"
+        className={`h-8 w-full rounded-lg border border-transparent bg-transparent px-2 pr-8 text-sm text-[var(--ink-strong)] outline-none transition placeholder:text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] focus:border-[var(--line-strong)] focus:bg-white disabled:cursor-not-allowed disabled:text-[var(--ink-subtle)] ${inputClassName}`}
+      />
+      <SearchableSelectChevron />
+      {open && !disabled ? (
+        <div
+          id={`${id}-options`}
+          role="listbox"
+          className={searchableSelectPanelClassName}
+          style={{ maxHeight: panelMaxHeight }}
+        >
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option, index) => {
+              const selected = option.value === value;
+              const active = index === effectiveActiveIndex;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  disabled={option.disabled}
+                  onMouseEnter={() => {
+                    if (!option.disabled) {
+                      setActiveIndex(index);
+                    }
+                  }}
+                  onClick={() => selectOption(option)}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-[13px] transition disabled:cursor-not-allowed disabled:text-[var(--ink-subtle)] ${
+                    selected || active
+                      ? "bg-[var(--surface-subtle)] text-[var(--accent-strong)]"
+                      : "text-[var(--ink-strong)] hover:bg-[var(--surface-subtle)]"
+                  }`}
+                >
+                  {renderOption ? (
+                    renderOption(option, { selected, active })
+                  ) : (
+                    <>
+                      <span className="min-w-0 truncate">{option.label}</span>
+                      {option.meta ? (
+                        <span className="shrink-0 text-xs text-[var(--ink-subtle)]">
+                          {option.meta}
+                        </span>
+                      ) : null}
+                    </>
+                  )}
+                </button>
+              );
+            })
+          ) : (
+            <p className="px-3 py-2 text-[13px] text-[var(--ink-subtle)]">
+              {emptyMessage}
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function StatusPill({
   tone,
@@ -45,7 +417,7 @@ export function StatusPill({
 
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full border text-center font-medium leading-none whitespace-nowrap ${compact ? "h-6 px-2 text-[10px]" : "h-7 px-2.5 text-[11px]"} ${tones[tone]}`}
+      className={`inline-flex items-center justify-center rounded-lg border text-center font-medium leading-none whitespace-nowrap ${compact ? "h-6 px-2 text-[10px]" : "h-7 px-2.5 text-xs"} ${tones[tone]}`}
     >
       {children}
     </span>
@@ -71,12 +443,12 @@ export function ModalHeaderKicker({
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span
-        className={`inline-flex h-7 items-center justify-center rounded-full px-3 font-mono text-[11px] uppercase leading-none tracking-[0.14em] ${codeTone}`}
+        className={`inline-flex h-7 items-center justify-center rounded-lg px-3 font-mono text-xs uppercase leading-none tracking-[0.14em] ${codeTone}`}
       >
         {code}
       </span>
       {label ? (
-        <span className="text-[11px] font-semibold uppercase leading-none tracking-[0.2em] text-[var(--accent-strong)]">
+        <span className="text-xs font-semibold uppercase leading-none tracking-[0.2em] text-[var(--accent-strong)]">
           {label}
         </span>
       ) : null}
@@ -135,7 +507,7 @@ function IconActionButton({
         {children}
       </button>
       <span
-        className={`pointer-events-none absolute z-20 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${verticalClass} ${horizontalClass}`}
+        className={`pointer-events-none absolute z-20 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${verticalClass} ${horizontalClass}`}
       >
         {label}
       </span>
@@ -166,7 +538,7 @@ export function IconTooltip({
     <span className="group relative inline-flex">
       {children}
       <span
-        className={`pointer-events-none absolute z-30 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${verticalClass} ${horizontalClass}`}
+        className={`pointer-events-none absolute z-30 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${verticalClass} ${horizontalClass}`}
       >
         {label}
       </span>
@@ -284,7 +656,7 @@ function InlineTooltip({
     <span className="group relative inline-flex">
       {children}
       <span
-        className={`pointer-events-none absolute bottom-full z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${alignmentClass}`}
+        className={`pointer-events-none absolute bottom-full z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${alignmentClass}`}
       >
         {label}
       </span>
@@ -305,7 +677,7 @@ function RepeatBadge({ task }: { task: Pick<TaskListItem, "repeatRuleId" | "repe
 
   return (
     <InlineTooltip label={label}>
-      <span className="inline-flex h-6 min-w-6 items-center justify-center gap-1 rounded-full border border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] px-1.5 text-[10px] font-semibold text-[var(--accent-strong)]">
+      <span className="inline-flex h-6 min-w-6 items-center justify-center gap-1 rounded-lg border border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] px-1.5 text-[10px] font-semibold text-[var(--accent-strong)]">
         <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
           <path d="M12.5 5.25A5 5 0 0 0 3.7 4.1L2.5 5.25" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M2.5 2.6v2.65h2.65" strokeLinecap="round" strokeLinejoin="round" />
@@ -408,7 +780,7 @@ function TaskCompleteButton({
       }}
       aria-label={isDone ? "Mark task incomplete" : "Mark task complete"}
       title={isDone ? "Mark task incomplete" : "Mark task complete"}
-      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${
+      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition ${
         isDone
           ? "border-[rgba(34,122,89,0.22)] bg-[var(--accent-strong)] text-white hover:bg-[rgb(43,107,79)] focus-visible:bg-[rgb(43,107,79)]"
           : "border-[var(--line-strong)] bg-white text-transparent hover:border-[rgba(34,122,89,0.24)] hover:bg-[rgba(34,122,89,0.08)] hover:text-[var(--accent-strong)] focus-visible:border-[rgba(34,122,89,0.24)] focus-visible:text-[var(--accent-strong)]"
@@ -495,15 +867,15 @@ export function TaskSubscriptionButton({
     : "Subscribe to this task";
   const sizeClass =
     size === "toolbar"
-      ? "h-9 w-9 rounded-xl"
-      : "h-6 w-6 rounded-full";
+      ? "h-8 w-8 rounded-lg"
+      : "h-6 w-6 rounded-lg";
   const spinnerClass =
     size === "toolbar"
-      ? "h-3.5 w-3.5"
+      ? "h-3 w-3"
       : "h-2.5 w-2.5";
   const iconClass =
     size === "toolbar"
-      ? "h-4.5 w-4.5"
+      ? "h-4 w-4"
       : "h-3.5 w-3.5";
 
   return (
@@ -552,7 +924,7 @@ export function CountPill({
 
   return (
     <span
-      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-center text-[11px] font-medium leading-none whitespace-nowrap ${tones[tone]}`}
+      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-lg border px-2 text-center text-xs font-medium leading-none whitespace-nowrap ${tones[tone]}`}
     >
       {children}
     </span>
@@ -574,7 +946,7 @@ export function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center justify-center rounded-full border font-medium transition ${
+      className={`inline-flex items-center justify-center rounded-lg border font-medium transition ${
         compact ? "h-7 px-3 text-[12px]" : "h-6 px-2.5 text-[12px]"
       } ${
         active
@@ -668,7 +1040,7 @@ export function FocusItem({
         />
       </td>
       <td
-        className={`${taskTableCellClass} w-px whitespace-nowrap font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]`}
+        className={`${taskTableCellClass} w-px whitespace-nowrap font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]`}
       >
         {id}
       </td>
@@ -759,7 +1131,7 @@ export function HorizontalListRow({
         />
       </td>
       <td
-        className={`${taskTableCellClass} w-px whitespace-nowrap font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]`}
+        className={`${taskTableCellClass} w-px whitespace-nowrap font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]`}
       >
         {id}
       </td>
@@ -853,7 +1225,7 @@ export function DashboardCompactTaskRow({
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex min-w-0 items-start gap-2">
-            <span className="shrink-0 pt-1 font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
+            <span className="shrink-0 pt-1 font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]">
               {id}
             </span>
             <TaskSubscriptionButton
@@ -1018,11 +1390,11 @@ export function ProjectSection({
 
 export function ProjectStatusBadge({ archived }: { archived?: boolean }) {
   return archived ? (
-    <span className="inline-flex h-6 items-center rounded-full border border-[var(--line-strong)] bg-[var(--surface-subtle)] px-2.5 text-[11px] font-medium text-[var(--ink-muted)]">
+    <span className="inline-flex h-6 items-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-subtle)] px-2.5 text-xs font-medium text-[var(--ink-muted)]">
       Archived
     </span>
   ) : (
-    <span className="inline-flex h-6 items-center rounded-full border border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] px-2.5 text-[11px] font-medium text-[var(--accent-strong)]">
+    <span className="inline-flex h-6 items-center rounded-lg border border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] px-2.5 text-xs font-medium text-[var(--accent-strong)]">
       Active
     </span>
   );
@@ -1050,7 +1422,7 @@ function ProjectMetaItem({
   value: string;
 }) {
   return (
-    <div className="flex min-w-fit items-center gap-2 rounded-xl border border-[var(--line-soft)] bg-white px-3 py-2">
+    <div className="flex min-w-fit items-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white px-3 py-2">
       <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
         {label}
       </dt>
@@ -1113,7 +1485,7 @@ export function ProjectRow({
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1 space-y-3">
           <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
               Project
             </p>
             <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
@@ -1194,7 +1566,7 @@ export function ProjectRow({
                     event.stopPropagation();
                     onMove(project.id, "up");
                   }}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
                   aria-label="Move project up"
                   title="Move project up"
                 >
@@ -1211,7 +1583,7 @@ export function ProjectRow({
                     event.stopPropagation();
                     onMove(project.id, "down");
                   }}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
                   aria-label="Move project down"
                   title="Move project down"
                 >
@@ -1300,7 +1672,7 @@ export function ProjectBoardLane({
                 onDragTaskStart(item.id);
               }}
               onDragEnd={onDragTaskEnd}
-              className={`rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card)] p-3 transition-colors hover:bg-[var(--surface-subtle)] ${
+              className={`rounded-lg border border-[var(--line-soft)] bg-[var(--surface-card)] p-3 transition-colors hover:bg-[var(--surface-subtle)] ${
                 draggingTaskId === item.id ? "opacity-60" : ""
               }`}
             >
@@ -1311,11 +1683,11 @@ export function ProjectBoardLane({
                     isCompleting={completingTaskId === item.id}
                     onComplete={onComplete}
                   />
-                  <span className="font-mono text-[11px] tracking-[0.04em] text-[var(--ink-subtle)]">
+                  <span className="font-mono text-xs tracking-[0.04em] text-[var(--ink-subtle)]">
                     {item.id}
                   </span>
                 </div>
-                <span className="text-[11px] text-[var(--ink-subtle)]">
+                <span className="text-xs text-[var(--ink-subtle)]">
                   <DueDisplay due={item.due} />
                 </span>
               </div>
@@ -1341,7 +1713,7 @@ export function ProjectBoardLane({
             </article>
           );
         }) : (
-          <div className="flex min-h-[8rem] items-center justify-center rounded-xl border border-dashed border-[var(--line-soft)] bg-[var(--surface-subtle)]/45 px-4 text-center text-sm text-[var(--ink-subtle)]">
+          <div className="flex min-h-[8rem] items-center justify-center rounded-lg border border-dashed border-[var(--line-soft)] bg-[var(--surface-subtle)]/45 px-4 text-center text-sm text-[var(--ink-subtle)]">
             No tasks in this stage.
           </div>
         )}

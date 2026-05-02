@@ -27,7 +27,7 @@ function WorkspaceMetaItem({
   value: string;
 }) {
   return (
-    <div className="flex min-w-fit items-center gap-2 rounded-xl border border-[var(--line-soft)] bg-white px-3 py-2">
+    <div className="flex min-w-fit items-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white px-3 py-2">
       <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
         {label}
       </dt>
@@ -83,7 +83,7 @@ function IconActionButton({
         {children}
       </button>
       <span
-        className={`pointer-events-none absolute bottom-full z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${
+        className={`pointer-events-none absolute bottom-full z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${
           tooltipAlign === "right" ? "right-0" : "left-1/2 -translate-x-1/2"
         }`}
       >
@@ -141,28 +141,34 @@ function MoveDownIcon() {
 
 function WorkspaceMoveButton({
   label,
+  tooltipAlign = "center",
   disabled,
   onClick,
   children,
 }: {
   label: string;
+  tooltipAlign?: "center" | "right";
   disabled: boolean;
   onClick: () => void;
   children: ReactNode;
 }) {
+  const horizontalClass = tooltipAlign === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
+
   return (
     <span className="group relative inline-flex">
       <button
         type="button"
         disabled={disabled}
         onClick={onClick}
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--ink-subtle)] transition hover:bg-white hover:text-[var(--ink-strong)] disabled:cursor-wait disabled:opacity-60"
         aria-label={label}
         title={label}
       >
         {children}
       </button>
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
+      <span
+        className={`pointer-events-none absolute bottom-full z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${horizontalClass}`}
+      >
         {label}
       </span>
     </span>
@@ -229,10 +235,10 @@ export function WorkspacesContent({
         />
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
+      <section className="overflow-visible rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
         <div className="flex flex-col gap-4 border-b border-[var(--line-soft)] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
               Workspace administration
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
@@ -275,7 +281,7 @@ export function WorkspacesContent({
                     <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="min-w-0 flex-1 space-y-3">
                         <div className="space-y-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+                          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
                             Workspace
                           </p>
                           <h3 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
@@ -332,6 +338,7 @@ export function WorkspacesContent({
                           </WorkspaceMoveButton>
                           <WorkspaceMoveButton
                             label="Move workspace down"
+                            tooltipAlign="right"
                             onClick={() => onMoveWorkspace(workspace.id, "down")}
                             disabled={
                               mutationPending ||

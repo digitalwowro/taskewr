@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "@/domain/tasks/constants";
 import { normalizeLabelName } from "@/domain/tasks/labels";
+import { TaskPropertiesPanel, TaskPropertyRow } from "@/components/app/task-property-panel";
+import {
+  SearchableSelect,
+  searchableSelectPanelClassName,
+  useDropdownPanelMaxHeight,
+  type SearchableSelectOption,
+} from "@/components/app/ui";
 
 export type TaskEditorFieldErrors = {
   title?: string;
@@ -20,22 +27,10 @@ const REMINDER_TIME_OPTIONS = Array.from({ length: 24 * 4 }, (_, index) => {
 });
 const REMINDER_SUBSCRIPTION_TOOLTIP =
   "To receive reminders for this task, you must subscribe to it.";
-
-function SelectChevron() {
-  return (
-    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[var(--ink-muted)]">
-      <svg
-        viewBox="0 0 16 16"
-        className="h-3.5 w-3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      >
-        <path d="m4.5 6.5 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
-  );
-}
+const PROPERTY_INPUT_CLASS =
+  "h-8 w-full rounded-lg border bg-transparent px-2 text-sm text-[var(--ink-strong)] outline-none transition hover:bg-[var(--surface-subtle)] focus:border-[var(--line-strong)] focus:bg-white disabled:cursor-not-allowed disabled:text-[var(--ink-subtle)]";
+const PROPERTY_DEFAULT_BORDER_CLASS = "border-transparent";
+const PROPERTY_INVALID_BORDER_CLASS = "border-[rgba(193,62,62,0.35)] bg-white";
 
 export function TaskCoreFields({
   availableProjectOptions,
@@ -48,7 +43,6 @@ export function TaskCoreFields({
   isSaving,
   labels,
   parentTaskId,
-  parentTaskLabel,
   parentTaskOptions,
   priority,
   projectId,
@@ -68,6 +62,7 @@ export function TaskCoreFields({
   taskId,
   title,
   titleInputRef,
+  rightColumnSlot,
 }: {
   availableProjectOptions: { id: string; name: string; workspaceName?: string }[];
   availableLabels: string[];
@@ -79,7 +74,6 @@ export function TaskCoreFields({
   isSaving: boolean;
   labels: string[];
   parentTaskId: string;
-  parentTaskLabel: string;
   parentTaskOptions: { id: string; title: string }[];
   priority: TaskPriority;
   projectId: string;
@@ -99,24 +93,16 @@ export function TaskCoreFields({
   taskId: string;
   title: string;
   titleInputRef: RefObject<HTMLInputElement | null>;
+  rightColumnSlot?: ReactNode;
 }) {
-  const parentTaskComboboxRef = useRef<HTMLDivElement | null>(null);
   const labelComboboxRef = useRef<HTMLDivElement | null>(null);
   const selectableParentTaskOptions = useMemo(
     () => parentTaskOptions.filter((option) => option.id !== taskId.replace("TSK-", "")),
     [parentTaskOptions, taskId],
   );
-  const selectedParentTask = selectableParentTaskOptions.find(
-    (option) => option.id === parentTaskId,
-  );
-  const selectedParentTaskTitle = parentTaskId
-    ? selectedParentTask?.title ?? parentTaskLabel ?? ""
-    : "";
-  const [parentTaskQuery, setParentTaskQuery] = useState(selectedParentTaskTitle);
-  const [parentTaskSearchOpen, setParentTaskSearchOpen] = useState(false);
   const [labelQuery, setLabelQuery] = useState("");
   const [labelSearchOpen, setLabelSearchOpen] = useState(false);
-  const normalizedParentTaskQuery = parentTaskQuery.trim().toLowerCase();
+  const labelDropdownMaxHeight = useDropdownPanelMaxHeight(labelSearchOpen, labelComboboxRef);
   const selectedLabelNames = useMemo(
     () => new Set(labels.map((label) => normalizeLabelName(label))),
     [labels],
@@ -139,19 +125,35 @@ export function TaskCoreFields({
   const labelAlreadySelected = selectedLabelNames.has(normalizedLabelQuery);
   const canCreateLabel =
     normalizedLabelQuery.length > 0 && !labelExists && !labelAlreadySelected;
-  const filteredParentTaskOptions = useMemo(() => {
-    if (!normalizedParentTaskQuery) {
-      return selectableParentTaskOptions.slice(0, 8);
-    }
-
-    return selectableParentTaskOptions
-      .filter((option) =>
-        [`TSK-${option.id}`, option.title].some((value) =>
-          value.toLowerCase().includes(normalizedParentTaskQuery),
-        ),
-      )
-      .slice(0, 8);
-  }, [normalizedParentTaskQuery, selectableParentTaskOptions]);
+  const projectSelectOptions: SearchableSelectOption[] = useMemo(
+    () =>
+      availableProjectOptions.map((option) => ({
+        value: option.id,
+        label: option.workspaceName ? `${option.name} (${option.workspaceName})` : option.name,
+        searchText: [option.name, option.workspaceName].filter(Boolean).join(" "),
+      })),
+    [availableProjectOptions],
+  );
+  const parentTaskSelectOptions: SearchableSelectOption[] = useMemo(
+    () => [
+      { value: "", label: "No parent task" },
+      ...selectableParentTaskOptions.map((option) => ({
+        value: option.id,
+        label: option.title,
+        meta: `TSK-${option.id}`,
+        searchText: `TSK-${option.id} ${option.title}`,
+      })),
+    ],
+    [selectableParentTaskOptions],
+  );
+  const statusSelectOptions: SearchableSelectOption[] = useMemo(
+    () => STATUS_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+    [],
+  );
+  const prioritySelectOptions: SearchableSelectOption[] = useMemo(
+    () => PRIORITY_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+    [],
+  );
   const reminderTimeOptions = useMemo(() => {
     if (!dueReminderTimeValue || REMINDER_TIME_OPTIONS.includes(dueReminderTimeValue)) {
       return REMINDER_TIME_OPTIONS;
@@ -159,22 +161,14 @@ export function TaskCoreFields({
 
     return [...REMINDER_TIME_OPTIONS, dueReminderTimeValue].sort();
   }, [dueReminderTimeValue]);
+  const reminderSelectOptions: SearchableSelectOption[] = useMemo(
+    () => [
+      { value: "", label: "--:--" },
+      ...reminderTimeOptions.map((time) => ({ value: time, label: time })),
+    ],
+    [reminderTimeOptions],
+  );
   const reminderLocked = !canEditReminder;
-
-  useEffect(() => {
-    const handlePointerDown = (event: PointerEvent) => {
-      if (
-        parentTaskComboboxRef.current &&
-        !parentTaskComboboxRef.current.contains(event.target as Node)
-      ) {
-        setParentTaskSearchOpen(false);
-        setParentTaskQuery(selectedParentTaskTitle);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [selectedParentTaskTitle]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -191,13 +185,7 @@ export function TaskCoreFields({
   }, []);
 
   const handleParentTaskSelect = (nextParentTaskId: string) => {
-    const nextParentTask = selectableParentTaskOptions.find(
-      (option) => option.id === nextParentTaskId,
-    );
-
     setParentTaskId(nextParentTaskId);
-    setParentTaskQuery(nextParentTask?.title ?? "");
-    setParentTaskSearchOpen(false);
   };
 
   const handleLabelSelect = (label: string) => {
@@ -220,332 +208,131 @@ export function TaskCoreFields({
   };
 
   return (
-    <>
-      <div className="space-y-2">
-        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-          Title
-        </label>
-        <input
-          ref={titleInputRef}
-          value={title}
-          onChange={(event) => {
-            setTitle(event.target.value);
-            setFieldErrors((current) => ({ ...current, title: undefined }));
-          }}
-          disabled={isSaving}
-          aria-invalid={Boolean(fieldErrors.title)}
-          className={`h-11 w-full rounded-[18px] border bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)] ${
-            fieldErrors.title
-              ? "border-[rgba(193,62,62,0.35)]"
-              : "border-[var(--line-strong)]"
-          }`}
-        />
-        {fieldErrors.title ? (
-          <p className="text-xs text-[var(--accent-red)]">{fieldErrors.title}</p>
-        ) : null}
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-          Description
-        </label>
-        <textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          rows={6}
-          disabled={isSaving}
-          className="w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 py-3 text-sm leading-6 text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-          Labels
-        </label>
-        <div ref={labelComboboxRef} className="relative">
-          <div className="flex min-h-11 w-full flex-wrap items-center gap-2 rounded-[18px] border border-[var(--line-strong)] bg-white px-3 py-2 text-sm text-[var(--ink-strong)]">
-            {labels.map((label) => (
-              <span
-                key={normalizeLabelName(label)}
-                className="inline-flex h-7 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface-subtle)] px-3 text-xs font-medium text-[var(--ink-muted)]"
-              >
-                {normalizeLabelName(label)}
-                <button
-                  type="button"
-                  onClick={() => handleLabelRemove(label)}
-                  disabled={isSaving}
-                  aria-label={`Remove ${label} label`}
-                  className="text-[var(--ink-subtle)] transition hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-            <input
-              value={labelQuery}
-              onFocus={() => setLabelSearchOpen(true)}
-              onChange={(event) => {
-                setLabelQuery(event.target.value);
-                setLabelSearchOpen(true);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  setLabelSearchOpen(false);
-                  return;
-                }
-
-                if (event.key === "Backspace" && !labelQuery && labels.length > 0) {
-                  handleLabelRemove(labels[labels.length - 1]);
-                  return;
-                }
-
-                if (event.key === "Enter") {
-                  event.preventDefault();
-
-                  const bestMatch =
-                    filteredLabelOptions[0] ??
-                    (canCreateLabel ? normalizedLabelQuery : "");
-
-                  if (bestMatch) {
-                    handleLabelSelect(bestMatch);
-                  }
-                }
-              }}
-              disabled={isSaving}
-              placeholder={labels.length > 0 ? "Add another label" : "Add label"}
-              role="combobox"
-              aria-expanded={labelSearchOpen}
-              aria-controls="label-options"
-              className="h-7 min-w-[12rem] flex-1 border-0 bg-transparent px-1 text-sm text-[var(--ink-strong)] outline-none placeholder:text-[var(--ink-muted)] disabled:cursor-not-allowed disabled:text-[var(--ink-subtle)]"
-            />
-          </div>
-          {labelSearchOpen && !isSaving ? (
-            <div
-              id="label-options"
-              role="listbox"
-              className="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-auto rounded-[16px] border border-[var(--line-strong)] bg-white p-1 shadow-[0_18px_40px_rgba(15,23,42,0.18)]"
-            >
-              {filteredLabelOptions.map((label) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => handleLabelSelect(label)}
-                  role="option"
-                  aria-selected={false}
-                  className="flex w-full items-center justify-between rounded-[12px] px-3 py-2 text-left text-[13px] text-[var(--ink-strong)] transition hover:bg-[var(--surface-subtle)]"
-                >
-                  <span>{label}</span>
-                  <span className="text-[11px] uppercase tracking-[0.12em] text-[var(--ink-subtle)]">
-                    Existing
-                  </span>
-                </button>
-              ))}
-              {canCreateLabel ? (
-                <button
-                  type="button"
-                  onClick={() => handleLabelSelect(normalizedLabelQuery)}
-                  role="option"
-                  aria-selected={false}
-                  className="flex w-full items-center justify-between rounded-[12px] px-3 py-2 text-left text-[13px] text-[var(--accent-strong)] transition hover:bg-[var(--surface-subtle)]"
-                >
-                  <span>Create “{normalizedLabelQuery}”</span>
-                  <span className="text-[11px] uppercase tracking-[0.12em] text-[var(--ink-subtle)]">
-                    New
-                  </span>
-                </button>
-              ) : null}
-              {filteredLabelOptions.length === 0 && !canCreateLabel ? (
-                <p className="px-3 py-2 text-[13px] text-[var(--ink-subtle)]">
-                  {labelAlreadySelected ? "Label already added." : "No labels yet."}
-                </p>
-              ) : null}
-            </div>
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(22rem,3fr)]">
+      <div className="space-y-4">
+        <div className="-mt-[5px]">
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            Title
+          </label>
+          <input
+            ref={titleInputRef}
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              setFieldErrors((current) => ({ ...current, title: undefined }));
+            }}
+            disabled={isSaving}
+            aria-invalid={Boolean(fieldErrors.title)}
+            className={`h-11 w-full rounded-lg border bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)] ${
+              fieldErrors.title
+                ? "border-[rgba(193,62,62,0.35)]"
+                : "border-[var(--line-strong)]"
+            }`}
+          />
+          {fieldErrors.title ? (
+            <p className="text-xs text-[var(--accent-red)]">{fieldErrors.title}</p>
           ) : null}
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            Description
+          </label>
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={14}
+            disabled={isSaving}
+            className="min-h-[22rem] w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 py-3 text-sm leading-6 text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+          />
         </div>
       </div>
 
-      <div className="rounded-[20px] border border-[var(--line-soft)] bg-[var(--surface-subtle)]/55 p-3">
-        <div className="grid gap-3 xl:grid-cols-[1.1fr_1.1fr_0.95fr_0.95fr_0.8fr_0.8fr_0.8fr]">
-          <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-              Project
-            </label>
-            <div className="relative">
-              <select
+      <div className="border-t border-[var(--line-soft)] pt-5 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+        <TaskPropertiesPanel>
+          <TaskPropertyRow icon="project" label="Project">
+            <div>
+              <SearchableSelect
                 value={projectId}
-                onChange={(event) => {
-                  setProjectId(event.target.value);
+                options={projectSelectOptions}
+                onChange={(nextProjectId) => {
+                  setProjectId(nextProjectId);
                   setParentTaskId("");
-                  setParentTaskQuery("");
-                  setParentTaskSearchOpen(false);
                   setFieldErrors((current) => ({ ...current, projectId: undefined }));
                 }}
                 disabled={isSaving}
-                aria-invalid={Boolean(fieldErrors.projectId)}
-                className={`h-9 w-full appearance-none rounded-[14px] border bg-white px-3 pr-8 text-[13px] text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)] ${
+                ariaLabel="Project"
+                ariaInvalid={Boolean(fieldErrors.projectId)}
+                inputClassName={`${
                   fieldErrors.projectId
-                    ? "border-[rgba(193,62,62,0.35)]"
-                    : "border-[var(--line-strong)]"
+                    ? PROPERTY_INVALID_BORDER_CLASS
+                    : PROPERTY_DEFAULT_BORDER_CLASS
                 }`}
-              >
-                {availableProjectOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.workspaceName ? `${option.name} (${option.workspaceName})` : option.name}
-                  </option>
-                ))}
-              </select>
-              <SelectChevron />
+                emptyMessage="No projects found."
+              />
             </div>
             {fieldErrors.projectId ? (
               <p className="text-xs text-[var(--accent-red)]">{fieldErrors.projectId}</p>
             ) : null}
-          </div>
+          </TaskPropertyRow>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-              Parent task
-            </label>
-            <div ref={parentTaskComboboxRef} className="relative">
-              <input
-                type="search"
-                value={parentTaskQuery}
-                onFocus={() => setParentTaskSearchOpen(true)}
-                onChange={(event) => {
-                  setParentTaskQuery(event.target.value);
-                  setParentTaskSearchOpen(true);
+          <TaskPropertyRow icon="parent" label="Parent task">
+            <SearchableSelect
+              value={parentTaskId}
+              options={parentTaskSelectOptions}
+              onChange={handleParentTaskSelect}
+              disabled={isSaving}
+              ariaLabel="Parent task"
+              inputClassName={`${PROPERTY_DEFAULT_BORDER_CLASS} placeholder:text-[var(--ink-muted)]`}
+              placeholder="No parent task"
+              emptyMessage="No matching parent tasks."
+              renderOption={(option) => (
+                <>
+                  {option.meta ? (
+                    <span className="shrink-0 font-mono text-xs uppercase tracking-[0.14em] text-[var(--ink-subtle)]">
+                      {option.meta}
+                    </span>
+                  ) : null}
+                  <span className="min-w-0 truncate">{option.label}</span>
+                </>
+              )}
+            />
+          </TaskPropertyRow>
 
-                  if (
-                    parentTaskId &&
-                    event.target.value !== (selectedParentTask?.title ?? parentTaskLabel)
-                  ) {
-                    setParentTaskId("");
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    setParentTaskSearchOpen(false);
-                    setParentTaskQuery(selectedParentTaskTitle);
-                  }
+          <TaskPropertyRow icon="status" label="Status">
+            <SearchableSelect
+              value={status}
+              options={statusSelectOptions}
+              onChange={(nextStatus) => setStatus(nextStatus as TaskStatus)}
+              disabled={isSaving}
+              ariaLabel="Status"
+              inputClassName={PROPERTY_DEFAULT_BORDER_CLASS}
+            />
+          </TaskPropertyRow>
 
-                  if (event.key === "Enter" && parentTaskSearchOpen) {
-                    event.preventDefault();
-                    handleParentTaskSelect(filteredParentTaskOptions[0]?.id ?? "");
-                  }
-                }}
-                placeholder="No parent task"
-                disabled={isSaving}
-                role="combobox"
-                aria-expanded={parentTaskSearchOpen}
-                aria-controls="parent-task-options"
-                className="h-9 w-full rounded-[14px] border border-[var(--line-strong)] bg-white px-3 pr-8 text-[13px] text-[var(--ink-strong)] outline-none placeholder:text-[var(--ink-muted)] disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-              />
-              <SelectChevron />
-              {parentTaskSearchOpen && !isSaving ? (
-                <div
-                  id="parent-task-options"
-                  role="listbox"
-                  className="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-auto rounded-[16px] border border-[var(--line-strong)] bg-white p-1 shadow-[0_18px_40px_rgba(15,23,42,0.18)]"
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleParentTaskSelect("")}
-                    className={`flex w-full items-center justify-between rounded-[12px] px-3 py-2 text-left text-[13px] transition hover:bg-[var(--surface-subtle)] ${
-                      parentTaskId
-                        ? "text-[var(--ink-muted)]"
-                        : "bg-[var(--surface-subtle)] text-[var(--accent-strong)]"
-                    }`}
-                  >
-                    <span>No parent task</span>
-                  </button>
-                  {filteredParentTaskOptions.length > 0 ? (
-                    filteredParentTaskOptions.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => handleParentTaskSelect(option.id)}
-                        role="option"
-                        aria-selected={parentTaskId === option.id}
-                        className={`flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-left text-[13px] transition hover:bg-[var(--surface-subtle)] ${
-                          parentTaskId === option.id
-                            ? "bg-[var(--surface-subtle)] text-[var(--accent-strong)]"
-                            : "text-[var(--ink-strong)]"
-                        }`}
-                      >
-                        <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--ink-subtle)]">
-                          TSK-{option.id}
-                        </span>
-                        <span className="min-w-0 truncate">{option.title}</span>
-                      </button>
-                    ))
-                  ) : (
-                    <p className="px-3 py-2 text-[13px] text-[var(--ink-subtle)]">
-                      No matching parent tasks.
-                    </p>
-                  )}
-                </div>
-              ) : null}
-            </div>
-          </div>
+          <TaskPropertyRow icon="priority" label="Priority">
+            <SearchableSelect
+              value={priority}
+              options={prioritySelectOptions}
+              onChange={(nextPriority) => setPriority(nextPriority as TaskPriority)}
+              disabled={isSaving}
+              ariaLabel="Priority"
+              inputClassName={PROPERTY_DEFAULT_BORDER_CLASS}
+            />
+          </TaskPropertyRow>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-              Status
-            </label>
-            <div className="relative">
-              <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value as TaskStatus)}
-                disabled={isSaving}
-                className="h-9 w-full appearance-none rounded-[14px] border border-[var(--line-strong)] bg-white px-3 pr-8 text-[13px] text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <SelectChevron />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-              Priority
-            </label>
-            <div className="relative">
-              <select
-                value={priority}
-                onChange={(event) => setPriority(event.target.value as TaskPriority)}
-                disabled={isSaving}
-                className="h-9 w-full appearance-none rounded-[14px] border border-[var(--line-strong)] bg-white px-3 pr-8 text-[13px] text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-              >
-                {PRIORITY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <SelectChevron />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-              Start date
-            </label>
+          <TaskPropertyRow icon="startDate" label="Start date">
             <input
               type="date"
               value={startDateValue}
               onChange={(event) => setStartDateValue(event.target.value)}
               disabled={isSaving}
-              className="h-9 w-full rounded-[14px] border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+              aria-label="Start date"
+              className={`${PROPERTY_INPUT_CLASS} ${PROPERTY_DEFAULT_BORDER_CLASS}`}
             />
-          </div>
+          </TaskPropertyRow>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-              Due date
-            </label>
+          <TaskPropertyRow icon="dueDate" label="Due date">
             <input
               type="date"
               value={dueDateValue}
@@ -558,78 +345,167 @@ export function TaskCoreFields({
               }}
               disabled={isSaving}
               aria-invalid={Boolean(fieldErrors.dueDate)}
-              className={`h-9 w-full rounded-[14px] border bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)] ${
+              aria-label="Due date"
+              className={`${PROPERTY_INPUT_CLASS} ${
                 fieldErrors.dueDate
-                  ? "border-[rgba(193,62,62,0.35)]"
-                  : "border-[var(--line-strong)]"
+                  ? PROPERTY_INVALID_BORDER_CLASS
+                  : PROPERTY_DEFAULT_BORDER_CLASS
               }`}
             />
             {fieldErrors.dueDate ? (
               <p className="text-xs text-[var(--accent-red)]">{fieldErrors.dueDate}</p>
             ) : null}
-          </div>
+          </TaskPropertyRow>
 
-          <div
-            className={`group relative space-y-2 ${
-              reminderLocked ? "cursor-help" : ""
-            }`}
-            tabIndex={reminderLocked ? 0 : undefined}
-            title={reminderLocked ? REMINDER_SUBSCRIPTION_TOOLTIP : undefined}
-          >
-            <label
-              className={`text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)] ${
-                reminderLocked ? "opacity-60" : ""
-              }`}
+          <TaskPropertyRow icon="reminder" label="Reminder">
+            <div
+              className={`group relative ${reminderLocked ? "cursor-help" : ""}`}
+              tabIndex={reminderLocked ? 0 : undefined}
             >
-              Reminder
-            </label>
-            <div className={`relative ${reminderLocked ? "opacity-60" : ""}`}>
-              <select
-                value={dueReminderTimeValue}
-                onChange={(event) => {
-                  setDueReminderTimeValue(event.target.value);
-                  setFieldErrors((current) => ({ ...current, dueReminderTime: undefined }));
-                }}
-                disabled={isSaving || !dueDateValue || reminderLocked}
-                aria-invalid={Boolean(fieldErrors.dueReminderTime)}
-                aria-describedby={reminderLocked ? `${taskId}-reminder-subscription-help` : undefined}
-                aria-label="Reminder time"
-                style={{
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  backgroundImage: "none",
-                }}
-                className={`h-9 w-full appearance-none rounded-[14px] border bg-white px-3 pr-8 text-[13px] text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)] ${
-                  fieldErrors.dueReminderTime
-                    ? "border-[rgba(193,62,62,0.35)]"
-                    : "border-[var(--line-strong)]"
-                }`}
-              >
-                <option value="">--:--</option>
-                {reminderTimeOptions.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-              <SelectChevron />
+              <div className={`relative ${reminderLocked ? "opacity-55" : ""}`}>
+                <SearchableSelect
+                  value={dueReminderTimeValue}
+                  options={reminderSelectOptions}
+                  onChange={(nextReminderTime) => {
+                    setDueReminderTimeValue(nextReminderTime);
+                    setFieldErrors((current) => ({ ...current, dueReminderTime: undefined }));
+                  }}
+                  disabled={isSaving || !dueDateValue || reminderLocked}
+                  ariaLabel="Reminder time"
+                  ariaDescribedBy={reminderLocked ? `${taskId}-reminder-subscription-help` : undefined}
+                  ariaInvalid={Boolean(fieldErrors.dueReminderTime)}
+                  inputClassName={`${
+                    fieldErrors.dueReminderTime
+                      ? PROPERTY_INVALID_BORDER_CLASS
+                      : PROPERTY_DEFAULT_BORDER_CLASS
+                  }`}
+                  placeholder="--:--"
+                />
+              </div>
+              {reminderLocked ? (
+                <>
+                  <span id={`${taskId}-reminder-subscription-help`} className="sr-only">
+                    {REMINDER_SUBSCRIPTION_TOOLTIP}
+                  </span>
+                  <span className="pointer-events-none absolute bottom-full right-0 z-30 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus:block">
+                    {REMINDER_SUBSCRIPTION_TOOLTIP}
+                  </span>
+                </>
+              ) : null}
+              {fieldErrors.dueReminderTime ? (
+                <p className="text-xs text-[var(--accent-red)]">{fieldErrors.dueReminderTime}</p>
+              ) : null}
             </div>
-            {reminderLocked ? (
-              <>
-                <span id={`${taskId}-reminder-subscription-help`} className="sr-only">
-                  {REMINDER_SUBSCRIPTION_TOOLTIP}
-                </span>
-                <span className="pointer-events-none absolute bottom-full right-0 z-30 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white opacity-100 shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus:block">
-                  {REMINDER_SUBSCRIPTION_TOOLTIP}
-                </span>
-              </>
-            ) : null}
-            {fieldErrors.dueReminderTime ? (
-              <p className="text-xs text-[var(--accent-red)]">{fieldErrors.dueReminderTime}</p>
-            ) : null}
-          </div>
-        </div>
+          </TaskPropertyRow>
+
+          <TaskPropertyRow icon="labels" label="Labels">
+            <div ref={labelComboboxRef} className="relative">
+              <div className="flex min-h-8 w-full flex-wrap items-center gap-2 rounded-lg border border-transparent bg-transparent px-2 py-0.5 text-sm text-[var(--ink-strong)] transition hover:bg-[var(--surface-subtle)] focus-within:border-[var(--line-strong)] focus-within:bg-white">
+                {labels.map((label) => (
+                  <span
+                    key={normalizeLabelName(label)}
+                    className="inline-flex h-6 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] bg-[var(--surface-subtle)] px-2.5 text-xs font-medium text-[var(--ink-muted)]"
+                  >
+                    {normalizeLabelName(label)}
+                    <button
+                      type="button"
+                      onClick={() => handleLabelRemove(label)}
+                      disabled={isSaving}
+                      aria-label={`Remove ${label} label`}
+                      className="text-[var(--ink-subtle)] transition hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <input
+                  value={labelQuery}
+                  onFocus={() => setLabelSearchOpen(true)}
+                  onChange={(event) => {
+                    setLabelQuery(event.target.value);
+                    setLabelSearchOpen(true);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setLabelSearchOpen(false);
+                      return;
+                    }
+
+                    if (event.key === "Backspace" && !labelQuery && labels.length > 0) {
+                      handleLabelRemove(labels[labels.length - 1]);
+                      return;
+                    }
+
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+
+                      const bestMatch =
+                        filteredLabelOptions[0] ??
+                        (canCreateLabel ? normalizedLabelQuery : "");
+
+                      if (bestMatch) {
+                        handleLabelSelect(bestMatch);
+                      }
+                    }
+                  }}
+                  disabled={isSaving}
+                  placeholder={labels.length > 0 ? "Add another label" : "Add label"}
+                  role="combobox"
+                  aria-expanded={labelSearchOpen}
+                  aria-controls="label-options"
+                  aria-label="Labels"
+                  className="h-7 min-w-[9rem] flex-1 border-0 bg-transparent px-1 text-sm text-[var(--ink-strong)] outline-none placeholder:text-[var(--ink-muted)] disabled:cursor-not-allowed disabled:text-[var(--ink-subtle)]"
+                />
+              </div>
+              {labelSearchOpen && !isSaving ? (
+                <div
+                  id="label-options"
+                  role="listbox"
+                  className={searchableSelectPanelClassName}
+                  style={{ maxHeight: labelDropdownMaxHeight }}
+                >
+                  {filteredLabelOptions.map((label) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => handleLabelSelect(label)}
+                      role="option"
+                      aria-selected={false}
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[13px] text-[var(--ink-strong)] transition hover:bg-[var(--surface-subtle)]"
+                    >
+                      <span>{label}</span>
+                      <span className="text-xs uppercase tracking-[0.12em] text-[var(--ink-subtle)]">
+                        Existing
+                      </span>
+                    </button>
+                  ))}
+                  {canCreateLabel ? (
+                    <button
+                      type="button"
+                      onClick={() => handleLabelSelect(normalizedLabelQuery)}
+                      role="option"
+                      aria-selected={false}
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[13px] text-[var(--accent-strong)] transition hover:bg-[var(--surface-subtle)]"
+                    >
+                      <span>Create “{normalizedLabelQuery}”</span>
+                      <span className="text-xs uppercase tracking-[0.12em] text-[var(--ink-subtle)]">
+                        New
+                      </span>
+                    </button>
+                  ) : null}
+                  {filteredLabelOptions.length === 0 && !canCreateLabel ? (
+                    <p className="px-3 py-2 text-[13px] text-[var(--ink-subtle)]">
+                      {labelAlreadySelected ? "Label already added." : "No labels yet."}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </TaskPropertyRow>
+
+          {rightColumnSlot}
+        </TaskPropertiesPanel>
       </div>
-    </>
+    </div>
   );
 }

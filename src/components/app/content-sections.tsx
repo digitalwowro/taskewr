@@ -50,7 +50,7 @@ function IconActionButton({
       >
         {children}
       </button>
-      <span className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
+      <span className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
         {label}
       </span>
     </span>
@@ -249,7 +249,7 @@ function WorkspaceDisplayControls({
           <span className="truncate">{selectedModeLabel}</span>
         </button>
         {modeMenuOpen ? (
-          <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[13rem] rounded-2xl border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+          <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[13rem] rounded-lg border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
             <div className="space-y-1">
               {WORKSPACE_DISPLAY_MODE_OPTIONS.map((option) => (
                 <button
@@ -259,7 +259,7 @@ function WorkspaceDisplayControls({
                     onChange({ mode: option.value });
                     setModeMenuOpen(false);
                   }}
-                  className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                  className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition ${
                     setting.mode === option.value
                       ? "bg-[var(--surface-subtle)] text-[var(--ink-strong)]"
                       : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
@@ -289,7 +289,7 @@ function WorkspaceDisplayControls({
               <span className="truncate">{leftWorkspaceName}</span>
             </button>
             {leftMenuOpen ? (
-              <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[13rem] rounded-2xl border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+              <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[13rem] rounded-lg border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
                 <div className="space-y-1">
                   {workspaces.map((workspace) => (
                     <button
@@ -299,7 +299,7 @@ function WorkspaceDisplayControls({
                         onChange({ leftWorkspaceId: workspace.id });
                         setLeftMenuOpen(false);
                       }}
-                      className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                      className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition ${
                         setting.leftWorkspaceId === workspace.id
                           ? "bg-[var(--surface-subtle)] text-[var(--ink-strong)]"
                           : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
@@ -327,7 +327,7 @@ function WorkspaceDisplayControls({
               <span className="truncate">{rightWorkspaceName}</span>
             </button>
             {rightMenuOpen ? (
-              <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[13rem] rounded-2xl border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+              <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[13rem] rounded-lg border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
                 <div className="space-y-1">
                   {workspaces.map((workspace) => (
                     <button
@@ -337,7 +337,7 @@ function WorkspaceDisplayControls({
                         onChange({ rightWorkspaceId: workspace.id });
                         setRightMenuOpen(false);
                       }}
-                      className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                      className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition ${
                         setting.rightWorkspaceId === workspace.id
                           ? "bg-[var(--surface-subtle)] text-[var(--ink-strong)]"
                           : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
@@ -399,7 +399,7 @@ function CollapseButton({
         }}
         aria-expanded={!collapsed}
         aria-label={tooltipLabel}
-        className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl border border-[var(--line-soft)] bg-white text-[var(--ink-subtle)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+        className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-lg border border-[var(--line-soft)] bg-white text-[var(--ink-subtle)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
       >
         <svg
           viewBox="0 0 16 16"
@@ -416,7 +416,7 @@ function CollapseButton({
         </svg>
       </button>
       <span
-        className={`pointer-events-none absolute right-0 z-20 whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] ${tooltipPlacementClass} ${
+        className={`pointer-events-none absolute right-0 z-20 whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] ${tooltipPlacementClass} ${
           tooltipVisible ? "block" : "hidden"
         }`}
       >
@@ -471,7 +471,7 @@ function DashboardTaskSubsection({
   ) => void;
 }) {
   return (
-    <section className={`overflow-hidden rounded-xl border bg-white ${borderClass}`}>
+    <section className={`overflow-hidden rounded-lg border bg-white ${borderClass}`}>
       <div className={`flex items-center justify-between border-b px-4 py-2 ${headerClass}`}>
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
@@ -480,7 +480,7 @@ function DashboardTaskSubsection({
           <CountPill tone={countTone}>{count}</CountPill>
         </div>
         <div className="flex items-center gap-3">
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowTone}`}>
+          <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${eyebrowTone}`}>
             {eyebrow}
           </p>
           <CollapseButton
@@ -1008,7 +1008,7 @@ export function ProjectsContent({
       <section className="overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
         <div className="flex flex-col gap-4 border-b border-[var(--line-soft)] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
               Projects administration
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
@@ -1179,7 +1179,7 @@ export function ProjectDetailContent({
       <div className="mt-5">
         <div className="space-y-5">
           {selectedProjectOverdueTasks.length > 0 ? (
-            <section className="overflow-hidden rounded-xl border border-[rgba(193,62,62,0.14)] bg-white">
+            <section className="overflow-hidden rounded-lg border border-[rgba(193,62,62,0.14)] bg-white">
               <div className="flex items-center justify-between border-b border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 py-2">
                 <div className="flex items-center gap-3">
                   <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
@@ -1188,7 +1188,7 @@ export function ProjectDetailContent({
                   <CountPill tone="red">{selectedProjectOverdueTasks.length}</CountPill>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
                     Needs action now
                   </p>
                   <CollapseButton
@@ -1270,7 +1270,7 @@ export function ProjectDetailContent({
           ) : (
             <>
               {selectedProjectActiveTasks.length > 0 ? (
-                <section className="overflow-hidden rounded-xl border border-[var(--line-soft)] bg-white">
+                <section className="overflow-hidden rounded-lg border border-[var(--line-soft)] bg-white">
                   <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2">
                     <div className="flex items-center gap-3">
                       <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
@@ -1279,7 +1279,7 @@ export function ProjectDetailContent({
                       <CountPill tone="green">{selectedProjectActiveTasks.length}</CountPill>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
                         Current work
                       </p>
                       <CollapseButton
@@ -1314,7 +1314,7 @@ export function ProjectDetailContent({
               ) : null}
 
               {selectedProjectCompletedTasks.length > 0 ? (
-                <section className="overflow-hidden rounded-xl border border-[var(--line-soft)] bg-white">
+                <section className="overflow-hidden rounded-lg border border-[var(--line-soft)] bg-white">
                   <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-[var(--surface-subtle)]/60 px-4 py-2">
                     <div className="flex items-center gap-3">
                       <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
@@ -1323,7 +1323,7 @@ export function ProjectDetailContent({
                       <CountPill tone="green">{selectedProjectCompletedTasks.length}</CountPill>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Finished work
                       </p>
                       <CollapseButton
@@ -1358,7 +1358,7 @@ export function ProjectDetailContent({
               ) : null}
 
               {selectedProjectTasks.length === 0 ? (
-                <section className="rounded-xl border border-[var(--line-soft)] bg-white px-4 py-5 text-sm text-[var(--ink-subtle)]">
+                <section className="rounded-lg border border-[var(--line-soft)] bg-white px-4 py-5 text-sm text-[var(--ink-subtle)]">
                   No tasks match the current view and filters for this project.
                 </section>
               ) : null}

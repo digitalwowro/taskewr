@@ -77,7 +77,7 @@ export function UserPasswordModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="password-modal-title"
-        className="relative z-[121] w-full max-w-xl overflow-hidden rounded-[24px] border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
+        className="relative z-[121] w-full max-w-xl overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
@@ -102,7 +102,7 @@ export function UserPasswordModal({
             onChange={(event) => setPassword(event.target.value)}
             placeholder="New password"
             disabled={isSaving}
-            className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+            className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
           />
           <input
             type="password"
@@ -110,7 +110,7 @@ export function UserPasswordModal({
             onChange={(event) => setConfirmPassword(event.target.value)}
             placeholder="Confirm password"
             disabled={isSaving}
-            className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+            className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
           />
           {fieldError || error ? (
             <p aria-live="polite" className="text-sm text-[var(--accent-red)]">
@@ -124,7 +124,7 @@ export function UserPasswordModal({
             type="button"
             disabled={isSaving}
             onClick={onClose}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -133,7 +133,7 @@ export function UserPasswordModal({
             disabled={isSaving}
             onClick={() => void handleSave()}
             aria-busy={isSaving}
-            className="inline-flex h-9 items-center justify-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Saving..." : "Set password"}
           </button>

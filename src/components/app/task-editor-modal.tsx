@@ -340,48 +340,47 @@ function TaskEditorModalContent({
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-editor-title"
-        className="relative z-[121] max-h-[88vh] w-full max-w-[72rem] overflow-y-auto rounded-[24px] border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
+        className="relative z-[121] max-h-[88vh] w-full max-w-[72rem] overflow-y-auto rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
       >
         <div className="sticky top-0 z-10 border-b border-[var(--line-soft)] bg-white/95 px-5 py-4 backdrop-blur">
-          <div className="flex items-start gap-4">
-            <div className="space-y-1.5">
-	              <ModalHeaderKicker code={isCreating ? "NEW" : task.id} label={isCreating ? "New task" : "Edit task"} />
-	              <div className="flex items-center gap-3">
-	                {!isCreating ? (
-	                  <TaskSubscriptionButton
-	                    task={task}
-	                    isPending={subscriptionPending}
-	                    size="toolbar"
-	                    tooltipAlign="left"
-	                    tooltipSide="bottom"
-	                    onToggleSubscription={(_targetTask, nextSubscribed) =>
-	                      handleSubscriptionToggle(nextSubscribed)
-	                    }
-	                  />
-	                ) : null}
-	                <h2
-	                  id="task-editor-title"
-	                  className="text-[2rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink-strong)]"
-	                >
-	                  {isCreating ? "Create task" : task.title}
-	                </h2>
-	                {!isCreating ? (
-	                  <>
-	                    <IconTooltip label="Get link" tooltipSide="bottom">
-                      <button
-                        type="button"
-                        onClick={handleShare}
-                        aria-label="Get link"
-                        title="Get link"
-                        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
-                          copied
-                            ? "border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
-                            : "border-[var(--line-strong)] bg-white text-[var(--ink-subtle)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
-                        }`}
+          <div className="space-y-1.5">
+            <ModalHeaderKicker code={isCreating ? "NEW" : task.id} label={isCreating ? "New task" : "Edit task"} />
+            <div className="flex items-center gap-3">
+              {!isCreating ? (
+                <TaskSubscriptionButton
+                  task={task}
+                  isPending={subscriptionPending}
+                  size="toolbar"
+                  tooltipAlign="left"
+                  tooltipSide="bottom"
+                  onToggleSubscription={(_targetTask, nextSubscribed) =>
+                    handleSubscriptionToggle(nextSubscribed)
+                  }
+                />
+              ) : null}
+              <h2
+                id="task-editor-title"
+                className="text-[2rem] font-semibold leading-tight tracking-[-0.045em] text-[var(--ink-strong)]"
+              >
+                {isCreating ? "Create task" : task.title}
+              </h2>
+              {!isCreating ? (
+                <>
+                  <IconTooltip label="Get link" tooltipSide="bottom">
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      aria-label="Get link"
+                      title="Get link"
+                      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition ${
+                        copied
+                          ? "border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
+                          : "border-[var(--line-strong)] bg-white text-[var(--ink-subtle)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+                      }`}
                       >
                         <svg
                           viewBox="0 0 20 20"
-                          className="h-4.5 w-4.5"
+                          className="h-4 w-4"
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="1.7"
@@ -398,18 +397,17 @@ function TaskEditorModalContent({
                           />
                         </svg>
                       </button>
-                    </IconTooltip>
-                    {copied ? (
-                      <span
-                        aria-live="polite"
-                        className="text-xs font-medium text-[var(--accent-strong)]"
-                      >
-                        Copied
-                      </span>
-                    ) : null}
-                  </>
-                ) : null}
-              </div>
+                  </IconTooltip>
+                  {copied ? (
+                    <span
+                      aria-live="polite"
+                      className="text-xs font-medium text-[var(--accent-strong)]"
+                    >
+                      Copied
+                    </span>
+                  ) : null}
+                </>
+              ) : null}
             </div>
           </div>
         </div>
@@ -427,7 +425,6 @@ function TaskEditorModalContent({
               isSaving={isSaving}
               labels={labels}
               parentTaskId={parentTaskId}
-              parentTaskLabel={details.parentTask ?? ""}
               parentTaskOptions={parentTaskOptions}
               priority={priority}
               projectId={projectId}
@@ -448,23 +445,25 @@ function TaskEditorModalContent({
               taskId={task.id}
               title={title}
               titleInputRef={titleInputRef}
-            />
-            <TaskRepeatSettings
-              isSaving={isSaving}
-              repeatEnabled={repeatEnabled}
-              repeatIncompleteBehavior={repeatIncompleteBehavior}
-              repeatInterval={repeatInterval}
-              repeatMonthDay={repeatMonthDay}
-              repeatScheduleType={repeatScheduleType}
-              repeatSpecificDates={repeatSpecificDates}
-              repeatWeekdays={repeatWeekdays}
-              setRepeatEnabled={setRepeatEnabled}
-              setRepeatIncompleteBehavior={setRepeatIncompleteBehavior}
-              setRepeatInterval={setRepeatInterval}
-              setRepeatMonthDay={setRepeatMonthDay}
-              setRepeatScheduleType={setRepeatScheduleType}
-              setRepeatSpecificDates={setRepeatSpecificDates}
-              toggleRepeatWeekday={toggleRepeatWeekday}
+              rightColumnSlot={
+                <TaskRepeatSettings
+                  isSaving={isSaving}
+                  repeatEnabled={repeatEnabled}
+                  repeatIncompleteBehavior={repeatIncompleteBehavior}
+                  repeatInterval={repeatInterval}
+                  repeatMonthDay={repeatMonthDay}
+                  repeatScheduleType={repeatScheduleType}
+                  repeatSpecificDates={repeatSpecificDates}
+                  repeatWeekdays={repeatWeekdays}
+                  setRepeatEnabled={setRepeatEnabled}
+                  setRepeatIncompleteBehavior={setRepeatIncompleteBehavior}
+                  setRepeatInterval={setRepeatInterval}
+                  setRepeatMonthDay={setRepeatMonthDay}
+                  setRepeatScheduleType={setRepeatScheduleType}
+                  setRepeatSpecificDates={setRepeatSpecificDates}
+                  toggleRepeatWeekday={toggleRepeatWeekday}
+                />
+              }
             />
             {error ? (
               <p aria-live="polite" className="text-sm text-[var(--accent-red)]">
@@ -485,7 +484,7 @@ function TaskEditorModalContent({
               type="button"
               disabled={isSaving}
               onClick={onClose}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -494,7 +493,7 @@ function TaskEditorModalContent({
               disabled={isSaving}
               onClick={handleSave}
               aria-busy={isSaving}
-              className="inline-flex h-9 items-center justify-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? "Saving..." : isCreating ? "Create task" : "Save changes"}
             </button>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { ModalHeaderKicker } from "@/components/app/ui";
+import { ModalHeaderKicker, SearchableSelect } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type {
   WorkspaceAdminItem,
@@ -10,16 +10,6 @@ import type {
 } from "@/hooks/use-workspace-admin-state";
 
 const NEW_WORKSPACE_ID = 0;
-
-function SelectChevron() {
-  return (
-    <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--ink-muted)]">
-      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-        <path d="m4.5 6.5 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
-  );
-}
 
 export function WorkspaceEditorModal({
   workspace,
@@ -112,7 +102,7 @@ export function WorkspaceEditorModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="workspace-editor-title"
-        className="relative z-[121] w-full max-w-3xl overflow-hidden rounded-[24px] border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
+        className="relative z-[121] w-full max-w-3xl overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
@@ -128,7 +118,7 @@ export function WorkspaceEditorModal({
 
         <div className="space-y-4 px-5 py-5">
           <div className="space-y-2">
-            <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
               Name
             </label>
             <input
@@ -136,11 +126,11 @@ export function WorkspaceEditorModal({
               value={name}
               onChange={(event) => setName(event.target.value)}
               disabled={isSaving}
-              className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+              className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
               Description
             </label>
             <textarea
@@ -148,36 +138,29 @@ export function WorkspaceEditorModal({
               onChange={(event) => setDescription(event.target.value)}
               disabled={isSaving}
               rows={5}
-              className="w-full resize-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 py-3 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+              className="w-full resize-none rounded-lg border border-[var(--line-strong)] bg-white px-4 py-3 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
             />
           </div>
           {showOwnerSelector ? (
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 Workspace Owner
               </label>
-              <div className="relative">
-                <select
+              <div>
+                <SearchableSelect
                   value={ownerUserId}
-                  onChange={(event) => setOwnerUserId(event.target.value)}
+                  options={ownerCandidates.map((user) => ({
+                    value: String(user.id),
+                    label: `${user.name} (${user.email})`,
+                    searchText: `${user.name} ${user.email}`,
+                  }))}
+                  onChange={setOwnerUserId}
                   disabled={isSaving || ownerCandidates.length === 0}
-                  style={{
-                    appearance: "none",
-                    WebkitAppearance: "none",
-                    backgroundImage: "none",
-                  }}
-                  className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                >
-                  <option value="">
-                    {ownerCandidates.length === 0 ? "No active users available" : "Select workspace owner"}
-                  </option>
-                  {ownerCandidates.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} ({user.email})
-                    </option>
-                  ))}
-                </select>
-                <SelectChevron />
+                  ariaLabel="Workspace Owner"
+                  placeholder={ownerCandidates.length === 0 ? "No active users available" : "Select workspace owner"}
+                  inputClassName="h-11 border-[var(--line-strong)] bg-white px-4 pr-10"
+                  emptyMessage="No active users found."
+                />
               </div>
             </div>
           ) : null}
@@ -199,12 +182,12 @@ export function WorkspaceEditorModal({
                   onClick={() => onDeleteWorkspace(workspace.id)}
                   aria-label="Delete workspace"
                   title={deleteTooltip}
-                  className="inline-flex h-9 items-center rounded-xl border border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 text-sm font-medium text-[var(--accent-red)] transition hover:bg-[rgba(193,62,62,0.08)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-9 items-center rounded-lg border border-[rgba(193,62,62,0.14)] bg-[rgba(193,62,62,0.04)] px-4 text-sm font-medium text-[var(--accent-red)] transition hover:bg-[rgba(193,62,62,0.08)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Delete workspace
                 </button>
                 {!workspace.actorCanDelete || !workspace.canDelete ? (
-                  <span className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 hidden max-w-[22rem] rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium leading-5 text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
+                  <span className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 hidden max-w-[22rem] rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium leading-5 text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block">
                     {deleteTooltip}
                   </span>
                 ) : null}
@@ -216,7 +199,7 @@ export function WorkspaceEditorModal({
               type="button"
               disabled={isSaving}
               onClick={onClose}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -225,7 +208,7 @@ export function WorkspaceEditorModal({
               disabled={isSaving}
               onClick={() => void handleSave()}
               aria-busy={isSaving}
-              className="inline-flex h-9 items-center justify-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? "Saving..." : isCreating ? "Create workspace" : "Save changes"}
             </button>

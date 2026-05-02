@@ -8,7 +8,7 @@ import {
   projectRoleLabel,
   workspaceRoleLabel,
 } from "@/components/app/access-role-format";
-import { ModalHeaderKicker, StatusPill } from "@/components/app/ui";
+import { ModalHeaderKicker, SearchableSelect, StatusPill } from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type { WorkspaceMemberAccessDetails } from "@/hooks/use-workspace-admin-state";
 
@@ -20,19 +20,9 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function SelectChevron() {
-  return (
-    <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--ink-muted)]">
-      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-        <path d="m4.5 6.5 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
-  );
-}
-
 function EmptyState({ children }: { children: string }) {
   return (
-    <div className="rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-4 text-sm text-[var(--ink-subtle)]">
+    <div className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-4 text-sm text-[var(--ink-subtle)]">
       {children}
     </div>
   );
@@ -109,7 +99,7 @@ export function WorkspaceMemberEditorModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="workspace-member-editor-title"
-        className="relative z-[121] max-h-[calc(100vh-3rem)] w-full max-w-4xl overflow-hidden rounded-[24px] border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
+        className="relative z-[121] max-h-[calc(100vh-3rem)] w-full max-w-4xl overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
@@ -145,7 +135,7 @@ export function WorkspaceMemberEditorModal({
             <EmptyState>Loading member access...</EmptyState>
           ) : member ? (
             <>
-              <section className="rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] p-4">
+              <section className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] p-4">
                 <div className="grid gap-4 lg:grid-cols-[1fr_16rem] lg:items-end">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
@@ -162,31 +152,22 @@ export function WorkspaceMemberEditorModal({
                     <label className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                       Workspace Role
                     </label>
-                    <div className="relative">
-                      <select
+                    <SearchableSelect
                         value={role}
-                        onChange={(event) =>
+                      options={roleOptions.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                      onChange={(nextRole) =>
                           setRoleState({
                             key: memberRoleKey,
-                            value: event.target.value,
+                          value: nextRole,
                           })
-                        }
+                      }
                         disabled={isSaving}
-                        style={{
-                          appearance: "none",
-                          WebkitAppearance: "none",
-                          backgroundImage: "none",
-                        }}
-                        className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                      >
-                        {roleOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <SelectChevron />
-                    </div>
+                      ariaLabel="Workspace role"
+                      inputClassName="h-11 border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium"
+                    />
                   </div>
                 </div>
               </section>
@@ -203,7 +184,7 @@ export function WorkspaceMemberEditorModal({
                 {otherWorkspaces.length === 0 ? (
                   <EmptyState>No other visible workspace access.</EmptyState>
                 ) : (
-                  <div className="overflow-hidden rounded-2xl border border-[var(--line-soft)]">
+                  <div className="overflow-hidden rounded-lg border border-[var(--line-soft)]">
                     <table className="w-full text-left">
                       <thead>
                         <tr className="bg-[var(--surface-subtle)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
@@ -217,7 +198,7 @@ export function WorkspaceMemberEditorModal({
                           <tr key={workspace.id} className="text-sm">
                             <td className="px-4 py-3">
                               <div className="font-medium text-[var(--ink-strong)]">{workspace.name}</div>
-                              <div className="font-mono text-[11px] tracking-[0.08em] text-[var(--ink-subtle)]">
+                              <div className="font-mono text-xs tracking-[0.08em] text-[var(--ink-subtle)]">
                                 {workspace.slug}
                               </div>
                             </td>
@@ -249,7 +230,7 @@ export function WorkspaceMemberEditorModal({
                 {member.projects.length === 0 ? (
                   <EmptyState>No visible project access.</EmptyState>
                 ) : (
-                  <div className="overflow-hidden rounded-2xl border border-[var(--line-soft)]">
+                  <div className="overflow-hidden rounded-lg border border-[var(--line-soft)]">
                     <table className="w-full text-left">
                       <thead>
                         <tr className="bg-[var(--surface-subtle)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
@@ -292,7 +273,7 @@ export function WorkspaceMemberEditorModal({
             type="button"
             disabled={isSaving}
             onClick={onClose}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -301,7 +282,7 @@ export function WorkspaceMemberEditorModal({
             disabled={isSaving || loading || !member}
             onClick={() => void onSaveRole(role)}
             aria-busy={isSaving}
-            className="inline-flex h-9 items-center justify-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Saving..." : "Save changes"}
           </button>

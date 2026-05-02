@@ -224,7 +224,6 @@ export function TaskewrApp({
     data.currentUser.appRole === "admin" || currentUserProfile?.appRole === "admin";
   const {
     users,
-    activeUserCount,
     query: userQuery,
     includeInactive: includeInactiveUsers,
     loading: usersLoading,
@@ -267,7 +266,6 @@ export function TaskewrApp({
   const {
     workspaces: managedWorkspaces,
     userCandidates: workspaceUserCandidates,
-    workspaceCount,
     query: workspaceQuery,
     loading: workspacesLoading,
     loadError: workspacesLoadError,
@@ -615,12 +613,7 @@ export function TaskewrApp({
         <section className="flex min-w-0 min-h-0 flex-col overflow-hidden">
           <AppHeader
             initialSection={initialSection}
-            visibleTaskCount={visibleTaskCount}
-            activeProjectCount={activeProjects.length}
-            userCount={activeUserCount}
-            workspaceCount={workspaceCount}
             selectedProjectName={selectedProject?.name ?? "Project"}
-            selectedProjectTaskCount={selectedProjectTasks.length}
             searchHrefBase=""
             showPrimaryAction={
               initialSection === "users"

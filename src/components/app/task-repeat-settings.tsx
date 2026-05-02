@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { RepeatIncompleteBehavior, RepeatScheduleType } from "@/domain/tasks/repeat-schemas";
+import { TaskPropertyRow } from "@/components/app/task-property-panel";
+import { SearchableSelect, type SearchableSelectOption } from "@/components/app/ui";
 
 const WEEKDAY_OPTIONS = [
   [1, "Mon"],
@@ -14,6 +16,18 @@ const WEEKDAY_OPTIONS = [
 ] as const;
 
 const CALENDAR_WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const PROPERTY_INPUT_CLASS =
+  "h-8 w-full rounded-lg border border-transparent bg-transparent px-2 text-sm text-[var(--ink-strong)] outline-none transition hover:bg-[var(--surface-subtle)] focus:border-[var(--line-strong)] focus:bg-white disabled:cursor-not-allowed disabled:text-[var(--ink-subtle)]";
+const REPEAT_SCHEDULE_OPTIONS: SearchableSelectOption[] = [
+  { value: "interval_days", label: "Days" },
+  { value: "weekly", label: "Weeks" },
+  { value: "monthly", label: "Months" },
+  { value: "specific_dates", label: "Specific dates" },
+];
+const REPEAT_INCOMPLETE_OPTIONS: SearchableSelectOption[] = [
+  { value: "carry_forward", label: "Reuse the open task" },
+  { value: "create_separate", label: "Create a separate task" },
+];
 
 function isIsoDate(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
@@ -88,7 +102,7 @@ function SpecificDatesCalendar({
   };
 
   return (
-    <div className="space-y-3 rounded-[18px] border border-[var(--line-soft)] bg-white p-3">
+    <div className="space-y-3 rounded-lg border border-[var(--line-soft)] bg-white p-3">
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
@@ -135,7 +149,7 @@ function SpecificDatesCalendar({
               onClick={() => toggleDate(date)}
               disabled={disabled}
               aria-pressed={isSelected}
-              className={`h-9 rounded-xl border text-[12px] font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`h-9 rounded-lg border text-[12px] font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
                 isSelected
                   ? "border-[rgba(34,122,89,0.24)] bg-[rgba(34,122,89,0.1)] text-[var(--accent-strong)]"
                   : isVisibleMonth
@@ -157,7 +171,7 @@ function SpecificDatesCalendar({
               type="button"
               onClick={() => onChange(selectedDates.filter((item) => item !== date).join(", "))}
               disabled={disabled}
-              className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] px-2.5 text-[11px] font-medium text-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[rgba(34,122,89,0.18)] bg-[rgba(34,122,89,0.08)] px-2.5 text-xs font-medium text-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
               title="Remove date"
             >
               {date}
@@ -206,101 +220,85 @@ export function TaskRepeatSettings({
   toggleRepeatWeekday: (weekday: number) => void;
 }) {
   return (
-    <div className="space-y-3 rounded-[20px] border border-[var(--line-soft)] bg-[var(--surface-card)] p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
-            Repeat
-          </p>
-        </div>
-        <label className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ink-strong)]">
+    <>
+      <TaskPropertyRow icon="repeat" label="Repeat">
+        <label className="inline-flex min-h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium text-[var(--ink-strong)] transition hover:bg-[var(--surface-subtle)]">
           <input
             type="checkbox"
             checked={repeatEnabled}
             onChange={(event) => setRepeatEnabled(event.target.checked)}
             disabled={isSaving}
-            className="h-4 w-4 accent-[var(--accent-strong)]"
+            className="h-4 w-4 rounded-lg accent-[var(--accent-strong)]"
           />
           Repeat this task
         </label>
-      </div>
+      </TaskPropertyRow>
 
       {repeatEnabled ? (
-        <div className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-[0.8fr_1fr_1.2fr]">
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-                Every
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={365}
-                value={repeatInterval}
-                onChange={(event) => setRepeatInterval(event.target.value)}
-                disabled={isSaving}
-                className="h-9 w-full rounded-[14px] border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-                Schedule
-              </label>
-              <select
-                value={repeatScheduleType}
-                onChange={(event) => setRepeatScheduleType(event.target.value as RepeatScheduleType)}
-                disabled={isSaving}
-                className="h-9 w-full rounded-[14px] border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none"
-              >
-                <option value="interval_days">Days</option>
-                <option value="weekly">Weeks</option>
-                <option value="monthly">Months</option>
-                <option value="specific_dates">Specific dates</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-                Incomplete task
-              </label>
-              <select
-                value={repeatIncompleteBehavior}
-                onChange={(event) =>
-                  setRepeatIncompleteBehavior(event.target.value as RepeatIncompleteBehavior)
-                }
-                disabled={isSaving}
-                className="h-9 w-full rounded-[14px] border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none"
-              >
-                <option value="carry_forward">Reuse the open task</option>
-                <option value="create_separate">Create a separate task</option>
-              </select>
-            </div>
-          </div>
+        <>
+          <TaskPropertyRow icon="schedule" label="Every">
+            <input
+              type="number"
+              min={1}
+              max={365}
+              value={repeatInterval}
+              onChange={(event) => setRepeatInterval(event.target.value)}
+              disabled={isSaving}
+              aria-label="Repeat interval"
+              className={PROPERTY_INPUT_CLASS}
+            />
+          </TaskPropertyRow>
+
+          <TaskPropertyRow icon="schedule" label="Schedule">
+            <SearchableSelect
+              value={repeatScheduleType}
+              options={REPEAT_SCHEDULE_OPTIONS}
+              onChange={(nextScheduleType) =>
+                setRepeatScheduleType(nextScheduleType as RepeatScheduleType)
+              }
+              disabled={isSaving}
+              ariaLabel="Repeat schedule"
+              inputClassName="border-transparent"
+            />
+          </TaskPropertyRow>
+
+          <TaskPropertyRow icon="repeat" label="Incomplete task">
+            <SearchableSelect
+              value={repeatIncompleteBehavior}
+              options={REPEAT_INCOMPLETE_OPTIONS}
+              onChange={(nextIncompleteBehavior) =>
+                setRepeatIncompleteBehavior(nextIncompleteBehavior as RepeatIncompleteBehavior)
+              }
+              disabled={isSaving}
+              ariaLabel="Incomplete task repeat behavior"
+              inputClassName="border-transparent"
+            />
+          </TaskPropertyRow>
 
           {repeatScheduleType === "weekly" ? (
-            <div className="flex flex-wrap gap-2">
-              {WEEKDAY_OPTIONS.map(([weekday, label]) => (
-                <button
-                  key={weekday}
-                  type="button"
-                  onClick={() => toggleRepeatWeekday(weekday)}
-                  disabled={isSaving}
-                  className={`h-8 rounded-xl border px-3 text-xs font-semibold ${
-                    repeatWeekdays.includes(weekday)
-                      ? "border-[rgba(34,122,89,0.24)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
-                      : "border-[var(--line-strong)] bg-white text-[var(--ink-muted)]"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <TaskPropertyRow icon="schedule" label="Weekdays">
+              <div className="flex flex-wrap gap-2">
+                {WEEKDAY_OPTIONS.map(([weekday, label]) => (
+                  <button
+                    key={weekday}
+                    type="button"
+                    onClick={() => toggleRepeatWeekday(weekday)}
+                    disabled={isSaving}
+                    className={`h-8 rounded-lg border px-3 text-xs font-semibold ${
+                      repeatWeekdays.includes(weekday)
+                        ? "border-[rgba(34,122,89,0.24)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)]"
+                        : "border-[var(--line-strong)] bg-white text-[var(--ink-muted)]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </TaskPropertyRow>
           ) : null}
 
           {repeatScheduleType === "monthly" ? (
-            <div className="max-w-48 space-y-2">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-                Day of month
-              </label>
+            <TaskPropertyRow icon="schedule" label="Day of month">
               <input
                 type="number"
                 min={1}
@@ -308,25 +306,23 @@ export function TaskRepeatSettings({
                 value={repeatMonthDay}
                 onChange={(event) => setRepeatMonthDay(event.target.value)}
                 disabled={isSaving}
-                className="h-9 w-full rounded-[14px] border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none"
+                aria-label="Repeat day of month"
+                className={PROPERTY_INPUT_CLASS}
               />
-            </div>
+            </TaskPropertyRow>
           ) : null}
 
           {repeatScheduleType === "specific_dates" ? (
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
-                Dates
-              </label>
+            <TaskPropertyRow icon="schedule" label="Dates">
               <SpecificDatesCalendar
                 disabled={isSaving}
                 value={repeatSpecificDates}
                 onChange={setRepeatSpecificDates}
               />
-            </div>
+            </TaskPropertyRow>
           ) : null}
-        </div>
+        </>
       ) : null}
-    </div>
+    </>
   );
 }

@@ -66,7 +66,7 @@ function IconActionButton({
         {children}
       </button>
       <span
-        className={`pointer-events-none absolute bottom-full z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${
+        className={`pointer-events-none absolute bottom-full z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-[var(--line-soft)] bg-[rgb(15,23,42)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] group-hover:block group-focus-within:block ${
           tooltipAlign === "right" ? "right-0" : "left-1/2 -translate-x-1/2"
         }`}
       >
@@ -232,7 +232,7 @@ export function UsersContent({
       <section className="overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
         <div className="flex flex-col gap-4 border-b border-[var(--line-soft)] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
               User administration
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
@@ -259,7 +259,7 @@ export function UsersContent({
                 {includeInactive ? "Yes" : "No"}
               </button>
               {inactiveMenuOpen ? (
-                <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[9rem] rounded-2xl border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+                <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[9rem] rounded-lg border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
                   <div className="space-y-1">
                     {[
                       { value: false, label: "No" },
@@ -272,7 +272,7 @@ export function UsersContent({
                           onToggleInactive(option.value);
                           setInactiveMenuOpen(false);
                         }}
-                        className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                        className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition ${
                           includeInactive === option.value
                             ? "bg-[var(--surface-subtle)] text-[var(--ink-strong)]"
                             : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
@@ -303,7 +303,7 @@ export function UsersContent({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
             <thead>
-              <tr className="bg-[var(--surface-subtle)] text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+              <tr className="bg-[var(--surface-subtle)] text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 <th className="px-5 py-3">ID</th>
                 <th className="px-5 py-3">Display name</th>
                 <th className="px-5 py-3">Email</th>

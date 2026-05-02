@@ -119,7 +119,7 @@ export function ProfileModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="profile-modal-title"
-        className="relative z-[121] w-full max-w-3xl overflow-hidden rounded-[24px] border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
+        className="relative z-[121] w-full max-w-3xl overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
@@ -134,7 +134,7 @@ export function ProfileModal({
         </div>
 
         <div className="space-y-5 px-5 py-5">
-          <div className="flex items-start gap-5 rounded-[20px] border border-[var(--line-soft)] bg-[var(--surface-card)] p-4">
+          <div className="flex items-start gap-5 rounded-lg border border-[var(--line-soft)] bg-[var(--surface-card)] p-4">
             <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-[rgba(34,122,89,0.24)] bg-white text-2xl font-semibold text-[var(--accent-strong)]">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -145,7 +145,7 @@ export function ProfileModal({
             </div>
             <div className="min-w-0 flex-1 space-y-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                   Avatar
                 </p>
                 <p className="mt-1 text-sm text-[var(--ink-muted)]">
@@ -163,14 +163,14 @@ export function ProfileModal({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-strong)] bg-white px-4 text-sm font-medium text-[var(--ink-strong)] transition hover:bg-[var(--surface-subtle)]"
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm font-medium text-[var(--ink-strong)] transition hover:bg-[var(--surface-subtle)]"
                 >
                   Upload
                 </button>
                 <button
                   type="button"
                   onClick={() => setAvatarUrl(null)}
-                  className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-card)]"
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-card)]"
                 >
                   Remove
                 </button>
@@ -180,31 +180,31 @@ export function ProfileModal({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 Display name
               </label>
               <input
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
-                className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
+                className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
+                className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
               />
             </div>
           </div>
 
-          <div className="space-y-3 rounded-[20px] border border-[var(--line-soft)] bg-[var(--surface-card)] p-4">
+          <div className="space-y-3 rounded-lg border border-[var(--line-soft)] bg-[var(--surface-card)] p-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 Change Password
               </p>
               <p className="mt-1 text-sm text-[var(--ink-muted)]">Update your account password.</p>
@@ -215,21 +215,21 @@ export function ProfileModal({
                 value={currentPassword}
                 onChange={(event) => setCurrentPassword(event.target.value)}
                 placeholder="Current password"
-                className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
+                className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
               />
               <input
                 type="password"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
                 placeholder="New password"
-                className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
+                className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
               />
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 placeholder="Confirm password"
-                className="h-11 w-full rounded-[18px] border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
+                className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
               />
             </div>
           </div>
@@ -245,7 +245,7 @@ export function ProfileModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
           >
             Cancel
           </button>
@@ -253,7 +253,7 @@ export function ProfileModal({
             type="button"
             onClick={() => void handleSave()}
             disabled={isSaving}
-            className="inline-flex h-9 items-center justify-center rounded-xl bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)]"
           >
             {isSaving ? "Saving..." : "Save changes"}
           </button>

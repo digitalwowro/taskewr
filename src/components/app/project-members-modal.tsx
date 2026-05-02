@@ -7,7 +7,12 @@ import {
   accessRoleTone,
   projectRoleLabel,
 } from "@/components/app/access-role-format";
-import { IconTooltip, ModalHeaderKicker, StatusPill } from "@/components/app/ui";
+import {
+  IconTooltip,
+  ModalHeaderKicker,
+  SearchableSelect,
+  StatusPill,
+} from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type {
   ProjectMemberItem,
@@ -22,16 +27,6 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function SelectChevron() {
-  return (
-    <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--ink-muted)]">
-      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-        <path d="m4.5 6.5 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
-  );
-}
-
 function RemoveIcon() {
   return (
     <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
@@ -43,7 +38,7 @@ function RemoveIcon() {
 
 function EmptyState({ children }: { children: string }) {
   return (
-    <div className="rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-4 text-sm text-[var(--ink-subtle)]">
+    <div className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-4 text-sm text-[var(--ink-subtle)]">
       {children}
     </div>
   );
@@ -146,7 +141,7 @@ export function ProjectMembersModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="project-members-title"
-        className="relative z-[121] max-h-[calc(100vh-3rem)] w-full max-w-4xl overflow-hidden rounded-[24px] border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
+        className="relative z-[121] max-h-[calc(100vh-3rem)] w-full max-w-4xl overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
@@ -177,7 +172,7 @@ export function ProjectMembersModal({
           ) : details ? (
             <>
               {details.actorCanManage ? (
-                <section className="rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] p-4">
+                <section className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] p-4">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
@@ -198,64 +193,48 @@ export function ProjectMembersModal({
                       <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         User
                       </span>
-                      <div className="relative">
-                        <select
+                      <SearchableSelect
                           value={selectedUserId}
-                          onChange={(event) => setSelectedUserId(event.target.value)}
+                        options={details.candidates.map((candidate) => ({
+                          value: String(candidate.id),
+                          label: `${candidate.name} (${candidate.email})`,
+                          searchText: `${candidate.name} ${candidate.email}`,
+                        }))}
+                        onChange={setSelectedUserId}
+                        placeholder={
+                          details.candidates.length > 0
+                            ? "Select user"
+                            : "No workspace users to add"
+                        }
+                        emptyMessage="No workspace users to add."
                           disabled={isSaving || details.candidates.length === 0}
-                          style={{
-                            appearance: "none",
-                            WebkitAppearance: "none",
-                            backgroundImage: "none",
-                          }}
-                          className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                        >
-                          <option value="">
-                            {details.candidates.length > 0
-                              ? "Select user"
-                              : "No workspace users to add"}
-                          </option>
-                          {details.candidates.map((candidate) => (
-                            <option key={candidate.id} value={candidate.id}>
-                              {candidate.name} ({candidate.email})
-                            </option>
-                          ))}
-                        </select>
-                        <SelectChevron />
-                      </div>
+                        ariaLabel="User"
+                        inputClassName="h-11 border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium"
+                      />
                     </label>
 
                     <label className="space-y-2">
                       <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Project Role
                       </span>
-                      <div className="relative">
-                        <select
+                      <SearchableSelect
                           value={selectedRole}
-                          onChange={(event) => setSelectedRole(event.target.value)}
+                        options={roleOptions.map((option) => ({
+                          value: option.value,
+                          label: option.label,
+                        }))}
+                        onChange={setSelectedRole}
                           disabled={isSaving}
-                          style={{
-                            appearance: "none",
-                            WebkitAppearance: "none",
-                            backgroundImage: "none",
-                          }}
-                          className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                        >
-                          {roleOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <SelectChevron />
-                      </div>
+                        ariaLabel="Project role"
+                        inputClassName="h-11 border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium"
+                      />
                     </label>
 
                     <button
                       type="button"
                       disabled={!canAdd || isSaving || addPending}
                       onClick={() => void handleAddMember()}
-                      className="inline-flex h-11 min-w-[7.5rem] items-center justify-center rounded-[16px] border border-transparent bg-[var(--accent-strong)] px-5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:border-[var(--line-strong)] disabled:bg-white disabled:text-[var(--ink-muted)] disabled:shadow-none"
+                      className="inline-flex h-11 min-w-[7.5rem] items-center justify-center rounded-lg border border-transparent bg-[var(--accent-strong)] px-5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:border-[var(--line-strong)] disabled:bg-white disabled:text-[var(--ink-muted)] disabled:shadow-none"
                     >
                       {addPending ? "Adding..." : "Add user"}
                     </button>
@@ -265,7 +244,7 @@ export function ProjectMembersModal({
                 <EmptyState>You can view project users, but cannot change project access.</EmptyState>
               )}
 
-              <section className="overflow-visible rounded-2xl border border-[var(--line-soft)]">
+              <section className="overflow-visible rounded-lg border border-[var(--line-soft)]">
                 <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-3">
                   <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
                     Users
@@ -302,27 +281,18 @@ export function ProjectMembersModal({
                           </td>
                           <td className="px-4 py-3">
                             {canEdit ? (
-                              <div className="relative max-w-[13rem]">
-                                <select
+                              <div className="max-w-[13rem]">
+                                <SearchableSelect
                                   value={member.role}
-                                  onChange={(event) =>
-                                    void onUpdateRole(member.userId, event.target.value)
-                                  }
+                                  options={memberRoleOptions.map((option) => ({
+                                    value: option.value,
+                                    label: option.label,
+                                  }))}
+                                  onChange={(nextRole) => void onUpdateRole(member.userId, nextRole)}
                                   disabled={isSaving}
-                                  style={{
-                                    appearance: "none",
-                                    WebkitAppearance: "none",
-                                    backgroundImage: "none",
-                                  }}
-                                  className="h-9 w-full appearance-none rounded-[14px] border border-[var(--line-strong)] bg-white px-3 pr-9 text-xs font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                                >
-                                  {memberRoleOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </select>
-                                <SelectChevron />
+                                  ariaLabel={`Project role for ${member.name}`}
+                                  inputClassName="h-9 border-[var(--line-strong)] bg-white px-3 pr-9 text-xs font-medium"
+                                />
                               </div>
                             ) : (
                               <StatusPill tone={accessRoleTone(member.role)}>
@@ -375,7 +345,7 @@ export function ProjectMembersModal({
             type="button"
             disabled={isSaving}
             onClick={onClose}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Close
           </button>

@@ -9,7 +9,12 @@ import {
   projectRoleLabel,
   workspaceRoleLabel,
 } from "@/components/app/access-role-format";
-import { IconTooltip, ModalHeaderKicker, StatusPill } from "@/components/app/ui";
+import {
+  IconTooltip,
+  ModalHeaderKicker,
+  SearchableSelect,
+  StatusPill,
+} from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import type { UserAdminItem, UserProjectAccess } from "@/hooks/use-user-admin-state";
 
@@ -31,19 +36,9 @@ function RemoveIcon() {
   );
 }
 
-function SelectChevron() {
-  return (
-    <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--ink-muted)]">
-      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
-        <path d="m4.5 6.5 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
-  );
-}
-
 function EmptyState({ children }: { children: string }) {
   return (
-    <div className="rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-4 text-sm text-[var(--ink-subtle)]">
+    <div className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-4 text-sm text-[var(--ink-subtle)]">
       {children}
     </div>
   );
@@ -155,7 +150,7 @@ export function UserProjectAccessModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="user-project-access-title"
-        className="relative z-[121] max-h-[calc(100vh-3rem)] w-full max-w-3xl overflow-hidden rounded-[24px] border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
+        className="relative z-[121] max-h-[calc(100vh-3rem)] w-full max-w-3xl overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
       >
         <div className="border-b border-[var(--line-soft)] bg-white px-5 py-4">
           <div className="space-y-1.5">
@@ -188,12 +183,12 @@ export function UserProjectAccessModal({
             <EmptyState>Loading project access...</EmptyState>
           ) : details && details.workspaces.length > 0 ? (
             <div className="space-y-4">
-              <section className="rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] p-4">
+              <section className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] p-4">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-sm font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
                     Add access
                   </h3>
-                  <div className="inline-flex rounded-xl border border-[var(--line-strong)] bg-white p-1">
+                  <div className="inline-flex rounded-lg border border-[var(--line-strong)] bg-white p-1">
                     {(["workspace", "project"] as const).map((mode) => (
                       <button
                         key={mode}
@@ -218,63 +213,47 @@ export function UserProjectAccessModal({
                       <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Workspace
                       </span>
-                      <div className="relative">
-                        <select
+                      <SearchableSelect
                           value={selectedWorkspaceValue}
-                          onChange={(event) => setSelectedWorkspaceId(event.target.value)}
+                        options={availableWorkspaceOptions.map((workspace) => ({
+                          value: String(workspace.id),
+                          label: workspace.name,
+                        }))}
+                        onChange={setSelectedWorkspaceId}
+                        placeholder={
+                          availableWorkspaceOptions.length > 0
+                            ? "Select workspace"
+                            : "No workspaces to add"
+                        }
+                        emptyMessage="No workspaces to add."
                           disabled={isSaving || availableWorkspaceOptions.length === 0}
-                          style={{
-                            appearance: "none",
-                            WebkitAppearance: "none",
-                            backgroundImage: "none",
-                          }}
-                          className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                        >
-                          {availableWorkspaceOptions.length > 0 ? (
-                            availableWorkspaceOptions.map((workspace) => (
-                              <option key={workspace.id} value={workspace.id}>
-                                {workspace.name}
-                              </option>
-                            ))
-                          ) : (
-                            <option value="">No workspaces to add</option>
-                          )}
-                        </select>
-                        <SelectChevron />
-                      </div>
+                        ariaLabel="Workspace"
+                        inputClassName="h-11 border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium"
+                      />
                     </label>
 
                     <label className="space-y-2">
                       <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Workspace Role
                       </span>
-                      <div className="relative">
-                        <select
+                      <SearchableSelect
                           value={selectedWorkspaceRole}
-                          onChange={(event) => setSelectedWorkspaceRole(event.target.value)}
+                        options={WORKSPACE_ROLE_OPTIONS.map((option) => ({
+                          value: option.value,
+                          label: option.label,
+                        }))}
+                        onChange={setSelectedWorkspaceRole}
                           disabled={isSaving}
-                          style={{
-                            appearance: "none",
-                            WebkitAppearance: "none",
-                            backgroundImage: "none",
-                          }}
-                          className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                        >
-                          {WORKSPACE_ROLE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <SelectChevron />
-                      </div>
+                        ariaLabel="Workspace role"
+                        inputClassName="h-11 border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium"
+                      />
                     </label>
 
                     <button
                       type="button"
                       disabled={!canAddWorkspace}
                       onClick={() => void handleAddWorkspace()}
-                      className="inline-flex h-11 min-w-[8.5rem] items-center justify-center rounded-[16px] border border-transparent bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:border-[var(--line-strong)] disabled:bg-white disabled:text-[var(--ink-muted)] disabled:shadow-none"
+                      className="inline-flex h-11 min-w-[8.5rem] items-center justify-center rounded-lg border border-transparent bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:border-[var(--line-strong)] disabled:bg-white disabled:text-[var(--ink-muted)] disabled:shadow-none"
                     >
                       <AddIcon />
                       <span className="ml-2">{isSaving ? "Adding..." : "Add workspace"}</span>
@@ -286,64 +265,50 @@ export function UserProjectAccessModal({
                       <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Project
                       </span>
-                      <div className="relative">
-                        <select
+                      <SearchableSelect
                           value={selectedProjectValue}
-                          onChange={(event) => setSelectedProjectId(event.target.value)}
+                        options={availableProjectOptions.map((project) => ({
+                          value: String(project.id),
+                          label: `${project.workspaceName} / ${project.name}${
+                            project.isArchived ? " (archived)" : ""
+                          }`,
+                          searchText: `${project.workspaceName} ${project.name}`,
+                        }))}
+                        onChange={setSelectedProjectId}
+                        placeholder={
+                          availableProjectOptions.length > 0
+                            ? "Select project"
+                            : "No projects to add"
+                        }
+                        emptyMessage="No projects to add."
                           disabled={isSaving || availableProjectOptions.length === 0}
-                          style={{
-                            appearance: "none",
-                            WebkitAppearance: "none",
-                            backgroundImage: "none",
-                          }}
-                          className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                        >
-                          {availableProjectOptions.length > 0 ? (
-                            availableProjectOptions.map((project) => (
-                              <option key={project.id} value={project.id}>
-                                {project.workspaceName} / {project.name}
-                                {project.isArchived ? " (archived)" : ""}
-                              </option>
-                            ))
-                          ) : (
-                            <option value="">No projects to add</option>
-                          )}
-                        </select>
-                        <SelectChevron />
-                      </div>
+                        ariaLabel="Project"
+                        inputClassName="h-11 border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium"
+                      />
                     </label>
 
                     <label className="space-y-2">
                       <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Project Role
                       </span>
-                      <div className="relative">
-                        <select
+                      <SearchableSelect
                           value={selectedProjectRole}
-                          onChange={(event) => setSelectedProjectRole(event.target.value)}
+                        options={PROJECT_ROLE_OPTIONS.map((option) => ({
+                          value: option.value,
+                          label: option.label,
+                        }))}
+                        onChange={setSelectedProjectRole}
                           disabled={isSaving}
-                          style={{
-                            appearance: "none",
-                            WebkitAppearance: "none",
-                            backgroundImage: "none",
-                          }}
-                          className="h-11 w-full appearance-none rounded-[18px] border border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
-                        >
-                          {PROJECT_ROLE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <SelectChevron />
-                      </div>
+                        ariaLabel="Project role"
+                        inputClassName="h-11 border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium"
+                      />
                     </label>
 
                     <button
                       type="button"
                       disabled={!canAddProject}
                       onClick={() => void handleAddProject()}
-                      className="inline-flex h-11 min-w-[8.5rem] items-center justify-center rounded-[16px] border border-transparent bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:border-[var(--line-strong)] disabled:bg-white disabled:text-[var(--ink-muted)] disabled:shadow-none"
+                      className="inline-flex h-11 min-w-[8.5rem] items-center justify-center rounded-lg border border-transparent bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:border-[var(--line-strong)] disabled:bg-white disabled:text-[var(--ink-muted)] disabled:shadow-none"
                     >
                       <AddIcon />
                       <span className="ml-2">{isSaving ? "Adding..." : "Add project"}</span>
@@ -355,7 +320,7 @@ export function UserProjectAccessModal({
               {details.workspaces.map((workspace) => (
                 <section
                   key={workspace.id}
-                  className="rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-card)] p-4"
+                  className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-card)] p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h3 className="text-base font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
@@ -395,7 +360,7 @@ export function UserProjectAccessModal({
                       {workspace.projects.map((project) => (
                         <li
                           key={project.id}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line-soft)] bg-white px-3 py-2"
+                          className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line-soft)] bg-white px-3 py-2"
                         >
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-[var(--ink-strong)]">
@@ -429,7 +394,7 @@ export function UserProjectAccessModal({
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-3 rounded-xl border border-dashed border-[var(--line-strong)] bg-white px-3 py-3 text-sm text-[var(--ink-subtle)]">
+                    <p className="mt-3 rounded-lg border border-dashed border-[var(--line-strong)] bg-white px-3 py-3 text-sm text-[var(--ink-subtle)]">
                       This user has access to this workspace but does not have access to any
                       projects in it.
                     </p>
@@ -447,7 +412,7 @@ export function UserProjectAccessModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Close
           </button>

@@ -54,7 +54,7 @@ export function ToolbarShell({
 }) {
   return (
     <div
-      className={`flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-[var(--line-soft)] bg-white px-4 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.03)] ${className}`.trim()}
+      className={`flex flex-wrap items-center justify-end gap-2 rounded-lg border border-[var(--line-soft)] bg-white px-4 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.03)] ${className}`.trim()}
     >
       {children}
     </div>
@@ -73,7 +73,7 @@ export function ToolbarMenuFrame({
   return (
     <div
       ref={menuRef}
-      className="relative flex items-center gap-2 rounded-xl border border-[var(--line-soft)] bg-white px-2.5 py-1 shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
+      className="relative flex items-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white px-2.5 py-1 shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
     >
       <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
         {label}
@@ -119,14 +119,14 @@ export function ToolbarSortMenu<T extends string>({
         {label}
       </button>
       {isOpen ? (
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[14rem] rounded-2xl border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[14rem] rounded-lg border border-[var(--line-soft)] bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
           <div className="space-y-1">
             {options.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => onSelectValue(option.value)}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
                   selectedValue === option.value
                     ? "bg-[var(--surface-subtle)] text-[var(--ink-strong)]"
                     : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
@@ -148,7 +148,7 @@ export function ToolbarSortMenu<T extends string>({
                 key={option.value}
                 type="button"
                 onClick={() => onSelectDirection(option.value as TaskSortDirection)}
-                className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition ${
                   direction === option.value
                     ? "bg-[var(--surface-subtle)] text-[var(--ink-strong)]"
                     : "text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)]"
@@ -200,7 +200,7 @@ export function ToolbarMultiSelectMenu<T extends string>({
         {count > 0 ? <CountPill tone="green">{count}</CountPill> : null}
       </button>
       {isOpen ? (
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[19rem] rounded-2xl border border-[var(--line-soft)] bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[19rem] rounded-lg border border-[var(--line-soft)] bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
           <div className="flex flex-wrap gap-2">
             <FilterChip active={selectedValues.length === 0} onClick={onReset}>
               {label === "Status" ? "All statuses" : "All priorities"}
@@ -252,7 +252,7 @@ export function ToolbarDateMenu({
         <span className="truncate">{summary}</span>
       </button>
       {isOpen ? (
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[18rem] rounded-2xl border border-[var(--line-soft)] bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[18rem] rounded-lg border border-[var(--line-soft)] bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
           <div className="grid gap-3">
             <div className="space-y-1.5">
               <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
@@ -262,7 +262,7 @@ export function ToolbarDateMenu({
                 type="date"
                 value={startDate ?? ""}
                 onChange={(event) => onSetStartDate(event.target.value || null)}
-                className="h-9 w-full rounded-[14px] border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none"
+                className="h-9 w-full rounded-lg border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none"
               />
             </div>
             <div className="space-y-1.5">
@@ -273,7 +273,7 @@ export function ToolbarDateMenu({
                 type="date"
                 value={endDate ?? ""}
                 onChange={(event) => onSetEndDate(event.target.value || null)}
-                className="h-9 w-full rounded-[14px] border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none"
+                className="h-9 w-full rounded-lg border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none"
               />
             </div>
           </div>
@@ -465,4 +465,3 @@ export function ProjectTaskToolbar<TSort extends string, TStatus extends string,
     </ToolbarShell>
   );
 }
-
