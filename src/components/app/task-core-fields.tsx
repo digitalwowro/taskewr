@@ -766,6 +766,49 @@ function TaskRelationshipActions({
 
 type TaskPlaceholderActionIconName = "subtask" | "time" | "attachment" | "link";
 
+type CompactSectionPersistenceName = "subtasks" | "time" | "links" | "attachments";
+
+function compactSectionStorageKey(taskId: string, section: CompactSectionPersistenceName) {
+  return `taskewr.task-section-open.${taskId}.${section}`;
+}
+
+function readPersistedCompactSectionOpen(taskId: string, section: CompactSectionPersistenceName) {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.localStorage.getItem(compactSectionStorageKey(taskId, section)) === "true";
+}
+
+function usePersistedCompactSectionOpen(
+  taskId: string,
+  section: CompactSectionPersistenceName,
+) {
+  const [open, setOpenState] = useState(() =>
+    readPersistedCompactSectionOpen(taskId, section),
+  );
+
+  useEffect(() => {
+    setOpenState(readPersistedCompactSectionOpen(taskId, section));
+  }, [section, taskId]);
+
+  const setOpen = (updater: (current: boolean) => boolean) => {
+    setOpenState((current) => {
+      const next = updater(current);
+
+      try {
+        window.localStorage.setItem(compactSectionStorageKey(taskId, section), String(next));
+      } catch {
+        // localStorage can be unavailable in private browsing or restricted contexts.
+      }
+
+      return next;
+    });
+  };
+
+  return [open, setOpen] as const;
+}
+
 function TaskPlaceholderActionIcon({ name }: { name: TaskPlaceholderActionIconName }) {
   const commonProps = {
     "aria-hidden": true,
@@ -1005,7 +1048,7 @@ function TaskHierarchyBlock({
   taskId: string;
   timeEntries: TaskTimeEntrySummary[];
 }) {
-  const [subtasksOpen, setSubtasksOpen] = useState(false);
+  const [subtasksOpen, setSubtasksOpen] = usePersistedCompactSectionOpen(taskId, "subtasks");
   const doneSubtaskCount = countDoneSubtasks(subtasks);
 
   return (
@@ -1069,6 +1112,7 @@ function TaskHierarchyBlock({
         disabled={isSaving || assetMutationPending}
         onAddTimeEntry={onAddTimeEntry}
         onDeleteTimeEntry={onDeleteTimeEntry}
+        taskId={taskId}
         timeEntries={timeEntries}
       />
       <CompactLinksSection
@@ -1076,6 +1120,7 @@ function TaskHierarchyBlock({
         links={links}
         onAddLink={onAddLink}
         onDeleteLink={onDeleteLink}
+        taskId={taskId}
       />
       <CompactAttachmentsSection
         attachments={attachments}
@@ -1167,6 +1212,7 @@ function CompactTimeEntriesSection({
   disabled,
   onAddTimeEntry,
   onDeleteTimeEntry,
+  taskId,
   timeEntries,
 }: {
   actorProjectRole?: string;
@@ -1174,13 +1220,10 @@ function CompactTimeEntriesSection({
   disabled: boolean;
   onAddTimeEntry: () => void;
   onDeleteTimeEntry: (entryId: string) => void;
+  taskId: string;
   timeEntries: TaskTimeEntrySummary[];
 }) {
-  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
-  const open = openOverride ?? timeEntries.length > 0;
-  const setOpen = (updater: (current: boolean) => boolean) => {
-    setOpenOverride((current) => updater(current ?? timeEntries.length > 0));
-  };
+  const [open, setOpen] = usePersistedCompactSectionOpen(taskId, "time");
   const canManageEntries = actorProjectRole === "owner" || actorProjectRole === "admin";
   const totalMinutes = timeEntries.reduce((sum, entry) => sum + entry.minutes, 0);
   const groupedEntries = groupTimeEntriesByUser(timeEntries);
@@ -1245,17 +1288,15 @@ function CompactLinksSection({
   links,
   onAddLink,
   onDeleteLink,
+  taskId,
 }: {
   disabled: boolean;
   links: TaskLinkSummary[];
   onAddLink: () => void;
   onDeleteLink: (linkId: string) => void;
+  taskId: string;
 }) {
-  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
-  const open = openOverride ?? links.length > 0;
-  const setOpen = (updater: (current: boolean) => boolean) => {
-    setOpenOverride((current) => updater(current ?? links.length > 0));
-  };
+  const [open, setOpen] = usePersistedCompactSectionOpen(taskId, "links");
 
   return (
     <div className="border-t border-[var(--line-soft)]">
@@ -1305,11 +1346,10 @@ function CompactAttachmentsSection({
   onDeleteAttachment: (attachmentId: string) => void;
   taskNumericId: string;
 }) {
-  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
-  const open = openOverride ?? attachments.length > 0;
-  const setOpen = (updater: (current: boolean) => boolean) => {
-    setOpenOverride((current) => updater(current ?? attachments.length > 0));
-  };
+  const [open, setOpen] = usePersistedCompactSectionOpen(
+    `TSK-${taskNumericId}`,
+    "attachments",
+  );
 
   return (
     <div className="border-t border-[var(--line-soft)]">
