@@ -10,7 +10,7 @@ const DEFAULT_NOTIFICATION_WORKER_POLL_INTERVAL_MS = 60_000;
 const DEFAULT_NOTIFICATION_WORKER_BATCH_SIZE = 50;
 const DEFAULT_NOTIFICATION_WORKER_MAX_ATTEMPTS = 3;
 const DEFAULT_NOTIFICATION_WORKER_CLAIM_TIMEOUT_MS = 300_000;
-const DEFAULT_TASK_ATTACHMENT_STORAGE_DIR = ".taskewr/uploads/task-attachments";
+const DEFAULT_TASK_ATTACHMENT_STORAGE_DIR = "uploads/task-attachments";
 const DEFAULT_TASK_ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
 const BUILD_PHASES = new Set(["phase-production-build"]);
 const emptyStringAsUndefined = (value: unknown) => (value === "" ? undefined : value);
