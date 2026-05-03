@@ -118,6 +118,9 @@ NOTIFICATION_WORKER_POLL_INTERVAL_MS=60000
 NOTIFICATION_WORKER_BATCH_SIZE=50
 NOTIFICATION_WORKER_MAX_ATTEMPTS=3
 NOTIFICATION_WORKER_CLAIM_TIMEOUT_MS=300000
+
+TASK_ATTACHMENT_STORAGE_DIR="uploads/task-attachments"
+TASK_ATTACHMENT_MAX_BYTES=26214400
 ```
 
 Generate `SESSION_SECRET` with:
@@ -134,6 +137,7 @@ Before exposing a deployment publicly, confirm:
 - Mutation rate limiting is enabled with appropriate production settings.
 - `APP_URL` matches the public origin.
 - SMTP settings point at the intended mail server and `SMTP_FROM` is allowed by that server.
+- Task attachment storage points at a persistent mounted path.
 - The notification worker service is running if task due reminder emails are enabled.
 
 Optional production rate-limit tuning:

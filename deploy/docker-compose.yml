@@ -20,7 +20,7 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:
-      - app_uploads:/app/storage/uploads
+      - app_uploads:/app/uploads
 
   worker:
     image: ghcr.io/digitalwowro/taskewr:latest
