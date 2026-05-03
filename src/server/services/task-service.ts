@@ -18,9 +18,11 @@ import {
   boardMoveSchema,
   taskLinkMutationSchema,
   taskMutationSchema,
+  taskTimeEntryMutationSchema,
   type BoardMoveInput,
   type TaskLinkMutationInput,
   type TaskMutationInput,
+  type TaskTimeEntryMutationInput,
 } from "@/domain/tasks/schemas";
 import { getNextRepeatDueDate } from "@/domain/tasks/repeat-schedule";
 import type { RepeatSettingsInput } from "@/domain/tasks/repeat-schemas";
@@ -32,6 +34,10 @@ import {
 } from "@/server/services/task-attachment-storage";
 import { TaskNotificationService } from "@/server/services/task-notification-service";
 import { db } from "@/lib/db";
+
+function canManageTaskTimeEntries(role: string | null | undefined) {
+  return role === "owner" || role === "admin";
+}
 
 export class TaskService {
   constructor(
@@ -465,6 +471,78 @@ export class TaskService {
     });
 
     return deleted;
+  }
+
+  async createTaskTimeEntry(taskId: number, input: TaskTimeEntryMutationInput) {
+    const payload = taskTimeEntryMutationSchema.parse(input);
+    const context = await this.contextService.getAppContext();
+    const task = await this.getTask(taskId);
+    const targetUserId = payload.userId ?? context.actorUserId;
+    const actorMember = await this.repository.findProjectMemberUser(
+      task.projectId,
+      context.actorUserId,
+    );
+
+    if (!actorMember || actorMember.user.deactivatedAt !== null) {
+      throw new AuthorizationError(
+        "You do not have permission to track time for this task.",
+        "task_time_entry_denied",
+      );
+    }
+
+    if (targetUserId !== context.actorUserId && !canManageTaskTimeEntries(actorMember.role)) {
+      throw new AuthorizationError(
+        "Only project owners and admins can track time for other users.",
+        "task_time_entry_user_denied",
+      );
+    }
+
+    const targetMember = await this.repository.findProjectMemberUser(task.projectId, targetUserId);
+
+    if (!targetMember || targetMember.user.deactivatedAt !== null) {
+      throw new ValidationError(
+        "Tracked time user must be an active project member.",
+        "task_time_entry_user_invalid",
+      );
+    }
+
+    return this.repository.createTaskTimeEntry({
+      taskId,
+      userId: targetUserId,
+      createdByUserId: context.actorUserId,
+      minutes: payload.hours * 60 + payload.minutes,
+    });
+  }
+
+  async deleteTaskTimeEntry(taskId: number, entryId: number) {
+    const context = await this.contextService.getAppContext();
+    const task = await this.getTask(taskId);
+    const entry = await this.repository.findTaskTimeEntry(taskId, entryId);
+
+    if (!entry) {
+      throw new NotFoundError("Task time entry not found.", "task_time_entry_not_found");
+    }
+
+    const actorMember = await this.repository.findProjectMemberUser(
+      task.projectId,
+      context.actorUserId,
+    );
+
+    if (!actorMember || actorMember.user.deactivatedAt !== null) {
+      throw new AuthorizationError(
+        "You do not have permission to delete tracked time for this task.",
+        "task_time_entry_delete_denied",
+      );
+    }
+
+    if (entry.userId !== context.actorUserId && !canManageTaskTimeEntries(actorMember.role)) {
+      throw new AuthorizationError(
+        "Only the entry owner or project owners and admins can delete tracked time.",
+        "task_time_entry_delete_denied",
+      );
+    }
+
+    return this.repository.deleteTaskTimeEntry(taskId, entryId);
   }
 
   private async syncLabels(taskId: number, labelNames: string[]) {

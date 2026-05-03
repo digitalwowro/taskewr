@@ -64,6 +64,29 @@ export class TasksRepository {
         },
       },
     },
+    timeEntries: {
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    },
     notificationSubscriptions: {
       select: {
         userId: true,
@@ -130,6 +153,29 @@ export class TasksRepository {
         },
       },
     },
+    timeEntries: {
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    },
     notificationSubscriptions: {
       select: {
         userId: true,
@@ -166,6 +212,25 @@ export class TasksRepository {
       },
       select: {
         userId: true,
+        role: true,
+      },
+    });
+  }
+
+  findProjectMemberUser(projectId: number, userId: number) {
+    return this.prisma.projectMember.findFirst({
+      where: {
+        projectId,
+        userId,
+      },
+      select: {
+        userId: true,
+        role: true,
+        user: {
+          select: {
+            deactivatedAt: true,
+          },
+        },
       },
     });
   }
@@ -379,6 +444,65 @@ export class TasksRepository {
     return this.prisma.taskAttachment.delete({
       where: {
         id: attachmentId,
+      },
+    });
+  }
+
+  createTaskTimeEntry(data: Prisma.TaskTimeEntryUncheckedCreateInput) {
+    return this.prisma.taskTimeEntry.create({
+      data,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+  }
+
+  findTaskTimeEntry(taskId: number, entryId: number) {
+    return this.prisma.taskTimeEntry.findFirst({
+      where: {
+        id: entryId,
+        taskId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+  }
+
+  deleteTaskTimeEntry(_taskId: number, entryId: number) {
+    return this.prisma.taskTimeEntry.delete({
+      where: {
+        id: entryId,
       },
     });
   }

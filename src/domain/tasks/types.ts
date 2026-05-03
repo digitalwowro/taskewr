@@ -70,9 +70,19 @@ export type TaskAttachmentSummary = {
   uploadedBy?: TaskUserOption;
 };
 
+export type TaskTimeEntrySummary = {
+  id: string;
+  minutes: number;
+  createdAt: string;
+  user: TaskUserOption;
+  createdBy?: TaskUserOption;
+};
+
 export type TaskDetails = {
   projectId?: string;
   description: string;
+  currentUserId?: string;
+  actorProjectRole?: string;
   createdBy?: TaskUserOption;
   assigneeId?: string;
   assigneeOptions?: TaskUserOption[];
@@ -89,4 +99,5 @@ export type TaskDetails = {
   subtasks?: TaskSubtaskSummary[];
   links?: TaskLinkSummary[];
   attachments?: TaskAttachmentSummary[];
+  timeEntries?: TaskTimeEntrySummary[];
 };

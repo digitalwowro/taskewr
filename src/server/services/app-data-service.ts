@@ -72,6 +72,7 @@ export class AppDataService {
           task,
           projects,
           tasks.filter((candidate) => candidate.projectId === task.projectId),
+          currentUser.id,
         ),
       ]),
     );

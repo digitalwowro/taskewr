@@ -11,6 +11,7 @@ import type {
   TaskAttachmentSummary,
   TaskLinkSummary,
   TaskSubtaskSummary,
+  TaskTimeEntrySummary,
   TaskUserOption,
 } from "@/domain/tasks/types";
 import { TaskPropertiesPanel, TaskPropertyRow } from "@/components/app/task-property-panel";
@@ -76,7 +77,10 @@ export function TaskCoreFields({
   assigneeId,
   assigneeOptions,
   createdBy,
+  currentUserId,
+  actorProjectRole,
   subtasks,
+  timeEntries,
   links,
   attachments,
   canCreateSubtask,
@@ -85,8 +89,10 @@ export function TaskCoreFields({
   onAddAttachment,
   onAddLink,
   onAddSubtask,
+  onAddTimeEntry,
   onDeleteAttachment,
   onDeleteLink,
+  onDeleteTimeEntry,
   onOpenSubtask,
   setAssigneeId,
   setDescription,
@@ -123,7 +129,10 @@ export function TaskCoreFields({
   assigneeId: string;
   assigneeOptions: TaskUserOption[];
   createdBy?: TaskUserOption;
+  currentUserId: string;
+  actorProjectRole?: string;
   subtasks: TaskSubtaskSummary[];
+  timeEntries: TaskTimeEntrySummary[];
   links: TaskLinkSummary[];
   attachments: TaskAttachmentSummary[];
   canCreateSubtask: boolean;
@@ -132,8 +141,10 @@ export function TaskCoreFields({
   onAddAttachment: () => void;
   onAddLink: () => void;
   onAddSubtask: () => void;
+  onAddTimeEntry: () => void;
   onDeleteAttachment: (attachmentId: string) => void;
   onDeleteLink: (linkId: string) => void;
+  onDeleteTimeEntry: (entryId: string) => void;
   onOpenSubtask: (taskId: string) => void;
   setAssigneeId: (value: string) => void;
   setDescription: (value: string) => void;
@@ -364,72 +375,37 @@ export function TaskCoreFields({
           onAddAttachment={onAddAttachment}
           onAddLink={onAddLink}
           onAddSubtask={onAddSubtask}
+          onAddTimeEntry={onAddTimeEntry}
         />
 
         <TaskHierarchyBlock
           attachments={attachments}
+          actorProjectRole={actorProjectRole}
           assetMutationPending={assetMutationPending}
           canCreateSubtask={canCreateSubtask}
+          currentUserId={currentUserId}
           hierarchyMessage={hierarchyMessage}
           isSaving={isSaving}
           links={links}
           onAddAttachment={onAddAttachment}
           onAddLink={onAddLink}
           onAddSubtask={onAddSubtask}
+          onAddTimeEntry={onAddTimeEntry}
           onDeleteAttachment={onDeleteAttachment}
           onDeleteLink={onDeleteLink}
+          onDeleteTimeEntry={onDeleteTimeEntry}
           onOpenSubtask={onOpenSubtask}
           parentTaskId={parentTaskId}
           parentTaskSelectOptions={parentTaskSelectOptions}
           setParentTaskId={setParentTaskId}
           subtasks={subtasks}
           taskId={taskId}
+          timeEntries={timeEntries}
         />
       </div>
 
       <div className="border-t border-[var(--line-soft)] pt-5 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
         <TaskPropertiesPanel>
-          <TaskPropertyRow icon="assignee" label="Assignee">
-            <div className="relative">
-              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2">
-                <TaskUserAvatar
-                  name={selectedAssigneeOption?.label ?? "Unassigned"}
-                  email={selectedAssigneeOption?.meta}
-                  avatarUrl={selectedAssigneeOption?.avatarUrl}
-                  muted={!assigneeId}
-                />
-              </span>
-              <SearchableSelect
-                value={assigneeId}
-                options={assigneeSelectOptions}
-                onChange={setAssigneeId}
-                disabled={isSaving}
-                ariaLabel="Assignee"
-                inputClassName={`${PROPERTY_DEFAULT_BORDER_CLASS} pl-8`}
-                placeholder="Unassigned"
-                emptyMessage="No active project members found."
-                renderOption={(option) => (
-                  <div className="flex min-w-0 items-center gap-2">
-                    <TaskUserAvatar
-                      name={option.label}
-                      email={option.meta}
-                      avatarUrl={option.avatarUrl}
-                      muted={!option.value}
-                    />
-                    <div className="flex min-w-0 flex-col">
-                      <span className="min-w-0 truncate">{option.label}</span>
-                      {option.meta ? (
-                        <span className="min-w-0 truncate text-xs text-[var(--ink-subtle)]">
-                          {option.meta}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                )}
-              />
-            </div>
-          </TaskPropertyRow>
-
           <TaskPropertyRow icon="status" label="Status">
             <div className="relative">
               <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2">
@@ -548,6 +524,47 @@ export function TaskCoreFields({
               {fieldErrors.dueReminderTime ? (
                 <p className="text-xs text-[var(--accent-red)]">{fieldErrors.dueReminderTime}</p>
               ) : null}
+            </div>
+          </TaskPropertyRow>
+
+          <TaskPropertyRow icon="assignee" label="Assignee">
+            <div className="relative">
+              <span className="pointer-events-none absolute left-2 top-1/2 z-10 -translate-y-1/2">
+                <TaskUserAvatar
+                  name={selectedAssigneeOption?.label ?? "Unassigned"}
+                  email={selectedAssigneeOption?.meta}
+                  avatarUrl={selectedAssigneeOption?.avatarUrl}
+                  muted={!assigneeId}
+                />
+              </span>
+              <SearchableSelect
+                value={assigneeId}
+                options={assigneeSelectOptions}
+                onChange={setAssigneeId}
+                disabled={isSaving}
+                ariaLabel="Assignee"
+                inputClassName={`${PROPERTY_DEFAULT_BORDER_CLASS} pl-8`}
+                placeholder="Unassigned"
+                emptyMessage="No active project members found."
+                renderOption={(option) => (
+                  <div className="flex min-w-0 items-center gap-2">
+                    <TaskUserAvatar
+                      name={option.label}
+                      email={option.meta}
+                      avatarUrl={option.avatarUrl}
+                      muted={!option.value}
+                    />
+                    <div className="flex min-w-0 flex-col">
+                      <span className="min-w-0 truncate">{option.label}</span>
+                      {option.meta ? (
+                        <span className="min-w-0 truncate text-xs text-[var(--ink-subtle)]">
+                          {option.meta}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+              />
             </div>
           </TaskPropertyRow>
 
@@ -707,20 +724,24 @@ function TaskRelationshipActions({
   onAddAttachment,
   onAddLink,
   onAddSubtask,
+  onAddTimeEntry,
 }: {
   canCreateSubtask: boolean;
   disabled: boolean;
   onAddAttachment: () => void;
   onAddLink: () => void;
   onAddSubtask: () => void;
+  onAddTimeEntry: () => void;
 }) {
   const actions: { label: string; icon: TaskPlaceholderActionIconName }[] = [
     { label: "Add Subtask", icon: "subtask" },
+    { label: "Track time", icon: "time" },
     { label: "Add Attachment", icon: "attachment" },
     { label: "Add Link", icon: "link" },
   ];
   const handlers: Record<string, () => void> = {
     "Add Subtask": onAddSubtask,
+    "Track time": onAddTimeEntry,
     "Add Attachment": onAddAttachment,
     "Add Link": onAddLink,
   };
@@ -743,7 +764,7 @@ function TaskRelationshipActions({
   );
 }
 
-type TaskPlaceholderActionIconName = "subtask" | "attachment" | "link";
+type TaskPlaceholderActionIconName = "subtask" | "time" | "attachment" | "link";
 
 function TaskPlaceholderActionIcon({ name }: { name: TaskPlaceholderActionIconName }) {
   const commonProps = {
@@ -773,6 +794,15 @@ function TaskPlaceholderActionIcon({ name }: { name: TaskPlaceholderActionIconNa
       <svg {...commonProps}>
         <path d="m7.25 10.25 4.4-4.4a2.35 2.35 0 0 1 3.32 3.32l-5.9 5.9a3.35 3.35 0 0 1-4.74-4.74l6.05-6.05" />
         <path d="m8.55 11.55 4.7-4.7" />
+      </svg>
+    );
+  }
+
+  if (name === "time") {
+    return (
+      <svg {...commonProps}>
+        <circle cx="10" cy="10" r="6.25" />
+        <path d="M10 6.75v3.5l2.5 1.5" />
       </svg>
     );
   }
@@ -930,40 +960,50 @@ function getUserInitials(name: string, email?: string) {
 
 function TaskHierarchyBlock({
   attachments,
+  actorProjectRole,
   assetMutationPending,
   canCreateSubtask,
+  currentUserId,
   hierarchyMessage,
   isSaving,
   links,
   onAddAttachment,
   onAddLink,
   onAddSubtask,
+  onAddTimeEntry,
   onDeleteAttachment,
   onDeleteLink,
+  onDeleteTimeEntry,
   onOpenSubtask,
   parentTaskId,
   parentTaskSelectOptions,
   setParentTaskId,
   subtasks,
   taskId,
+  timeEntries,
 }: {
   attachments: TaskAttachmentSummary[];
+  actorProjectRole?: string;
   assetMutationPending: boolean;
   canCreateSubtask: boolean;
+  currentUserId: string;
   hierarchyMessage: string | null;
   isSaving: boolean;
   links: TaskLinkSummary[];
   onAddAttachment: () => void;
   onAddLink: () => void;
   onAddSubtask: () => void;
+  onAddTimeEntry: () => void;
   onDeleteAttachment: (attachmentId: string) => void;
   onDeleteLink: (linkId: string) => void;
+  onDeleteTimeEntry: (entryId: string) => void;
   onOpenSubtask: (taskId: string) => void;
   parentTaskId: string;
   parentTaskSelectOptions: SearchableSelectOption[];
   setParentTaskId: (value: string) => void;
   subtasks: TaskSubtaskSummary[];
   taskId: string;
+  timeEntries: TaskTimeEntrySummary[];
 }) {
   const [subtasksOpen, setSubtasksOpen] = useState(false);
   const doneSubtaskCount = countDoneSubtasks(subtasks);
@@ -1022,6 +1062,14 @@ function TaskHierarchyBlock({
         open={subtasksOpen}
         setOpen={setSubtasksOpen}
         subtasks={subtasks}
+      />
+      <CompactTimeEntriesSection
+        actorProjectRole={actorProjectRole}
+        currentUserId={currentUserId}
+        disabled={isSaving || assetMutationPending}
+        onAddTimeEntry={onAddTimeEntry}
+        onDeleteTimeEntry={onDeleteTimeEntry}
+        timeEntries={timeEntries}
       />
       <CompactLinksSection
         disabled={isSaving || assetMutationPending}
@@ -1105,6 +1153,85 @@ function CompactSubtasksSection({
           ) : (
             <p className="px-8 py-3 text-sm text-[var(--ink-muted)]">
               No subtasks yet.
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CompactTimeEntriesSection({
+  actorProjectRole,
+  currentUserId,
+  disabled,
+  onAddTimeEntry,
+  onDeleteTimeEntry,
+  timeEntries,
+}: {
+  actorProjectRole?: string;
+  currentUserId: string;
+  disabled: boolean;
+  onAddTimeEntry: () => void;
+  onDeleteTimeEntry: (entryId: string) => void;
+  timeEntries: TaskTimeEntrySummary[];
+}) {
+  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
+  const open = openOverride ?? timeEntries.length > 0;
+  const setOpen = (updater: (current: boolean) => boolean) => {
+    setOpenOverride((current) => updater(current ?? timeEntries.length > 0));
+  };
+  const canManageEntries = actorProjectRole === "owner" || actorProjectRole === "admin";
+  const totalMinutes = timeEntries.reduce((sum, entry) => sum + entry.minutes, 0);
+  const groupedEntries = groupTimeEntriesByUser(timeEntries);
+
+  return (
+    <div className="border-t border-[var(--line-soft)]">
+      <CompactSectionHeader
+        countLabel={formatTrackedTime(totalMinutes)}
+        disabled={disabled}
+        id="task-time-entries-section"
+        label="Tracked time"
+        onAdd={onAddTimeEntry}
+        open={open}
+        setOpen={setOpen}
+      />
+      {open ? (
+        <div id="task-time-entries-section" className="border-t border-[var(--line-soft)]">
+          {groupedEntries.length > 0 ? (
+            <div className="divide-y divide-[var(--line-soft)]">
+              {groupedEntries.map((group) => (
+                <div key={group.user.id} className="px-8 py-3">
+                  <div className="mb-2 flex min-w-0 items-center justify-between gap-3 text-sm">
+                    <span className="flex min-w-0 items-center gap-2 font-semibold text-[var(--ink-strong)]">
+                      <TaskUserAvatar
+                        name={group.user.name}
+                        email={group.user.email}
+                        avatarUrl={group.user.avatarUrl}
+                      />
+                      <span className="min-w-0 truncate">{group.user.name}</span>
+                    </span>
+                    <span className="shrink-0 font-medium text-[var(--ink-muted)]">
+                      {formatTrackedTime(group.totalMinutes)}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {group.entries.map((entry) => (
+                      <CompactTimeEntryRow
+                        key={entry.id}
+                        canDelete={canManageEntries || entry.user.id === currentUserId}
+                        disabled={disabled}
+                        entry={entry}
+                        onDeleteTimeEntry={onDeleteTimeEntry}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="px-8 py-3 text-sm text-[var(--ink-muted)]">
+              No tracked time yet.
             </p>
           )}
         </div>
@@ -1237,6 +1364,8 @@ function CompactSectionHeader({
   open: boolean;
   setOpen: (updater: (current: boolean) => boolean) => void;
 }) {
+  const addLabel = label.endsWith("s") ? label.toLowerCase().slice(0, -1) : label.toLowerCase();
+
   return (
     <div className="flex h-10 items-center justify-between gap-3 px-3">
       <button
@@ -1257,7 +1386,7 @@ function CompactSectionHeader({
       <button
         type="button"
         onClick={onAdd}
-        aria-label={`Add ${label.toLowerCase().slice(0, -1)}`}
+        aria-label={`Add ${addLabel}`}
         disabled={disabled}
         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xl leading-none text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-45"
       >
@@ -1333,6 +1462,46 @@ function CompactAttachmentRow({
         label={`More actions for ${attachment.fileName}`}
         onDelete={() => onDeleteAttachment(attachment.id)}
       />
+    </div>
+  );
+}
+
+function CompactTimeEntryRow({
+  canDelete,
+  disabled,
+  entry,
+  onDeleteTimeEntry,
+}: {
+  canDelete: boolean;
+  disabled: boolean;
+  entry: TaskTimeEntrySummary;
+  onDeleteTimeEntry: (entryId: string) => void;
+}) {
+  return (
+    <div className="grid min-h-8 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-sm">
+      <span className="flex min-w-0 items-center gap-2 text-[var(--ink-muted)]">
+        <TimeAssetIcon />
+        <span className="font-medium text-[var(--ink-strong)]">
+          {formatTrackedTime(entry.minutes)}
+        </span>
+        {entry.createdBy && entry.createdBy.id !== entry.user.id ? (
+          <span className="hidden min-w-0 truncate text-[var(--ink-subtle)] sm:inline">
+            logged by {entry.createdBy.name}
+          </span>
+        ) : null}
+      </span>
+      <span className="hidden text-[var(--ink-subtle)] md:inline">
+        {formatRelativeAssetTime(entry.createdAt)}
+      </span>
+      {canDelete ? (
+        <TaskAssetOverflowMenu
+          disabled={disabled}
+          label={`More actions for ${entry.user.name} tracked time`}
+          onDelete={() => onDeleteTimeEntry(entry.id)}
+        />
+      ) : (
+        <span aria-hidden="true" className="h-7 w-7" />
+      )}
     </div>
   );
 }
@@ -1427,6 +1596,23 @@ function FileAssetIcon() {
   );
 }
 
+function TimeAssetIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-4 w-4 shrink-0 text-[var(--ink-subtle)]"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+    >
+      <circle cx="10" cy="10" r="6.25" />
+      <path d="M10 6.75v3.5l2.5 1.5" />
+    </svg>
+  );
+}
+
 function formatFileSize(bytes: number) {
   if (bytes < 1024) {
     return `${bytes} B`;
@@ -1439,6 +1625,47 @@ function formatFileSize(bytes: number) {
   }
 
   return `${formatAssetNumber(kib / 1024)} MB`;
+}
+
+function formatTrackedTime(minutes: number) {
+  const safeMinutes = Math.max(0, Math.floor(minutes));
+  const hours = Math.floor(safeMinutes / 60);
+  const remainder = safeMinutes % 60;
+
+  if (hours === 0) {
+    return `${remainder}m`;
+  }
+
+  if (remainder === 0) {
+    return `${hours}h`;
+  }
+
+  return `${hours}h ${remainder}m`;
+}
+
+function groupTimeEntriesByUser(entries: TaskTimeEntrySummary[]) {
+  const groups = new Map<
+    string,
+    {
+      user: TaskUserOption;
+      totalMinutes: number;
+      entries: TaskTimeEntrySummary[];
+    }
+  >();
+
+  for (const entry of entries) {
+    const group = groups.get(entry.user.id) ?? {
+      user: entry.user,
+      totalMinutes: 0,
+      entries: [],
+    };
+
+    group.totalMinutes += entry.minutes;
+    group.entries.push(entry);
+    groups.set(entry.user.id, group);
+  }
+
+  return Array.from(groups.values());
 }
 
 function formatAssetNumber(value: number) {

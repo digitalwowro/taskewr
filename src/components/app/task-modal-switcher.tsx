@@ -25,6 +25,7 @@ type TaskModalSwitcherProps = {
   selectedTask: TaskListItem | null;
   taskEditorTask: TaskListItem | null;
   taskDetails: Record<string, TaskDetails>;
+  currentUserId: string;
   projectOptions: Array<{ id: string; name: string; workspaceName?: string }>;
   availableLabels: string[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
@@ -45,6 +46,7 @@ export function TaskModalSwitcher({
   selectedTask,
   taskEditorTask,
   taskDetails,
+  currentUserId,
   projectOptions,
   availableLabels,
   parentTaskOptionsByProject,
@@ -74,6 +76,7 @@ export function TaskModalSwitcher({
         key={activeTask.id}
         task={activeTask}
         taskDetails={taskDetails}
+        currentUserId={currentUserId}
         projectOptions={projectOptions}
         availableLabels={availableLabels}
         parentTaskOptionsByProject={parentTaskOptionsByProject}

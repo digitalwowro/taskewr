@@ -35,6 +35,8 @@ model User {
   updatedTasks                  Task[]                         @relation("UpdatedTasks")
   createdTaskLinks              TaskLink[]                     @relation("TaskLinkCreators")
   uploadedTaskAttachments       TaskAttachment[]               @relation("TaskAttachmentUploaders")
+  taskTimeEntries               TaskTimeEntry[]                @relation("TaskTimeEntryUsers")
+  createdTaskTimeEntries        TaskTimeEntry[]                @relation("TaskTimeEntryCreators")
   auditLogs                     AuditLog[]                     @relation("AuditActors")
   passwordResetTokens           PasswordResetToken[]
   taskNotificationSubscriptions TaskNotificationSubscription[]
@@ -189,6 +191,7 @@ model Task {
   taskLabels                TaskLabel[]
   links                     TaskLink[]
   attachments               TaskAttachment[]
+  timeEntries               TaskTimeEntry[]
   notificationSubscriptions TaskNotificationSubscription[]
   notificationDeliveries    TaskNotificationDelivery[]
 
@@ -239,6 +242,24 @@ model TaskAttachment {
   @@index([taskId])
   @@index([uploadedByUserId])
   @@map("task_attachments")
+}
+
+model TaskTimeEntry {
+  id              Int      @id @default(autoincrement())
+  taskId          Int      @map("task_id")
+  userId          Int      @map("user_id")
+  createdByUserId Int?     @map("created_by_user_id")
+  minutes         Int
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user            User     @relation("TaskTimeEntryUsers", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy       User?    @relation("TaskTimeEntryCreators", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([taskId])
+  @@index([userId])
+  @@index([createdByUserId])
+  @@map("task_time_entries")
 }
 
 model TaskNotificationSubscription {

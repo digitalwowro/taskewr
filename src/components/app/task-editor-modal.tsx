@@ -4,10 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { TaskPriority, TaskStatus } from "@/domain/tasks/constants";
 import { normalizeLabelNames } from "@/domain/tasks/labels";
 import type { RepeatIncompleteBehavior, RepeatScheduleType } from "@/domain/tasks/repeat-schemas";
-import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
+import type { TaskDetails, TaskListItem, TaskUserOption } from "@/domain/tasks/types";
 import { TaskCoreFields, type TaskEditorFieldErrors } from "@/components/app/task-core-fields";
 import { TaskRepeatSettings } from "@/components/app/task-repeat-settings";
-import { IconTooltip, ModalHeaderKicker, TaskSubscriptionButton } from "@/components/app/ui";
+import {
+  IconTooltip,
+  ModalHeaderKicker,
+  SearchableSelect,
+  TaskSubscriptionButton,
+  type SearchableSelectOption,
+} from "@/components/app/ui";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import { requestFormData, requestJson } from "@/lib/api-client";
 
@@ -83,6 +89,7 @@ function validateTaskEditorInput(input: {
 export function TaskEditorModal(props: {
   task: TaskListItem | null;
   taskDetails: Record<string, TaskDetails>;
+  currentUserId: string;
   projectOptions: { id: string; name: string; workspaceName?: string }[];
   availableLabels: string[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
@@ -127,6 +134,7 @@ export function TaskEditorModal(props: {
 function TaskEditorModalContent({
   task,
   taskDetails,
+  currentUserId,
   projectOptions,
   availableLabels,
   parentTaskOptionsByProject,
@@ -142,6 +150,7 @@ function TaskEditorModalContent({
 }: {
   task: TaskListItem;
   taskDetails: Record<string, TaskDetails>;
+  currentUserId: string;
   projectOptions: { id: string; name: string; workspaceName?: string }[];
   availableLabels: string[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
@@ -187,6 +196,7 @@ function TaskEditorModalContent({
   const [assetMutationPending, setAssetMutationPending] = useState(false);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [attachmentModalOpen, setAttachmentModalOpen] = useState(false);
+  const [timeEntryModalOpen, setTimeEntryModalOpen] = useState(false);
 
   const isCreating = task.id === NEW_TASK_ID;
 
@@ -217,6 +227,7 @@ function TaskEditorModalContent({
         projectOptions,
         parentTaskOptions: [],
         subtasks: [],
+        timeEntries: [],
         links: [],
         attachments: [],
       },
@@ -281,6 +292,7 @@ function TaskEditorModalContent({
     setAssetError(null);
     setLinkModalOpen(false);
     setAttachmentModalOpen(false);
+    setTimeEntryModalOpen(false);
     setIsSubscribedToNotifications(Boolean(task.isSubscribedToNotifications));
   }, [task.id, task.isSubscribedToNotifications]);
 
@@ -303,8 +315,12 @@ function TaskEditorModalContent({
   const assigneeOptions =
     details.assigneeOptionsByProjectId?.[projectId] ?? details.assigneeOptions ?? [];
   const subtasks = details.subtasks ?? [];
+  const timeEntries = details.timeEntries ?? [];
   const links = details.links ?? [];
   const attachments = details.attachments ?? [];
+  const effectiveCurrentUserId = details.currentUserId ?? currentUserId;
+  const canManageTimeEntries =
+    details.actorProjectRole === "owner" || details.actorProjectRole === "admin";
   const validationErrors = useMemo(
     () =>
       validateTaskEditorInput({
@@ -498,7 +514,7 @@ function TaskEditorModalContent({
       return true;
     }
 
-    setAssetError("Save the task before adding links or attachments.");
+    setAssetError("Save the task before adding links, attachments, or tracked time.");
     return false;
   };
 
@@ -511,6 +527,12 @@ function TaskEditorModalContent({
   const handleOpenAttachmentModal = () => {
     if (guardSavedTaskAssetMutation()) {
       setAttachmentModalOpen(true);
+    }
+  };
+
+  const handleOpenTimeEntryModal = () => {
+    if (guardSavedTaskAssetMutation()) {
+      setTimeEntryModalOpen(true);
     }
   };
 
@@ -592,6 +614,55 @@ function TaskEditorModalContent({
       onRefreshTaskData();
     } catch (error) {
       setAssetError(error instanceof Error ? error.message : "Could not delete attachment.");
+    } finally {
+      setAssetMutationPending(false);
+    }
+  };
+
+  const handleCreateTimeEntry = async (input: {
+    hours: number;
+    minutes: number;
+    userId?: number;
+  }) => {
+    if (!guardSavedTaskAssetMutation()) {
+      return;
+    }
+
+    setAssetMutationPending(true);
+    setAssetError(null);
+
+    try {
+      await requestJson(`/api/v1/tasks/${task.id.replace("TSK-", "")}/time-entries`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      });
+      setTimeEntryModalOpen(false);
+      onRefreshTaskData();
+    } catch (error) {
+      setAssetError(error instanceof Error ? error.message : "Could not track time.");
+      throw error;
+    } finally {
+      setAssetMutationPending(false);
+    }
+  };
+
+  const handleDeleteTimeEntry = async (entryId: string) => {
+    setAssetMutationPending(true);
+    setAssetError(null);
+
+    try {
+      await requestJson(
+        `/api/v1/tasks/${task.id.replace("TSK-", "")}/time-entries/${entryId}`,
+        {
+          method: "DELETE",
+        },
+      );
+      onRefreshTaskData();
+    } catch (error) {
+      setAssetError(error instanceof Error ? error.message : "Could not delete tracked time.");
     } finally {
       setAssetMutationPending(false);
     }
@@ -708,8 +779,11 @@ function TaskEditorModalContent({
               projectId={projectId}
               assigneeId={assigneeId}
               assigneeOptions={assigneeOptions}
+              actorProjectRole={details.actorProjectRole}
               createdBy={details.createdBy}
+              currentUserId={effectiveCurrentUserId}
               subtasks={subtasks}
+              timeEntries={timeEntries}
               links={links}
               attachments={attachments}
               canCreateSubtask={!isCreating}
@@ -718,8 +792,10 @@ function TaskEditorModalContent({
               onAddAttachment={handleOpenAttachmentModal}
               onAddLink={handleOpenLinkModal}
               onAddSubtask={handleAddSubtask}
+              onAddTimeEntry={handleOpenTimeEntryModal}
               onDeleteAttachment={handleDeleteAttachment}
               onDeleteLink={handleDeleteLink}
+              onDeleteTimeEntry={handleDeleteTimeEntry}
               onOpenSubtask={handleOpenSubtask}
               setAssigneeId={setAssigneeId}
               setDescription={setDescription}
@@ -819,6 +895,20 @@ function TaskEditorModalContent({
             }
           }}
           onUpload={handleCreateAttachment}
+        />
+      ) : null}
+      {timeEntryModalOpen ? (
+        <TaskTimeEntryEditorModal
+          canChooseUser={canManageTimeEntries}
+          currentUserId={effectiveCurrentUserId}
+          isSaving={assetMutationPending}
+          userOptions={assigneeOptions}
+          onClose={() => {
+            if (!assetMutationPending) {
+              setTimeEntryModalOpen(false);
+            }
+          }}
+          onSave={handleCreateTimeEntry}
         />
       ) : null}
     </div>
@@ -928,6 +1018,193 @@ function TaskLinkEditorModal({
             className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Adding..." : "Add link"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function TaskTimeEntryEditorModal({
+  canChooseUser,
+  currentUserId,
+  isSaving,
+  userOptions,
+  onClose,
+  onSave,
+}: {
+  canChooseUser: boolean;
+  currentUserId: string;
+  isSaving: boolean;
+  userOptions: TaskUserOption[];
+  onClose: () => void;
+  onSave: (input: { hours: number; minutes: number; userId?: number }) => Promise<void>;
+}) {
+  const [hours, setHours] = useState("0");
+  const [minutes, setMinutes] = useState("0");
+  const [selectedUserId, setSelectedUserId] = useState(currentUserId);
+  const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const hoursRef = useRef<HTMLInputElement | null>(null);
+  const userSelectOptions: SearchableSelectOption[] = useMemo(
+    () =>
+      userOptions.map((option) => ({
+        value: option.id,
+        label: option.name,
+        meta: option.email,
+        avatarUrl: option.avatarUrl,
+        searchText: `${option.name} ${option.email}`,
+      })),
+    [userOptions],
+  );
+
+  useFocusTrap(dialogRef, true);
+
+  useEffect(() => {
+    hoursRef.current?.focus();
+  }, []);
+
+  const handleSubmit = async () => {
+    const parsedHours = Number(hours);
+    const parsedMinutes = Number(minutes);
+
+    if (!Number.isInteger(parsedHours) || parsedHours < 0 || parsedHours > 999) {
+      setError("Hours must be between 0 and 999.");
+      return;
+    }
+
+    if (!Number.isInteger(parsedMinutes) || parsedMinutes < 0 || parsedMinutes > 59) {
+      setError("Minutes must be between 0 and 59.");
+      return;
+    }
+
+    if (parsedHours === 0 && parsedMinutes === 0) {
+      setError("Tracked time must be greater than 0.");
+      return;
+    }
+
+    if (canChooseUser && !selectedUserId) {
+      setError("Choose a user for this time entry.");
+      return;
+    }
+
+    try {
+      setError(null);
+      await onSave({
+        hours: parsedHours,
+        minutes: parsedMinutes,
+        ...(canChooseUser ? { userId: Number(selectedUserId) } : {}),
+      });
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not track time.");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[rgba(15,23,42,0.28)] px-4 py-5 backdrop-blur-sm">
+      <button
+        type="button"
+        aria-label="Close track time dialog"
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+      />
+      <section
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-time-entry-modal-title"
+        className="relative z-[151] w-full max-w-md rounded-2xl border border-[var(--line-soft)] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.22)]"
+      >
+        <div className="border-b border-[var(--line-soft)] px-5 py-4">
+          <ModalHeaderKicker code="TIME" label="Task time" />
+          <h3
+            id="task-time-entry-modal-title"
+            className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]"
+          >
+            Track time
+          </h3>
+        </div>
+        <div className="space-y-4 px-5 py-5">
+          {canChooseUser ? (
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                User
+              </label>
+              <SearchableSelect
+                value={selectedUserId}
+                options={userSelectOptions}
+                onChange={setSelectedUserId}
+                disabled={isSaving}
+                ariaLabel="Tracked time user"
+                emptyMessage="No active project members found."
+                renderOption={(option) => (
+                  <div className="flex min-w-0 flex-col">
+                    <span className="min-w-0 truncate">{option.label}</span>
+                    {option.meta ? (
+                      <span className="min-w-0 truncate text-xs text-[var(--ink-subtle)]">
+                        {option.meta}
+                      </span>
+                    ) : null}
+                  </div>
+                )}
+              />
+            </div>
+          ) : null}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                Hours
+              </label>
+              <input
+                ref={hoursRef}
+                type="number"
+                min="0"
+                max="999"
+                step="1"
+                value={hours}
+                onChange={(event) => setHours(event.target.value)}
+                disabled={isSaving}
+                className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                Minutes
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                step="1"
+                value={minutes}
+                onChange={(event) => setMinutes(event.target.value)}
+                disabled={isSaving}
+                className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
+              />
+            </div>
+          </div>
+          {error ? (
+            <p aria-live="polite" className="text-sm text-[var(--accent-red)]">
+              {error}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--line-soft)] px-5 py-3">
+          <button
+            type="button"
+            disabled={isSaving}
+            onClick={onClose}
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface-card)] px-4 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={isSaving}
+            onClick={handleSubmit}
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--accent-strong)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,122,89,0.18)] transition hover:bg-[var(--accent-strong-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? "Tracking..." : "Track time"}
           </button>
         </div>
       </section>

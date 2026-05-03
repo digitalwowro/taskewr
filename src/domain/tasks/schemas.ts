@@ -98,6 +98,24 @@ export const taskLinkMutationSchema = z.object({
 
 export type TaskLinkMutationInput = z.infer<typeof taskLinkMutationSchema>;
 
+export const taskTimeEntryMutationSchema = z
+  .object({
+    hours: z.number().int().min(0).max(999),
+    minutes: z.number().int().min(0).max(59),
+    userId: z.number().int().positive().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.hours === 0 && value.minutes === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["minutes"],
+        message: "Tracked time must be greater than 0.",
+      });
+    }
+  });
+
+export type TaskTimeEntryMutationInput = z.infer<typeof taskTimeEntryMutationSchema>;
+
 export const boardMoveSchema = z.object({
   taskId: z.number().int().positive(),
   projectId: z.number().int().positive(),

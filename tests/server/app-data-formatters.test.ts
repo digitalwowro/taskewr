@@ -95,6 +95,25 @@ function buildTask(overrides: Record<string, unknown> = {}) {
         },
       },
     ],
+    timeEntries: [
+      {
+        id: 7,
+        minutes: 90,
+        createdAt: new Date("2026-03-31T09:45:00.000Z"),
+        user: {
+          id: 8,
+          name: "Taskewr User",
+          email: "user@taskewr.com",
+          avatarUrl: null,
+        },
+        createdBy: {
+          id: 7,
+          name: "Taskewr Admin",
+          email: "admin@taskewr.com",
+          avatarUrl: null,
+        },
+      },
+    ],
     notificationSubscriptions: [{ userId: 7 }],
     ...overrides,
   };
@@ -133,6 +152,7 @@ test("toTaskDetails maps repeat settings and filters invalid json values", () =>
       archivedAt: null,
       members: [
         {
+          role: "member",
           user: {
             id: 8,
             name: "Taskewr User",
@@ -142,6 +162,7 @@ test("toTaskDetails maps repeat settings and filters invalid json values", () =>
           },
         },
         {
+          role: "member",
           user: {
             id: 9,
             name: "Inactive User",
@@ -166,9 +187,11 @@ test("toTaskDetails maps repeat settings and filters invalid json values", () =>
     buildTask({ id: 16, parentTaskId: 12, title: "Canceled child", status: "canceled" }),
   ];
 
-  assert.deepEqual(toTaskDetails(buildTask() as never, projects, siblingTasks as never), {
+  assert.deepEqual(toTaskDetails(buildTask() as never, projects, siblingTasks as never, 7), {
     projectId: "4",
     description: "Check the migration notes",
+    currentUserId: "7",
+    actorProjectRole: undefined,
     createdBy: {
       id: "7",
       name: "Taskewr Admin",
@@ -256,6 +279,25 @@ test("toTaskDetails maps repeat settings and filters invalid json values", () =>
           id: "8",
           name: "Taskewr User",
           email: "user@taskewr.com",
+          avatarUrl: null,
+        },
+      },
+    ],
+    timeEntries: [
+      {
+        id: "7",
+        minutes: 90,
+        createdAt: "2026-03-31T09:45:00.000Z",
+        user: {
+          id: "8",
+          name: "Taskewr User",
+          email: "user@taskewr.com",
+          avatarUrl: null,
+        },
+        createdBy: {
+          id: "7",
+          name: "Taskewr Admin",
+          email: "admin@taskewr.com",
           avatarUrl: null,
         },
       },

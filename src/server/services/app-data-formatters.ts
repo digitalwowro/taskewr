@@ -59,6 +59,26 @@ export type AppTaskRecord = Prisma.TaskGetPayload<{
         };
       };
     };
+    timeEntries: {
+      include: {
+        user: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+            avatarUrl: true;
+          };
+        };
+        createdBy: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+            avatarUrl: true;
+          };
+        };
+      };
+    };
     notificationSubscriptions: {
       select: {
         userId: true;
@@ -76,6 +96,7 @@ export type AppProjectRecord = {
     name: string;
   } | null;
   members?: Array<{
+    role: string;
     user: {
       id: number;
       name: string;
@@ -181,7 +202,13 @@ export function toTaskDetails(
     members?: AppProjectRecord["members"];
   }>,
   siblingTasks: AppTaskRecord[],
+  currentUserId?: number,
 ): TaskDetails {
+  const taskProject = projects.find((project) => project.id === task.projectId);
+  const actorProjectRole =
+    currentUserId !== undefined
+      ? taskProject?.members?.find((member) => member.user.id === currentUserId)?.role
+      : undefined;
   const activeAssigneeOptionsByProjectId = Object.fromEntries(
     projects.map((project) => [
       String(project.id),
@@ -199,6 +226,8 @@ export function toTaskDetails(
   return {
     projectId: String(task.projectId),
     description: task.description ?? "",
+    currentUserId: currentUserId !== undefined ? String(currentUserId) : undefined,
+    actorProjectRole,
     createdBy: task.creator
       ? {
           id: String(task.creator.id),
@@ -284,6 +313,25 @@ export function toTaskDetails(
             name: attachment.uploadedBy.name,
             email: attachment.uploadedBy.email,
             avatarUrl: attachment.uploadedBy.avatarUrl,
+          }
+        : undefined,
+    })),
+    timeEntries: (task.timeEntries ?? []).map((entry) => ({
+      id: String(entry.id),
+      minutes: entry.minutes,
+      createdAt: entry.createdAt.toISOString(),
+      user: {
+        id: String(entry.user.id),
+        name: entry.user.name,
+        email: entry.user.email,
+        avatarUrl: entry.user.avatarUrl,
+      },
+      createdBy: entry.createdBy
+        ? {
+            id: String(entry.createdBy.id),
+            name: entry.createdBy.name,
+            email: entry.createdBy.email,
+            avatarUrl: entry.createdBy.avatarUrl,
           }
         : undefined,
     })),

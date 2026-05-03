@@ -991,6 +991,7 @@ export function TaskewrApp({
         selectedTask={selectedTask}
         taskEditorTask={taskEditorTask}
         taskDetails={taskDetails}
+        currentUserId={String(data.currentUser.id)}
         projectOptions={projectOptions}
         availableLabels={labels}
         parentTaskOptionsByProject={parentTaskOptionsByProject}

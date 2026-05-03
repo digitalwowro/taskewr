@@ -655,6 +655,182 @@ test("deleteTaskLink rejects cross-task links", async () => {
   );
 });
 
+test("createTaskTimeEntry lets members log their own time", async () => {
+  const createCalls: Array<Record<string, unknown>> = [];
+  const service = buildTaskService({
+    findById: async () => buildTask(),
+    findProjectMemberUser: async (_projectId: number, userId: number) => ({
+      userId,
+      role: userId === 7 ? "member" : "owner",
+      user: { deactivatedAt: null },
+    }),
+    createTaskTimeEntry: async (data: Record<string, unknown>) => {
+      createCalls.push(data);
+      return data;
+    },
+  });
+
+  await service.createTaskTimeEntry(10, {
+    hours: 1,
+    minutes: 15,
+  });
+
+  assert.deepEqual(createCalls[0], {
+    taskId: 10,
+    userId: 7,
+    createdByUserId: 7,
+    minutes: 75,
+  });
+});
+
+test("createTaskTimeEntry lets project admins log time for another active project member", async () => {
+  const createCalls: Array<Record<string, unknown>> = [];
+  const service = buildTaskService({
+    findById: async () => buildTask(),
+    findProjectMemberUser: async (_projectId: number, userId: number) => ({
+      userId,
+      role: userId === 7 ? "admin" : "member",
+      user: { deactivatedAt: null },
+    }),
+    createTaskTimeEntry: async (data: Record<string, unknown>) => {
+      createCalls.push(data);
+      return data;
+    },
+  });
+
+  await service.createTaskTimeEntry(10, {
+    hours: 2,
+    minutes: 0,
+    userId: 8,
+  });
+
+  assert.deepEqual(createCalls[0], {
+    taskId: 10,
+    userId: 8,
+    createdByUserId: 7,
+    minutes: 120,
+  });
+});
+
+test("createTaskTimeEntry rejects members logging time for another user", async () => {
+  const service = buildTaskService({
+    findById: async () => buildTask(),
+    findProjectMemberUser: async (_projectId: number, userId: number) => ({
+      userId,
+      role: "member",
+      user: { deactivatedAt: null },
+    }),
+  });
+
+  await assert.rejects(
+    () => service.createTaskTimeEntry(10, {
+      hours: 1,
+      minutes: 0,
+      userId: 8,
+    }),
+    (error) => error instanceof AuthorizationError && error.code === "task_time_entry_user_denied",
+  );
+});
+
+test("createTaskTimeEntry rejects inactive or non-project target users", async () => {
+  const service = buildTaskService({
+    findById: async () => buildTask(),
+    findProjectMemberUser: async (_projectId: number, userId: number) => {
+      if (userId === 7) {
+        return {
+          userId,
+          role: "owner",
+          user: { deactivatedAt: null },
+        };
+      }
+
+      return {
+        userId,
+        role: "member",
+        user: { deactivatedAt: new Date("2026-05-01T00:00:00.000Z") },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => service.createTaskTimeEntry(10, {
+      hours: 1,
+      minutes: 0,
+      userId: 8,
+    }),
+    (error) => error instanceof ValidationError && error.code === "task_time_entry_user_invalid",
+  );
+});
+
+test("deleteTaskTimeEntry lets entry owners delete their own entries", async () => {
+  const deleted: number[] = [];
+  const service = buildTaskService({
+    findById: async () => buildTask(),
+    findTaskTimeEntry: async () => ({ id: 22, taskId: 10, userId: 7 }),
+    findProjectMemberUser: async (_projectId: number, userId: number) => ({
+      userId,
+      role: "member",
+      user: { deactivatedAt: null },
+    }),
+    deleteTaskTimeEntry: async (_taskId: number, entryId: number) => {
+      deleted.push(entryId);
+      return { id: entryId };
+    },
+  });
+
+  await service.deleteTaskTimeEntry(10, 22);
+
+  assert.deepEqual(deleted, [22]);
+});
+
+test("deleteTaskTimeEntry lets project owners delete any project entry", async () => {
+  const deleted: number[] = [];
+  const service = buildTaskService({
+    findById: async () => buildTask(),
+    findTaskTimeEntry: async () => ({ id: 22, taskId: 10, userId: 8 }),
+    findProjectMemberUser: async (_projectId: number, userId: number) => ({
+      userId,
+      role: "owner",
+      user: { deactivatedAt: null },
+    }),
+    deleteTaskTimeEntry: async (_taskId: number, entryId: number) => {
+      deleted.push(entryId);
+      return { id: entryId };
+    },
+  });
+
+  await service.deleteTaskTimeEntry(10, 22);
+
+  assert.deepEqual(deleted, [22]);
+});
+
+test("deleteTaskTimeEntry rejects unrelated users and cross-task entries", async () => {
+  const missingEntryService = buildTaskService({
+    findById: async () => buildTask(),
+    findTaskTimeEntry: async () => null,
+  });
+
+  await assert.rejects(
+    () => missingEntryService.deleteTaskTimeEntry(10, 22),
+    (error) => error instanceof NotFoundError && error.code === "task_time_entry_not_found",
+  );
+
+  const unrelatedUserService = buildTaskService({
+    findById: async () => buildTask(),
+    findTaskTimeEntry: async () => ({ id: 22, taskId: 10, userId: 8 }),
+    findProjectMemberUser: async (_projectId: number, userId: number) => ({
+      userId,
+      role: "member",
+      user: { deactivatedAt: null },
+    }),
+  });
+
+  await assert.rejects(
+    () => unrelatedUserService.deleteTaskTimeEntry(10, 22),
+    (error) => error instanceof AuthorizationError && error.code === "task_time_entry_delete_denied",
+  );
+});
+
 test("createTaskAttachment stores file metadata for accessible tasks", async () => {
   const createCalls: Array<Record<string, unknown>> = [];
   const storage = {
