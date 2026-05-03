@@ -276,8 +276,8 @@ export function WorkspaceMembersModal({
 
               {mode === "existing" ? (
                 <div className="grid gap-4 lg:grid-cols-[1fr_14rem_auto] lg:items-end">
-                  <label className="space-y-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                  <label className="block">
+                    <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                       User
                     </span>
                     <SearchableSelect
@@ -296,8 +296,8 @@ export function WorkspaceMembersModal({
                     />
                   </label>
 
-                  <label className="space-y-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                  <label className="block">
+                    <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                       Workspace Role
                     </span>
                     <SearchableSelect
@@ -325,8 +325,8 @@ export function WorkspaceMembersModal({
               ) : (
                 <div className="space-y-4">
                   <div className="grid gap-4 lg:grid-cols-2">
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Display name
                       </span>
                       <input
@@ -336,8 +336,8 @@ export function WorkspaceMembersModal({
                         className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
                       />
                     </label>
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Email
                       </span>
                       <input
@@ -350,8 +350,8 @@ export function WorkspaceMembersModal({
                     </label>
                   </div>
                   <div className="grid gap-4 lg:grid-cols-3">
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Timezone
                       </span>
                       <SearchableSelect
@@ -366,8 +366,8 @@ export function WorkspaceMembersModal({
                         inputClassName="h-11 border-[var(--line-strong)] bg-white px-4 pr-10 text-sm font-medium"
                       />
                     </label>
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Password
                       </span>
                       <input
@@ -378,8 +378,8 @@ export function WorkspaceMembersModal({
                         className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm font-medium text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
                       />
                     </label>
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Confirm Password
                       </span>
                       <input
@@ -392,8 +392,8 @@ export function WorkspaceMembersModal({
                     </label>
                   </div>
                   <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Workspace Role
                       </span>
                       <SearchableSelect

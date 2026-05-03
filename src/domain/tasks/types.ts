@@ -38,9 +38,45 @@ export type TaskListItem = {
   updatedAt: string;
 };
 
+export type TaskUserOption = {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string | null;
+};
+
+export type TaskSubtaskSummary = {
+  id: string;
+  title: string;
+  status: string;
+  statusValue: TaskStatus;
+};
+
+export type TaskLinkSummary = {
+  id: string;
+  title: string;
+  url: string;
+  host: string;
+  createdAt: string;
+  createdBy?: TaskUserOption;
+};
+
+export type TaskAttachmentSummary = {
+  id: string;
+  fileName: string;
+  mimeType: string | null;
+  sizeBytes: number;
+  createdAt: string;
+  uploadedBy?: TaskUserOption;
+};
+
 export type TaskDetails = {
   projectId?: string;
   description: string;
+  createdBy?: TaskUserOption;
+  assigneeId?: string;
+  assigneeOptions?: TaskUserOption[];
+  assigneeOptionsByProjectId?: Record<string, TaskUserOption[]>;
   parentTaskId?: string;
   parentTask: string;
   labels: string[];
@@ -50,4 +86,7 @@ export type TaskDetails = {
   dueReminderTime?: string;
   projectOptions?: { id: string; name: string; workspaceName?: string }[];
   parentTaskOptions?: { id: string; title: string }[];
+  subtasks?: TaskSubtaskSummary[];
+  links?: TaskLinkSummary[];
+  attachments?: TaskAttachmentSummary[];
 };

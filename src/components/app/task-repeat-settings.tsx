@@ -259,10 +259,11 @@ export function TaskRepeatSettings({
               disabled={isSaving}
               ariaLabel="Repeat schedule"
               inputClassName="border-transparent"
+              panelPlacement="top"
             />
           </TaskPropertyRow>
 
-          <TaskPropertyRow icon="repeat" label="Incomplete task">
+          <TaskPropertyRow icon="repeat" label="If incomplete">
             <SearchableSelect
               value={repeatIncompleteBehavior}
               options={REPEAT_INCOMPLETE_OPTIONS}
@@ -270,8 +271,9 @@ export function TaskRepeatSettings({
                 setRepeatIncompleteBehavior(nextIncompleteBehavior as RepeatIncompleteBehavior)
               }
               disabled={isSaving}
-              ariaLabel="Incomplete task repeat behavior"
+              ariaLabel="If incomplete repeat behavior"
               inputClassName="border-transparent"
+              panelPlacement="top"
             />
           </TaskPropertyRow>
 

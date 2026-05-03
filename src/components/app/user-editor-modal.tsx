@@ -182,8 +182,8 @@ export function UserEditorModal({
 
         <div className="space-y-4 px-5 py-5">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 Display name
               </label>
               <input
@@ -194,8 +194,8 @@ export function UserEditorModal({
                 className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 Email
               </label>
               <input
@@ -210,8 +210,8 @@ export function UserEditorModal({
 
           <div className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)]/55 p-3">
             <div className="grid gap-3 md:grid-cols-3">
-              <div className="space-y-2">
-                <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
+              <div>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
                   Timezone
                 </label>
                 <div>
@@ -226,8 +226,8 @@ export function UserEditorModal({
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
+              <div>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
                   App Role
                 </label>
                 <div>
@@ -241,8 +241,8 @@ export function UserEditorModal({
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
+              <div>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
                   Status
                 </label>
                 <label className="flex h-9 items-center justify-between rounded-lg border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)]">

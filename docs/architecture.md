@@ -137,6 +137,7 @@ Project membership is the source of truth for project and task visibility:
 
 - a user only sees projects where they have a `ProjectMember` row
 - task reads and mutations inherit access from the task project
+- task links and attachments inherit access from the task project
 - dashboard, search, repeat sync, project detail, and task detail must filter through accessible project IDs
 - workspace owners do not implicitly see every project in the workspace unless they are also project members
 
@@ -227,6 +228,7 @@ The implementation baseline is now in place:
 
 - real DB-backed dashboard, projects, project detail, and task flows
 - real task/project mutation APIs
+- task-scoped links and local-disk attachments
 - real login/session foundation
 - multi-workspace app context and project-membership policy checks
 - users administration with app roles and deactivation

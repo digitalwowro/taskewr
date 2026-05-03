@@ -24,6 +24,7 @@ This document is the source of truth for styling new Taskewr UI modules. Prefer 
 - Page titles use large, high-contrast type with tight tracking.
 - Section labels use uppercase green text with wide tracking.
 - Field labels, table headers, and metadata labels use uppercase muted text with wide tracking.
+- Field labels that sit directly above an input, textarea, date field, checkbox row, or app dropdown use the shared spacing pattern `mb-1.5 block`.
 - Body and helper text should be plain, direct, and muted when secondary.
 - Do not use visible text to explain obvious controls or visual styling.
 - Keep labels short enough to scan in dense admin and task screens.
@@ -45,6 +46,7 @@ This document is the source of truth for styling new Taskewr UI modules. Prefer 
 - Filters use compact toolbar-style controls with uppercase labels and readable selected values.
 - Inputs, app dropdown triggers, textareas, and checkboxes use `rounded-lg`.
 - Non-date app dropdowns use the shared searchable dropdown pattern from `src/components/app/ui.tsx`; do not use native `<select>` for app UI choices.
+- App dropdown triggers do not show a down chevron. When searchable dropdown text is cleared, the clear control is the app-owned green `×`, not the browser-native blue search clear button.
 - Date fields remain native date inputs until a dedicated date picker is designed.
 - Alerts and inline helper panels use `rounded-lg`, soft borders, and restrained background tints.
 
@@ -56,6 +58,7 @@ This document is the source of truth for styling new Taskewr UI modules. Prefer 
 - Metadata pills use white or lightly tinted backgrounds, soft borders, uppercase labels, and `rounded-lg`.
 - Status and priority pills use consistent token colors and `rounded-lg`.
 - Empty states should be short, muted, and framed only when the surrounding section needs a visible body.
+- Task-modal relationship sections such as Subtasks, Links, and Attachments use compact Plane-like rows under the Description area. Keep them collapsible, low-height, and row-driven rather than adding bulky nested cards.
 
 ## Modals
 

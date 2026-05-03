@@ -10,25 +10,30 @@ const projectMemberOrderBy: Prisma.ProjectMemberOrderByWithRelationInput[] = [
 export class ProjectsRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  private readonly projectInclude = {
-    workspace: true,
-	    _count: {
-	      select: {
-	        tasks: true,
-	        members: true,
-	      },
-	    },
-  } as const;
-
   private readonly projectMemberInclude = {
     user: {
       select: {
         id: true,
         name: true,
         email: true,
+        avatarUrl: true,
         deactivatedAt: true,
       },
     },
+  } as const;
+
+  private readonly projectInclude = {
+    workspace: true,
+    members: {
+      include: this.projectMemberInclude,
+      orderBy: projectMemberOrderBy,
+    },
+	    _count: {
+	      select: {
+	        tasks: true,
+	        members: true,
+	      },
+	    },
   } as const;
 
   listProjectsByIds(projectIds: number[], includeArchived = true) {

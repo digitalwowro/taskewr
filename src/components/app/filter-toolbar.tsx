@@ -254,8 +254,8 @@ export function ToolbarDateMenu({
       {isOpen ? (
         <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 min-w-[18rem] rounded-lg border border-[var(--line-soft)] bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
           <div className="grid gap-3">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
+            <div>
+              <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
                 Starting date
               </label>
               <input
@@ -265,8 +265,8 @@ export function ToolbarDateMenu({
                 className="h-9 w-full rounded-lg border border-[var(--line-strong)] bg-white px-3 text-[13px] text-[var(--ink-strong)] outline-none"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
+            <div>
+              <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
                 Ending date
               </label>
               <input

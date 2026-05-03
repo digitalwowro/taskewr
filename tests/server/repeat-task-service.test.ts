@@ -8,6 +8,7 @@ const sourceTask = {
   projectId: 1,
   createdByUserId: 1,
   updatedByUserId: 1,
+  assigneeUserId: 9,
   title: "Check backup",
   description: "Daily operational check",
   priority: "high",
@@ -46,6 +47,7 @@ function buildStore(rule: ReturnType<typeof buildRule>) {
     repeatScheduledFor: Date;
     status: string;
     repeatCarryCount: number;
+    assigneeUserId?: number;
   }> = [];
 
   return {
@@ -66,13 +68,20 @@ function buildStore(rule: ReturnType<typeof buildRule>) {
     findTaskForOccurrence: async (_repeatRuleId: number, scheduledFor: Date) =>
       tasks.find((task) => task.repeatScheduledFor.getTime() === scheduledFor.getTime()) ?? null,
     findOpenTaskForRule: async () => tasks.find((task) => task.status !== "done" && task.status !== "canceled") ?? null,
-    createTask: async (data: { repeatRuleId: number; repeatScheduledFor: Date; status: string; repeatCarryCount?: number }) => {
+    createTask: async (data: {
+      repeatRuleId: number;
+      repeatScheduledFor: Date;
+      status: string;
+      repeatCarryCount?: number;
+      assigneeUserId?: number;
+    }) => {
       const task = {
         id: tasks.length + 100,
         repeatRuleId: data.repeatRuleId,
         repeatScheduledFor: data.repeatScheduledFor,
         status: data.status,
         repeatCarryCount: data.repeatCarryCount ?? 0,
+        assigneeUserId: data.assigneeUserId,
       };
       tasks.push(task);
       return task;
@@ -108,6 +117,7 @@ test("carry forward repeat rules reuse one open task", async () => {
   assert.equal(store.tasks.length, 1);
   assert.equal(store.tasks[0].repeatScheduledFor.toISOString().slice(0, 10), "2026-04-03");
   assert.equal(store.tasks[0].repeatCarryCount, 2);
+  assert.equal(store.tasks[0].assigneeUserId, 9);
 });
 
 test("create separate repeat rules preserve missed work", async () => {
@@ -121,4 +131,5 @@ test("create separate repeat rules preserve missed work", async () => {
     store.tasks.map((task) => task.repeatScheduledFor.toISOString().slice(0, 10)),
     ["2026-04-01", "2026-04-02", "2026-04-03"],
   );
+  assert.deepEqual(store.tasks.map((task) => task.assigneeUserId), [9, 9, 9]);
 });

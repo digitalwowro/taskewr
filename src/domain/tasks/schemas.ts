@@ -34,6 +34,7 @@ export const taskMutationSchema = z
     title: z.string().trim().min(1).max(200),
     description: z.string().trim().max(10000).optional().default(""),
     parentTaskId: z.number().int().positive().nullable().optional().default(null),
+    assigneeUserId: z.number().int().positive().nullable().optional().default(null),
     status: taskStatusSchema,
     priority: taskPrioritySchema,
     startDate: z.string().date().nullable().optional().default(null),
@@ -77,6 +78,25 @@ export const taskMutationSchema = z
   });
 
 export type TaskMutationInput = z.infer<typeof taskMutationSchema>;
+
+export const taskLinkMutationSchema = z.object({
+  title: z.string().trim().min(1, "Link title is required.").max(200),
+  url: z
+    .string()
+    .trim()
+    .min(1, "Link URL is required.")
+    .max(2048)
+    .refine((value) => {
+      try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+      } catch {
+        return false;
+      }
+    }, "Link URL must start with http:// or https://."),
+});
+
+export type TaskLinkMutationInput = z.infer<typeof taskLinkMutationSchema>;
 
 export const boardMoveSchema = z.object({
   taskId: z.number().int().positive(),

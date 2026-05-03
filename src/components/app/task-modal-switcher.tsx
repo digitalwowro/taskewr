@@ -10,6 +10,7 @@ type TaskSaveInput = {
   title: string;
   description: string;
   parentTaskId: number | null;
+  assigneeUserId: number | null;
   status: TaskStatus;
   priority: TaskPriority;
   startDate: string | null;
@@ -27,10 +28,14 @@ type TaskModalSwitcherProps = {
   projectOptions: Array<{ id: string; name: string; workspaceName?: string }>;
   availableLabels: string[];
   parentTaskOptionsByProject: Record<string, { id: string; title: string }[]>;
+  draftDefaults?: { projectId?: string; parentTaskId?: string };
   taskMutationPending: boolean;
   taskMutationError: string | null;
   onCloseTaskRoute: () => void;
   onCloseInlineTaskEditor: () => void;
+  onOpenTask: (taskId: string) => void;
+  onCreateSubtask: (input: { projectId: string; parentTaskId: string }) => void;
+  onRefreshTaskData: () => void;
   onSaveTask: (targetTask: TaskListItem, input: TaskSaveInput) => Promise<void>;
   onToggleTaskSubscription: (targetTask: TaskListItem, nextSubscribed: boolean) => Promise<void>;
 };
@@ -43,28 +48,43 @@ export function TaskModalSwitcher({
   projectOptions,
   availableLabels,
   parentTaskOptionsByProject,
+  draftDefaults,
   taskMutationPending,
   taskMutationError,
   onCloseTaskRoute,
   onCloseInlineTaskEditor,
+  onOpenTask,
+  onCreateSubtask,
+  onRefreshTaskData,
   onSaveTask,
   onToggleTaskSubscription,
 }: TaskModalSwitcherProps) {
-  if (initialSection === "task_detail") {
+  const activeTask =
+    taskEditorTask ?? (initialSection === "task_detail" ? selectedTask : null);
+
+  if (!activeTask) {
+    return null;
+  }
+
+  const closeModal = taskEditorTask ? onCloseInlineTaskEditor : onCloseTaskRoute;
+
+  if (taskEditorTask || initialSection === "task_detail") {
     return (
       <TaskEditorModal
-        key={selectedTask?.id ?? "task-detail-empty"}
-        task={selectedTask}
+        key={activeTask.id}
+        task={activeTask}
         taskDetails={taskDetails}
         projectOptions={projectOptions}
         availableLabels={availableLabels}
         parentTaskOptionsByProject={parentTaskOptionsByProject}
-        onClose={onCloseTaskRoute}
-        onSave={(input) =>
-          selectedTask ? onSaveTask(selectedTask, input) : Promise.resolve()
-        }
+        draftDefaults={draftDefaults}
+        onClose={closeModal}
+        onOpenTask={onOpenTask}
+        onCreateSubtask={onCreateSubtask}
+        onRefreshTaskData={onRefreshTaskData}
+        onSave={(input) => onSaveTask(activeTask, input)}
         onToggleSubscription={(nextSubscribed) =>
-          selectedTask ? onToggleTaskSubscription(selectedTask, nextSubscribed) : Promise.resolve()
+          onToggleTaskSubscription(activeTask, nextSubscribed)
         }
         isSaving={taskMutationPending}
         error={taskMutationError}
@@ -72,25 +92,5 @@ export function TaskModalSwitcher({
     );
   }
 
-  if (!taskEditorTask) {
-    return null;
-  }
-
-  return (
-    <TaskEditorModal
-      key={taskEditorTask.id}
-      task={taskEditorTask}
-      taskDetails={taskDetails}
-      projectOptions={projectOptions}
-      availableLabels={availableLabels}
-      parentTaskOptionsByProject={parentTaskOptionsByProject}
-      onClose={onCloseInlineTaskEditor}
-      onSave={(input) => onSaveTask(taskEditorTask, input)}
-      onToggleSubscription={(nextSubscribed) =>
-        onToggleTaskSubscription(taskEditorTask, nextSubscribed)
-      }
-      isSaving={taskMutationPending}
-      error={taskMutationError}
-    />
-  );
+  return null;
 }

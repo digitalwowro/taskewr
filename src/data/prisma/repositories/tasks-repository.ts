@@ -11,11 +11,57 @@ export class TasksRepository {
       },
     },
     parentTask: true,
+    creator: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+      },
+    },
+    assignee: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+      },
+    },
     repeatRule: true,
     childTasks: true,
     taskLabels: {
       include: {
         label: true,
+      },
+    },
+    links: {
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    },
+    attachments: {
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
       },
     },
     notificationSubscriptions: {
@@ -32,10 +78,56 @@ export class TasksRepository {
       },
     },
     parentTask: true,
+    creator: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+      },
+    },
+    assignee: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+      },
+    },
     repeatRule: true,
     taskLabels: {
       include: {
         label: true,
+      },
+    },
+    links: {
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    },
+    attachments: {
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
       },
     },
     notificationSubscriptions: {
@@ -59,6 +151,21 @@ export class TasksRepository {
         id: true,
         workspaceId: true,
         archivedAt: true,
+      },
+    });
+  }
+
+  findActiveProjectMemberUser(projectId: number, userId: number) {
+    return this.prisma.projectMember.findFirst({
+      where: {
+        projectId,
+        userId,
+        user: {
+          deactivatedAt: null,
+        },
+      },
+      select: {
+        userId: true,
       },
     });
   }
@@ -209,6 +316,70 @@ export class TasksRepository {
           })),
         });
       }
+    });
+  }
+
+  createTaskLink(data: Prisma.TaskLinkUncheckedCreateInput) {
+    return this.prisma.taskLink.create({
+      data,
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  findTaskLink(taskId: number, linkId: number) {
+    return this.prisma.taskLink.findFirst({
+      where: {
+        id: linkId,
+        taskId,
+      },
+    });
+  }
+
+  deleteTaskLink(_taskId: number, linkId: number) {
+    return this.prisma.taskLink.delete({
+      where: {
+        id: linkId,
+      },
+    });
+  }
+
+  createTaskAttachment(data: Prisma.TaskAttachmentUncheckedCreateInput) {
+    return this.prisma.taskAttachment.create({
+      data,
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  findTaskAttachment(taskId: number, attachmentId: number) {
+    return this.prisma.taskAttachment.findFirst({
+      where: {
+        id: attachmentId,
+        taskId,
+      },
+    });
+  }
+
+  deleteTaskAttachment(_taskId: number, attachmentId: number) {
+    return this.prisma.taskAttachment.delete({
+      where: {
+        id: attachmentId,
+      },
     });
   }
 }

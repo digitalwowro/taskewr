@@ -109,8 +109,8 @@ export function ProjectEditorModal({
         </div>
 
         <div className="space-y-4 px-5 py-5">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
               Project name
             </label>
             <input
@@ -129,8 +129,8 @@ export function ProjectEditorModal({
             {nameError ? <p className="text-xs text-[var(--accent-red)]">{nameError}</p> : null}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
               Description
             </label>
             <textarea
@@ -142,8 +142,8 @@ export function ProjectEditorModal({
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
               Workspace
             </label>
             <div>

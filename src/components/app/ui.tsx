@@ -19,21 +19,26 @@ import type { TaskListItem } from "@/domain/tasks/types";
 const DROPDOWN_PANEL_MAX_HEIGHT = 448;
 const DROPDOWN_PANEL_MIN_HEIGHT = 176;
 const DROPDOWN_PANEL_BOTTOM_GUTTER = 96;
+const DROPDOWN_PANEL_TOP_GUTTER = 24;
 
-export const searchableSelectPanelClassName =
-  "absolute left-0 right-0 top-full z-50 mt-2 overflow-auto rounded-lg border border-[var(--line-strong)] bg-white p-1 shadow-[0_18px_40px_rgba(15,23,42,0.18)]";
+const searchableSelectPanelBaseClassName =
+  "absolute left-0 right-0 z-50 overflow-auto rounded-lg border border-[var(--line-strong)] bg-white p-1 shadow-[0_18px_40px_rgba(15,23,42,0.18)]";
+
+export const searchableSelectPanelClassName = `${searchableSelectPanelBaseClassName} top-full mt-2`;
 
 export type SearchableSelectOption = {
   value: string;
   label: string;
   searchText?: string;
   meta?: string;
+  avatarUrl?: string | null;
   disabled?: boolean;
 };
 
 export function useDropdownPanelMaxHeight(
   isOpen: boolean,
   anchorRef: RefObject<HTMLElement | null>,
+  placement: "bottom" | "top" = "bottom",
 ) {
   const [maxHeight, setMaxHeight] = useState(DROPDOWN_PANEL_MAX_HEIGHT);
 
@@ -51,12 +56,17 @@ export function useDropdownPanelMaxHeight(
 
       const anchorRect = anchor.getBoundingClientRect();
       const dialog = anchor.closest('[role="dialog"]') as HTMLElement | null;
-      const boundaryBottom = dialog?.getBoundingClientRect().bottom ?? window.innerHeight;
-      const availableBelow = boundaryBottom - anchorRect.bottom - DROPDOWN_PANEL_BOTTOM_GUTTER;
+      const dialogRect = dialog?.getBoundingClientRect();
+      const boundaryBottom = dialogRect?.bottom ?? window.innerHeight;
+      const boundaryTop = dialogRect?.top ?? 0;
+      const availableSpace =
+        placement === "top"
+          ? anchorRect.top - boundaryTop - DROPDOWN_PANEL_TOP_GUTTER
+          : boundaryBottom - anchorRect.bottom - DROPDOWN_PANEL_BOTTOM_GUTTER;
       const nextMaxHeight = Math.round(
         Math.min(
           DROPDOWN_PANEL_MAX_HEIGHT,
-          Math.max(DROPDOWN_PANEL_MIN_HEIGHT, availableBelow),
+          Math.max(DROPDOWN_PANEL_MIN_HEIGHT, availableSpace),
         ),
       );
 
@@ -74,25 +84,9 @@ export function useDropdownPanelMaxHeight(
       window.removeEventListener("resize", updateMaxHeight);
       dialog?.removeEventListener("scroll", updateMaxHeight);
     };
-  }, [anchorRef, isOpen]);
+  }, [anchorRef, isOpen, placement]);
 
   return maxHeight;
-}
-
-function SearchableSelectChevron() {
-  return (
-    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[var(--ink-muted)]">
-      <svg
-        viewBox="0 0 16 16"
-        className="h-3.5 w-3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      >
-        <path d="m4.5 6.5 3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
-  );
 }
 
 function findNextEnabledOption(
@@ -128,6 +122,7 @@ export function SearchableSelect({
   emptyMessage = "No matching options.",
   className = "",
   inputClassName = "",
+  panelPlacement = "bottom",
 }: {
   value: string;
   options: SearchableSelectOption[];
@@ -144,6 +139,7 @@ export function SearchableSelect({
   emptyMessage?: string;
   className?: string;
   inputClassName?: string;
+  panelPlacement?: "bottom" | "top";
 }) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -155,7 +151,11 @@ export function SearchableSelect({
   const selectedOption = options.find((option) => option.value === value);
   const selectedLabel = selectedOption?.label ?? "";
   const query = hasEditedSearch ? searchValue.trim().toLowerCase() : "";
-  const panelMaxHeight = useDropdownPanelMaxHeight(open, rootRef);
+  const panelMaxHeight = useDropdownPanelMaxHeight(open, rootRef, panelPlacement);
+  const panelClassName =
+    panelPlacement === "top"
+      ? `${searchableSelectPanelBaseClassName} bottom-full mb-2`
+      : searchableSelectPanelClassName;
   const filteredOptions = useMemo(() => {
     if (!query) {
       return options;
@@ -296,7 +296,7 @@ export function SearchableSelect({
     <div ref={rootRef} className={`relative ${className}`}>
       <input
         ref={inputRef}
-        type="search"
+        type="text"
         value={open ? searchValue : selectedLabel}
         onFocus={openDropdown}
         onChange={(event) => {
@@ -315,14 +315,31 @@ export function SearchableSelect({
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
         autoComplete="off"
-        className={`h-8 w-full rounded-lg border border-transparent bg-transparent px-2 pr-8 text-sm text-[var(--ink-strong)] outline-none transition placeholder:text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] focus:border-[var(--line-strong)] focus:bg-white disabled:cursor-not-allowed disabled:text-[var(--ink-subtle)] ${inputClassName}`}
+        className={`h-8 w-full rounded-lg border border-transparent bg-transparent px-2 text-sm text-[var(--ink-strong)] outline-none transition placeholder:text-[var(--ink-muted)] hover:bg-[var(--surface-subtle)] focus:border-[var(--line-strong)] focus:bg-white disabled:cursor-not-allowed disabled:text-[var(--ink-subtle)] ${
+          open && !disabled && searchValue ? "pr-8" : ""
+        } ${inputClassName}`}
       />
-      <SearchableSelectChevron />
+      {open && !disabled && searchValue ? (
+        <button
+          type="button"
+          aria-label={`Clear ${ariaLabel}`}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            setSearchValue("");
+            setHasEditedSearch(true);
+            setActiveIndex(-1);
+            inputRef.current?.focus();
+          }}
+          className="absolute inset-y-0 right-2 flex items-center text-lg font-semibold leading-none text-[var(--accent-strong)] transition hover:text-[var(--accent-strong-hover)]"
+        >
+          ×
+        </button>
+      ) : null}
       {open && !disabled ? (
         <div
           id={`${id}-options`}
           role="listbox"
-          className={searchableSelectPanelClassName}
+          className={panelClassName}
           style={{ maxHeight: panelMaxHeight }}
         >
           {filteredOptions.length > 0 ? (
@@ -606,7 +623,7 @@ function UsersIcon() {
   );
 }
 
-function getStatusTone(status: string): "neutral" | "green" | "amber" | "red" | "blue" | "black" {
+export function getStatusTone(status: string): "neutral" | "green" | "amber" | "red" | "blue" | "black" {
   switch (status) {
     case "Backlog":
       return "neutral";
@@ -852,7 +869,7 @@ export function TaskSubscriptionButton({
 }: {
   task: TaskSubscriptionTarget;
   isPending?: boolean;
-  size?: "compact" | "toolbar";
+  size?: "compact" | "toolbar" | "action";
   tooltipAlign?: "center" | "left" | "right";
   tooltipSide?: "top" | "bottom";
   onToggleSubscription?: TaskSubscriptionToggle;
@@ -866,17 +883,24 @@ export function TaskSubscriptionButton({
     ? "Unsubscribe from this task"
     : "Subscribe to this task";
   const sizeClass =
-    size === "toolbar"
+    size === "action"
+      ? "h-9 rounded-lg px-3"
+      : size === "toolbar"
       ? "h-8 w-8 rounded-lg"
       : "h-6 w-6 rounded-lg";
   const spinnerClass =
-    size === "toolbar"
+    size === "action"
+      ? "h-3 w-3"
+      : size === "toolbar"
       ? "h-3 w-3"
       : "h-2.5 w-2.5";
   const iconClass =
-    size === "toolbar"
+    size === "action"
+      ? "h-4 w-4"
+      : size === "toolbar"
       ? "h-4 w-4"
       : "h-3.5 w-3.5";
+  const visibleLabel = subscribed ? "Unsubscribe" : "Subscribe";
 
   return (
     <IconTooltip label={label} tooltipAlign={tooltipAlign} tooltipSide={tooltipSide}>
@@ -892,7 +916,7 @@ export function TaskSubscriptionButton({
           void onToggleSubscription(task, !subscribed);
           event.currentTarget.blur();
         }}
-        className={`inline-flex shrink-0 items-center justify-center border transition disabled:cursor-wait disabled:opacity-60 ${sizeClass} ${
+        className={`inline-flex shrink-0 items-center justify-center gap-2 border text-sm font-medium transition disabled:cursor-wait disabled:opacity-60 ${sizeClass} ${
           subscribed
             ? "border-[rgba(34,122,89,0.2)] bg-[rgba(34,122,89,0.08)] text-[var(--accent-strong)] hover:bg-[rgba(34,122,89,0.12)]"
             : "border-[var(--line-strong)] bg-white text-[var(--ink-subtle)] hover:border-[rgba(34,122,89,0.22)] hover:bg-[rgba(34,122,89,0.06)] hover:text-[var(--accent-strong)]"
@@ -903,6 +927,7 @@ export function TaskSubscriptionButton({
         ) : (
           <SubscribeIcon subscribed={subscribed} className={iconClass} />
         )}
+        {size === "action" ? <span>{visibleLabel}</span> : null}
       </button>
     </IconTooltip>
   );

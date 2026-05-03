@@ -17,8 +17,21 @@ function buildTask(overrides: Record<string, unknown> = {}) {
     title: "Review rollout",
     description: "Check the migration notes",
     parentTaskId: 9,
+    assigneeUserId: 8,
     parentTask: {
       title: "Parent item",
+    },
+    creator: {
+      id: 7,
+      name: "Taskewr Admin",
+      email: "admin@taskewr.com",
+      avatarUrl: null,
+    },
+    assignee: {
+      id: 8,
+      name: "Taskewr User",
+      email: "user@taskewr.com",
+      avatarUrl: null,
     },
     status: "in_progress",
     priority: "urgent",
@@ -50,6 +63,35 @@ function buildTask(overrides: Record<string, unknown> = {}) {
       {
         label: {
           name: "Customer",
+        },
+      },
+    ],
+    links: [
+      {
+        id: 5,
+        title: "Migration notes",
+        url: "https://www.example.com/migration",
+        createdAt: new Date("2026-03-31T09:00:00.000Z"),
+        createdBy: {
+          id: 7,
+          name: "Taskewr Admin",
+          email: "admin@taskewr.com",
+          avatarUrl: null,
+        },
+      },
+    ],
+    attachments: [
+      {
+        id: 6,
+        originalFileName: "rollout.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 2048,
+        createdAt: new Date("2026-03-31T09:30:00.000Z"),
+        uploadedBy: {
+          id: 8,
+          name: "Taskewr User",
+          email: "user@taskewr.com",
+          avatarUrl: null,
         },
       },
     ],
@@ -85,17 +127,74 @@ test("toTaskListItem maps task records into app task rows", () => {
 
 test("toTaskDetails maps repeat settings and filters invalid json values", () => {
   const projects = [
-    { id: 4, name: "Service Management", archivedAt: null },
-    { id: 5, name: "Archived", archivedAt: new Date("2026-04-01T00:00:00.000Z") },
+    {
+      id: 4,
+      name: "Service Management",
+      archivedAt: null,
+      members: [
+        {
+          user: {
+            id: 8,
+            name: "Taskewr User",
+            email: "user@taskewr.com",
+            avatarUrl: null,
+            deactivatedAt: null,
+          },
+        },
+        {
+          user: {
+            id: 9,
+            name: "Inactive User",
+            email: "inactive@taskewr.com",
+            avatarUrl: null,
+            deactivatedAt: new Date("2026-04-01T00:00:00.000Z"),
+          },
+        },
+      ],
+    },
+    {
+      id: 5,
+      name: "Archived",
+      archivedAt: new Date("2026-04-01T00:00:00.000Z"),
+      members: [],
+    },
   ];
   const siblingTasks = [
     buildTask(),
     buildTask({ id: 14, title: "Sibling task" }),
+    buildTask({ id: 15, parentTaskId: 12, title: "Done child", status: "done" }),
+    buildTask({ id: 16, parentTaskId: 12, title: "Canceled child", status: "canceled" }),
   ];
 
   assert.deepEqual(toTaskDetails(buildTask() as never, projects, siblingTasks as never), {
     projectId: "4",
     description: "Check the migration notes",
+    createdBy: {
+      id: "7",
+      name: "Taskewr Admin",
+      email: "admin@taskewr.com",
+      avatarUrl: null,
+    },
+    assigneeId: "8",
+    assigneeOptions: [
+      {
+        id: "8",
+        name: "Taskewr User",
+        email: "user@taskewr.com",
+        avatarUrl: null,
+      },
+    ],
+    assigneeOptionsByProjectId: {
+      "4": [
+        {
+          id: "8",
+          name: "Taskewr User",
+          email: "user@taskewr.com",
+          avatarUrl: null,
+        },
+      ],
+      "5": [],
+    },
     parentTaskId: "9",
     parentTask: "Parent item",
     labels: ["Customer"],
@@ -112,7 +211,55 @@ test("toTaskDetails maps repeat settings and filters invalid json values", () =>
     dueDateValue: "",
     dueReminderTime: "09:30",
     projectOptions: [{ id: "4", name: "Service Management", workspaceName: "No workspace" }],
-    parentTaskOptions: [{ id: "14", title: "Sibling task" }],
+    parentTaskOptions: [
+      { id: "14", title: "Sibling task" },
+      { id: "15", title: "Done child" },
+      { id: "16", title: "Canceled child" },
+    ],
+    subtasks: [
+      {
+        id: "TSK-15",
+        title: "Done child",
+        status: "Completed",
+        statusValue: "done",
+      },
+      {
+        id: "TSK-16",
+        title: "Canceled child",
+        status: "Canceled",
+        statusValue: "canceled",
+      },
+    ],
+    links: [
+      {
+        id: "5",
+        title: "Migration notes",
+        url: "https://www.example.com/migration",
+        host: "example.com",
+        createdAt: "2026-03-31T09:00:00.000Z",
+        createdBy: {
+          id: "7",
+          name: "Taskewr Admin",
+          email: "admin@taskewr.com",
+          avatarUrl: null,
+        },
+      },
+    ],
+    attachments: [
+      {
+        id: "6",
+        fileName: "rollout.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 2048,
+        createdAt: "2026-03-31T09:30:00.000Z",
+        uploadedBy: {
+          id: "8",
+          name: "Taskewr User",
+          email: "user@taskewr.com",
+          avatarUrl: null,
+        },
+      },
+    ],
   });
 });
 

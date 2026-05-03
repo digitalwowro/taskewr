@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 export type TaskPropertyIconName =
   | "project"
   | "parent"
+  | "assignee"
+  | "createdBy"
   | "status"
   | "priority"
   | "startDate"
@@ -39,6 +41,27 @@ function TaskPropertyIcon({ name }: { name: TaskPropertyIconName }) {
         <path d="M5 14.5h7" />
         <path d="M12 11.5v3h3" />
         <path d="M3.5 4h3v3h-3z" />
+      </svg>
+    );
+  }
+
+  if (name === "assignee") {
+    return (
+      <svg {...commonProps}>
+        <circle cx="8" cy="7" r="2.75" />
+        <path d="M3.75 15.5a4.25 4.25 0 0 1 8.5 0" />
+        <path d="M14.25 8.5v4" />
+        <path d="M12.25 10.5h4" />
+      </svg>
+    );
+  }
+
+  if (name === "createdBy") {
+    return (
+      <svg {...commonProps}>
+        <circle cx="10" cy="7" r="3" />
+        <path d="M4.75 16a5.25 5.25 0 0 1 10.5 0" />
+        <path d="m13.75 12.25 1.5 1.5 2.25-2.5" />
       </svg>
     );
   }
@@ -149,7 +172,7 @@ export function TaskPropertyRow({
   children: ReactNode;
 }) {
   return (
-    <div className="grid min-h-8 grid-cols-[minmax(8.5rem,0.92fr)_minmax(0,1.08fr)] items-center gap-3 rounded-lg py-0.5">
+    <div className="grid min-h-8 grid-cols-[8.5rem_minmax(0,1fr)] items-center gap-1 rounded-lg py-0.5">
       <div className="flex min-w-0 items-center gap-2.5 text-[var(--ink-muted)]">
         <span className="flex h-5 w-5 shrink-0 items-center justify-center">
           <TaskPropertyIcon name={icon} />

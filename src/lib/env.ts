@@ -10,6 +10,8 @@ const DEFAULT_NOTIFICATION_WORKER_POLL_INTERVAL_MS = 60_000;
 const DEFAULT_NOTIFICATION_WORKER_BATCH_SIZE = 50;
 const DEFAULT_NOTIFICATION_WORKER_MAX_ATTEMPTS = 3;
 const DEFAULT_NOTIFICATION_WORKER_CLAIM_TIMEOUT_MS = 300_000;
+const DEFAULT_TASK_ATTACHMENT_STORAGE_DIR = ".taskewr/uploads/task-attachments";
+const DEFAULT_TASK_ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
 const BUILD_PHASES = new Set(["phase-production-build"]);
 const emptyStringAsUndefined = (value: unknown) => (value === "" ? undefined : value);
 const optionalBooleanSchema = z.preprocess((value) => {
@@ -49,6 +51,8 @@ const envSchema = z.object({
   NOTIFICATION_WORKER_BATCH_SIZE: optionalNumberSchema,
   NOTIFICATION_WORKER_MAX_ATTEMPTS: optionalNumberSchema,
   NOTIFICATION_WORKER_CLAIM_TIMEOUT_MS: optionalNumberSchema,
+  TASK_ATTACHMENT_STORAGE_DIR: z.preprocess(emptyStringAsUndefined, z.string().trim().min(1).optional()),
+  TASK_ATTACHMENT_MAX_BYTES: optionalNumberSchema,
 });
 
 function readEnv() {
@@ -162,5 +166,19 @@ export function getNotificationWorkerConfig(): NotificationWorkerConfig {
     claimTimeoutMs:
       env.NOTIFICATION_WORKER_CLAIM_TIMEOUT_MS ??
       DEFAULT_NOTIFICATION_WORKER_CLAIM_TIMEOUT_MS,
+  };
+}
+
+export type TaskAttachmentStorageConfig = {
+  storageDir: string;
+  maxBytes: number;
+};
+
+export function getTaskAttachmentStorageConfig(): TaskAttachmentStorageConfig {
+  const env = readEnv();
+
+  return {
+    storageDir: env.TASK_ATTACHMENT_STORAGE_DIR ?? DEFAULT_TASK_ATTACHMENT_STORAGE_DIR,
+    maxBytes: env.TASK_ATTACHMENT_MAX_BYTES ?? DEFAULT_TASK_ATTACHMENT_MAX_BYTES,
   };
 }

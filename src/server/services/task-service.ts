@@ -16,14 +16,20 @@ import {
 import { generateLabelColor, normalizeLabelNames } from "@/domain/tasks/labels";
 import {
   boardMoveSchema,
+  taskLinkMutationSchema,
   taskMutationSchema,
   type BoardMoveInput,
+  type TaskLinkMutationInput,
   type TaskMutationInput,
 } from "@/domain/tasks/schemas";
 import { getNextRepeatDueDate } from "@/domain/tasks/repeat-schedule";
 import type { RepeatSettingsInput } from "@/domain/tasks/repeat-schemas";
 import { AuthorizationError, NotFoundError, ValidationError } from "@/domain/common/errors";
 import { AppContextService } from "@/server/services/app-context-service";
+import {
+  TaskAttachmentStorage,
+  type TaskAttachmentFileInput,
+} from "@/server/services/task-attachment-storage";
 import { TaskNotificationService } from "@/server/services/task-notification-service";
 import { db } from "@/lib/db";
 
@@ -33,6 +39,7 @@ export class TaskService {
     private readonly repeatRulesRepository = new RepeatRulesRepository(db),
     private readonly contextService = new AppContextService(),
     private readonly notificationService = new TaskNotificationService(),
+    private readonly attachmentStorage = new TaskAttachmentStorage(),
   ) {}
 
   async getTask(id: number) {
@@ -94,6 +101,21 @@ export class TaskService {
       id: project.id,
       workspaceId: requireWorkspaceOwnership(project.workspaceId),
     };
+  }
+
+  private async assertValidAssignee(projectId: number, assigneeUserId: number | null) {
+    if (assigneeUserId === null) {
+      return;
+    }
+
+    const projectMember = await this.repository.findActiveProjectMemberUser(projectId, assigneeUserId);
+
+    if (!projectMember) {
+      throw new ValidationError(
+        "Assignee must be an active member of the selected project.",
+        "task_assignee_invalid",
+      );
+    }
   }
 
   async planBoardMove(input: {
@@ -167,6 +189,7 @@ export class TaskService {
     const context = await this.contextService.getAppContext();
 
     const targetProject = await this.assertCanUseProject(payload.projectId, context);
+    await this.assertValidAssignee(payload.projectId, payload.assigneeUserId);
 
     await this.validateParentAssignment({
       taskId: null,
@@ -182,6 +205,7 @@ export class TaskService {
       title: payload.title,
       description: payload.description || null,
       parentTaskId: payload.parentTaskId,
+      assigneeUserId: payload.assigneeUserId,
       status: payload.status,
       priority: payload.priority,
       startDate: payload.startDate ? new Date(payload.startDate) : null,
@@ -205,6 +229,7 @@ export class TaskService {
     const currentTask = await this.getTask(id);
 
     const targetProject = await this.assertCanUseProject(payload.projectId, context);
+    await this.assertValidAssignee(payload.projectId, payload.assigneeUserId);
 
     assertTaskProjectChangeAllowed({
       currentProjectId: currentTask.projectId,
@@ -239,6 +264,7 @@ export class TaskService {
       title: payload.title,
       description: payload.description || null,
       parentTaskId: payload.parentTaskId,
+      assigneeUserId: payload.assigneeUserId,
       status: payload.status,
       priority: payload.priority,
       startDate: payload.startDate ? new Date(payload.startDate) : null,
@@ -355,6 +381,90 @@ export class TaskService {
 
     await this.notificationService.syncTaskDueReminder(payload.taskId);
     return this.getTask(payload.taskId);
+  }
+
+  async createTaskLink(taskId: number, input: TaskLinkMutationInput) {
+    const payload = taskLinkMutationSchema.parse(input);
+    const context = await this.contextService.getAppContext();
+    await this.getTask(taskId);
+
+    return this.repository.createTaskLink({
+      taskId,
+      createdByUserId: context.actorUserId,
+      title: payload.title,
+      url: new URL(payload.url).href,
+    });
+  }
+
+  async deleteTaskLink(taskId: number, linkId: number) {
+    await this.getTask(taskId);
+    const link = await this.repository.findTaskLink(taskId, linkId);
+
+    if (!link) {
+      throw new NotFoundError("Task link not found.", "task_link_not_found");
+    }
+
+    return this.repository.deleteTaskLink(taskId, linkId);
+  }
+
+  getAttachmentMaxBytes() {
+    return this.attachmentStorage.maxBytes;
+  }
+
+  async createTaskAttachment(taskId: number, file: TaskAttachmentFileInput) {
+    const context = await this.contextService.getAppContext();
+    await this.getTask(taskId);
+
+    const stored = await this.attachmentStorage.store(taskId, file);
+
+    try {
+      return await this.repository.createTaskAttachment({
+        taskId,
+        uploadedByUserId: context.actorUserId,
+        originalFileName: stored.originalFileName,
+        storageKey: stored.storageKey,
+        mimeType: stored.mimeType,
+        sizeBytes: stored.sizeBytes,
+      });
+    } catch (error) {
+      await this.attachmentStorage.delete(stored.storageKey).catch((deleteError) => {
+        console.error("Failed to clean up task attachment after metadata write failure.", deleteError);
+      });
+      throw error;
+    }
+  }
+
+  async getTaskAttachmentDownload(taskId: number, attachmentId: number) {
+    await this.getTask(taskId);
+    const attachment = await this.repository.findTaskAttachment(taskId, attachmentId);
+
+    if (!attachment) {
+      throw new NotFoundError("Task attachment not found.", "task_attachment_not_found");
+    }
+
+    const bytes = await this.attachmentStorage.read(attachment.storageKey);
+
+    return {
+      attachment,
+      bytes,
+    };
+  }
+
+  async deleteTaskAttachment(taskId: number, attachmentId: number) {
+    await this.getTask(taskId);
+    const attachment = await this.repository.findTaskAttachment(taskId, attachmentId);
+
+    if (!attachment) {
+      throw new NotFoundError("Task attachment not found.", "task_attachment_not_found");
+    }
+
+    const deleted = await this.repository.deleteTaskAttachment(taskId, attachmentId);
+
+    await this.attachmentStorage.delete(attachment.storageKey).catch((error) => {
+      console.error("Failed to delete task attachment file after metadata deletion.", error);
+    });
+
+    return deleted;
   }
 
   private async syncLabels(taskId: number, labelNames: string[]) {

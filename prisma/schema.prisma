@@ -33,6 +33,8 @@ model User {
   labels                        Label[]                        @relation("OwnedLabels")
   createdTasks                  Task[]                         @relation("CreatedTasks")
   updatedTasks                  Task[]                         @relation("UpdatedTasks")
+  createdTaskLinks              TaskLink[]                     @relation("TaskLinkCreators")
+  uploadedTaskAttachments       TaskAttachment[]               @relation("TaskAttachmentUploaders")
   auditLogs                     AuditLog[]                     @relation("AuditActors")
   passwordResetTokens           PasswordResetToken[]
   taskNotificationSubscriptions TaskNotificationSubscription[]
@@ -185,6 +187,8 @@ model Task {
   repeatRule                TaskRepeatRule?                @relation("RepeatRuleTasks", fields: [repeatRuleId], references: [id], onDelete: SetNull)
   sourceRepeatRule          TaskRepeatRule?                @relation("RepeatRuleSourceTask")
   taskLabels                TaskLabel[]
+  links                     TaskLink[]
+  attachments               TaskAttachment[]
   notificationSubscriptions TaskNotificationSubscription[]
   notificationDeliveries    TaskNotificationDelivery[]
 
@@ -201,6 +205,40 @@ model Task {
   @@index([dueDate])
   @@index([projectId, status, sortOrder])
   @@map("tasks")
+}
+
+model TaskLink {
+  id              Int      @id @default(autoincrement())
+  taskId          Int      @map("task_id")
+  createdByUserId Int?     @map("created_by_user_id")
+  title           String   @db.VarChar(200)
+  url             String   @db.VarChar(2048)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdBy       User?    @relation("TaskLinkCreators", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([taskId])
+  @@index([createdByUserId])
+  @@map("task_links")
+}
+
+model TaskAttachment {
+  id               Int      @id @default(autoincrement())
+  taskId           Int      @map("task_id")
+  uploadedByUserId Int?     @map("uploaded_by_user_id")
+  originalFileName String   @map("original_file_name") @db.VarChar(255)
+  storageKey       String   @unique @map("storage_key") @db.VarChar(160)
+  mimeType         String?  @map("mime_type") @db.VarChar(120)
+  sizeBytes        Int      @map("size_bytes")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  task             Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy       User?    @relation("TaskAttachmentUploaders", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([taskId])
+  @@index([uploadedByUserId])
+  @@map("task_attachments")
 }
 
 model TaskNotificationSubscription {

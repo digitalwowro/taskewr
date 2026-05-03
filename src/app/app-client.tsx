@@ -108,6 +108,7 @@ export function TaskewrApp({
   const [draggingProjectTaskId, setDraggingProjectTaskId] = useState<string | null>(null);
   const [subscriptionPendingTaskId, setSubscriptionPendingTaskId] = useState<string | null>(null);
   const [newTaskProjectId, setNewTaskProjectId] = useState<string | null>(null);
+  const [newTaskParentTaskId, setNewTaskParentTaskId] = useState<string | null>(null);
   const [taskProjectRequiredOpen, setTaskProjectRequiredOpen] = useState(false);
   const {
     projectSortMenuOpen,
@@ -453,6 +454,12 @@ export function TaskewrApp({
     redirectToLogin,
     refreshApp: () => router.refresh(),
   });
+  useEffect(() => {
+    if (!taskEditorTask) {
+      setNewTaskProjectId(null);
+      setNewTaskParentTaskId(null);
+    }
+  }, [taskEditorTask]);
   const toggleTaskSubscription = useCallback(
     async (
       targetTask: Pick<TaskListItem, "id" | "isSubscribedToNotifications">,
@@ -514,7 +521,13 @@ export function TaskewrApp({
     }
   };
 
-  const openNewTask = (projectId?: string) => {
+  const openTaskEditor = (taskId: string) => {
+    setNewTaskProjectId(null);
+    setNewTaskParentTaskId(null);
+    setEditingTaskId(taskId);
+  };
+
+  const openNewTask = (projectId?: string, parentTaskId?: string) => {
     const targetProjectId = projectId ?? defaultTaskProjectId;
 
     if (!targetProjectId || activeProjects.length === 0) {
@@ -523,12 +536,14 @@ export function TaskewrApp({
     }
 
     setNewTaskProjectId(targetProjectId);
+    setNewTaskParentTaskId(parentTaskId ?? null);
     setEditingTaskId(NEW_TASK_ID);
   };
 
   const closeInlineTaskEditor = () => {
     setEditingTaskId(null);
     setNewTaskProjectId(null);
+    setNewTaskParentTaskId(null);
   };
 
   const openPrimaryCreateAction = () => {
@@ -707,7 +722,7 @@ export function TaskewrApp({
                       filteredOverdueItems={filteredOverdueItems}
                       filteredTodayItems={filteredTodayItems}
                       filteredProjects={filteredProjects}
-                      onEditTask={setEditingTaskId}
+                      onEditTask={openTaskEditor}
                       onCompleteTask={completeTask}
                       completingTaskId={completingTaskId}
                       subscriptionPendingTaskId={subscriptionPendingTaskId}
@@ -979,10 +994,17 @@ export function TaskewrApp({
         projectOptions={projectOptions}
         availableLabels={labels}
         parentTaskOptionsByProject={parentTaskOptionsByProject}
+        draftDefaults={{
+          projectId: effectiveDefaultTaskProjectId,
+          parentTaskId: newTaskParentTaskId ?? undefined,
+        }}
         taskMutationPending={taskMutationPending}
         taskMutationError={taskMutationError}
         onCloseTaskRoute={closeTaskRoute}
         onCloseInlineTaskEditor={closeInlineTaskEditor}
+        onOpenTask={openTaskEditor}
+        onCreateSubtask={({ projectId, parentTaskId }) => openNewTask(projectId, parentTaskId)}
+        onRefreshTaskData={() => router.refresh()}
         onSaveTask={handleTaskSave}
         onToggleTaskSubscription={toggleTaskSubscription}
       />

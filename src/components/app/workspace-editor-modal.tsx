@@ -117,8 +117,8 @@ export function WorkspaceEditorModal({
         </div>
 
         <div className="space-y-4 px-5 py-5">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
               Name
             </label>
             <input
@@ -129,8 +129,8 @@ export function WorkspaceEditorModal({
               className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none disabled:cursor-not-allowed disabled:bg-[var(--surface-subtle)] disabled:text-[var(--ink-subtle)]"
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
               Description
             </label>
             <textarea
@@ -142,8 +142,8 @@ export function WorkspaceEditorModal({
             />
           </div>
           {showOwnerSelector ? (
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 Workspace Owner
               </label>
               <div>

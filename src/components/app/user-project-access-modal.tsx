@@ -209,8 +209,8 @@ export function UserProjectAccessModal({
 
                 {addAccessMode === "workspace" ? (
                   <div className="grid gap-3 lg:grid-cols-[1fr_14rem_auto] lg:items-end">
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Workspace
                       </span>
                       <SearchableSelect
@@ -232,8 +232,8 @@ export function UserProjectAccessModal({
                       />
                     </label>
 
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Workspace Role
                       </span>
                       <SearchableSelect
@@ -261,8 +261,8 @@ export function UserProjectAccessModal({
                   </div>
                 ) : (
                   <div className="grid gap-3 lg:grid-cols-[1fr_14rem_auto] lg:items-end">
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Project
                       </span>
                       <SearchableSelect
@@ -287,8 +287,8 @@ export function UserProjectAccessModal({
                       />
                     </label>
 
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Project Role
                       </span>
                       <SearchableSelect

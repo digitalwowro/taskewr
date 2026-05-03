@@ -15,6 +15,7 @@ export type TaskMutationInput = {
   title: string;
   description: string;
   parentTaskId: number | null;
+  assigneeUserId: number | null;
   status: TaskStatus;
   priority: TaskPriority;
   startDate: string | null;
@@ -119,7 +120,7 @@ export function useTaskEditorState({
 
       refreshApp();
 
-      if (initialSection === "dashboard" || targetTask.id === NEW_TASK_ID) {
+      if (editingTaskId !== null || initialSection === "dashboard" || targetTask.id === NEW_TASK_ID) {
         setEditingTaskId(null);
       } else {
         closeTaskRoute();

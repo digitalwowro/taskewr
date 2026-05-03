@@ -82,6 +82,13 @@ DOTENV_CONFIG_PATH=.env.dev npm run build:prod
 
 Task due-time email reminders are sent by the notification worker. `DOTENV_CONFIG_PATH=.env.dev npm run dev:all` starts it alongside the app. In local development, Mailpit-delivered emails are visible at `http://localhost:8025`.
 
+Task attachments are stored on local disk. Development defaults write them under `.taskewr/uploads/task-attachments`, which is gitignored. You can override the storage directory and upload limit with:
+
+```text
+TASK_ATTACHMENT_STORAGE_DIR
+TASK_ATTACHMENT_MAX_BYTES
+```
+
 If local data or login sessions get tangled while developing, reset the local database:
 
 ```bash

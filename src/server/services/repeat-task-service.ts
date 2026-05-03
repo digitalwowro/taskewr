@@ -169,6 +169,7 @@ export class RepeatTaskService {
       projectId: rule.projectId,
       createdByUserId: rule.sourceTask?.createdByUserId ?? undefined,
       updatedByUserId: rule.sourceTask?.updatedByUserId ?? rule.sourceTask?.createdByUserId ?? undefined,
+      assigneeUserId: rule.sourceTask?.assigneeUserId ?? undefined,
       title: rule.sourceTask?.title ?? "Repeated task",
       description: rule.sourceTask?.description ?? null,
       parentTaskId: null,

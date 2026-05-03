@@ -189,8 +189,8 @@ export function ProjectMembersModal({
                   </div>
 
                   <div className="grid gap-4 lg:grid-cols-[1fr_16rem_auto] lg:items-end">
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         User
                       </span>
                       <SearchableSelect
@@ -213,8 +213,8 @@ export function ProjectMembersModal({
                       />
                     </label>
 
-                    <label className="space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                         Project Role
                       </span>
                       <SearchableSelect

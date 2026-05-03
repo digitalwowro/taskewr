@@ -1,5 +1,6 @@
 import type { AppProject } from "@/app/app-data";
 import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from "@/domain/tasks/constants";
+import type { TaskStatus } from "@/domain/tasks/constants";
 import type { TaskDetails, TaskListItem } from "@/domain/tasks/types";
 import type { Prisma } from "@/generated/prisma/client";
 import { formatDashboardDueLabel } from "@/lib/time/dashboard-dates";
@@ -12,10 +13,50 @@ export type AppTaskRecord = Prisma.TaskGetPayload<{
       };
     };
     parentTask: true;
+    creator: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+        avatarUrl: true;
+      };
+    };
+    assignee: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+        avatarUrl: true;
+      };
+    };
     repeatRule: true;
     taskLabels: {
       include: {
         label: true;
+      };
+    };
+    links: {
+      include: {
+        createdBy: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+            avatarUrl: true;
+          };
+        };
+      };
+    };
+    attachments: {
+      include: {
+        uploadedBy: {
+          select: {
+            id: true;
+            name: true;
+            email: true;
+            avatarUrl: true;
+          };
+        };
       };
     };
     notificationSubscriptions: {
@@ -34,6 +75,15 @@ export type AppProjectRecord = {
   workspace: {
     name: string;
   } | null;
+  members?: Array<{
+    user: {
+      id: number;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+      deactivatedAt: Date | null;
+    };
+  }>;
   archivedAt: Date | null;
   updatedAt: Date;
 	  _count: {
@@ -123,12 +173,43 @@ export function toTaskListItem(
 
 export function toTaskDetails(
   task: AppTaskRecord,
-  projects: { id: number; name: string; archivedAt: Date | null; workspace?: { name: string } | null }[],
+  projects: Array<{
+    id: number;
+    name: string;
+    archivedAt: Date | null;
+    workspace?: { name: string } | null;
+    members?: AppProjectRecord["members"];
+  }>,
   siblingTasks: AppTaskRecord[],
 ): TaskDetails {
+  const activeAssigneeOptionsByProjectId = Object.fromEntries(
+    projects.map((project) => [
+      String(project.id),
+      (project.members ?? [])
+        .filter((member) => member.user.deactivatedAt === null)
+        .map((member) => ({
+          id: String(member.user.id),
+          name: member.user.name,
+          email: member.user.email,
+          avatarUrl: member.user.avatarUrl,
+        })),
+    ]),
+  );
+
   return {
     projectId: String(task.projectId),
     description: task.description ?? "",
+    createdBy: task.creator
+      ? {
+          id: String(task.creator.id),
+          name: task.creator.name,
+          email: task.creator.email,
+          avatarUrl: task.creator.avatarUrl,
+        }
+      : undefined,
+    assigneeId: task.assigneeUserId ? String(task.assigneeUserId) : "",
+    assigneeOptions: activeAssigneeOptionsByProjectId[String(task.projectId)] ?? [],
+    assigneeOptionsByProjectId: activeAssigneeOptionsByProjectId,
     parentTaskId: task.parentTaskId ? String(task.parentTaskId) : "",
     parentTask: task.parentTask?.title ?? "",
     labels: task.taskLabels.map((item) => item.label.name),
@@ -168,7 +249,53 @@ export function toTaskDetails(
     parentTaskOptions: siblingTasks
       .filter((siblingTask) => siblingTask.id !== task.id)
       .map((siblingTask) => ({ id: String(siblingTask.id), title: siblingTask.title })),
+    subtasks: siblingTasks
+      .filter((siblingTask) => siblingTask.parentTaskId === task.id)
+      .map((subtask) => ({
+        id: `TSK-${subtask.id}`,
+        title: subtask.title,
+        status: TASK_STATUS_LABELS[subtask.status as keyof typeof TASK_STATUS_LABELS] ?? subtask.status,
+        statusValue: subtask.status as TaskStatus,
+      })),
+    links: (task.links ?? []).map((link) => ({
+      id: String(link.id),
+      title: link.title,
+      url: link.url,
+      host: formatLinkHost(link.url),
+      createdAt: link.createdAt.toISOString(),
+      createdBy: link.createdBy
+        ? {
+            id: String(link.createdBy.id),
+            name: link.createdBy.name,
+            email: link.createdBy.email,
+            avatarUrl: link.createdBy.avatarUrl,
+          }
+        : undefined,
+    })),
+    attachments: (task.attachments ?? []).map((attachment) => ({
+      id: String(attachment.id),
+      fileName: attachment.originalFileName,
+      mimeType: attachment.mimeType,
+      sizeBytes: attachment.sizeBytes,
+      createdAt: attachment.createdAt.toISOString(),
+      uploadedBy: attachment.uploadedBy
+        ? {
+            id: String(attachment.uploadedBy.id),
+            name: attachment.uploadedBy.name,
+            email: attachment.uploadedBy.email,
+            avatarUrl: attachment.uploadedBy.avatarUrl,
+          }
+        : undefined,
+    })),
   };
+}
+
+function formatLinkHost(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
 }
 
 export function toActiveProjectCard(project: AppProjectRecord, referenceDate = new Date()): AppProject {

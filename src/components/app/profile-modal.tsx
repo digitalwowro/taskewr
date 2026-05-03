@@ -179,8 +179,8 @@ export function ProfileModal({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 Display name
               </label>
               <input
@@ -189,8 +189,8 @@ export function ProfileModal({
                 className="h-11 w-full rounded-lg border border-[var(--line-strong)] bg-white px-4 text-sm text-[var(--ink-strong)] outline-none"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                 Email
               </label>
               <input

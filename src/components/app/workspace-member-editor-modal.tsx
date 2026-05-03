@@ -148,8 +148,8 @@ export function WorkspaceMemberEditorModal({
                       Change the workspace role from here instead of directly in the table.
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
                       Workspace Role
                     </label>
                     <SearchableSelect

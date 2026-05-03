@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { AuthorizationError, ValidationError } from "@/domain/common/errors";
+import { AuthorizationError, NotFoundError, ValidationError } from "@/domain/common/errors";
 import { TaskService } from "@/server/services/task-service";
 
 const appContext = {
@@ -201,6 +201,155 @@ test("createTask auto-subscribes creator and syncs due reminder delivery", async
   } as never);
 
   assert.deepEqual(notificationCalls, ["subscribe:44:7", "sync:44"]);
+});
+
+test("createTask stores no assignee by default", async () => {
+  const createCalls: Array<Record<string, unknown>> = [];
+  const service = new TaskService({
+    findProjectById: async () => ({
+      id: 2,
+      workspaceId: 1,
+      archivedAt: null,
+    }),
+    listTasksForHierarchy: async () => [],
+    create: async (data: Record<string, unknown>) => {
+      createCalls.push(data);
+      return buildTask({ id: 44, projectId: 2 });
+    },
+    replaceTaskLabels: async () => {},
+    updateById: async () => buildTask({ id: 44, projectId: 2 }),
+    findById: async () => buildTask({ id: 44, projectId: 2 }),
+  } as never, {
+    deactivateForSourceTask: async () => {},
+  } as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never, {
+    subscribeTaskCreator: async () => {},
+    syncTaskDueReminder: async () => {},
+  } as never);
+
+  await service.createTask({
+    ...validTaskInput,
+    projectId: 2,
+  } as never);
+
+  assert.equal(createCalls[0].assigneeUserId, null);
+});
+
+test("createTask accepts assignees who are active project members", async () => {
+  const createCalls: Array<Record<string, unknown>> = [];
+  const service = new TaskService({
+    findProjectById: async () => ({
+      id: 2,
+      workspaceId: 1,
+      archivedAt: null,
+    }),
+    findActiveProjectMemberUser: async (projectId: number, userId: number) =>
+      projectId === 2 && userId === 9 ? { userId: 9 } : null,
+    listTasksForHierarchy: async () => [],
+    create: async (data: Record<string, unknown>) => {
+      createCalls.push(data);
+      return buildTask({ id: 44, projectId: 2, assigneeUserId: 9 });
+    },
+    replaceTaskLabels: async () => {},
+    updateById: async () => buildTask({ id: 44, projectId: 2, assigneeUserId: 9 }),
+    findById: async () => buildTask({ id: 44, projectId: 2, assigneeUserId: 9 }),
+  } as never, {
+    deactivateForSourceTask: async () => {},
+  } as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never, {
+    subscribeTaskCreator: async () => {},
+    syncTaskDueReminder: async () => {},
+  } as never);
+
+  await service.createTask({
+    ...validTaskInput,
+    projectId: 2,
+    assigneeUserId: 9,
+  } as never);
+
+  assert.equal(createCalls[0].assigneeUserId, 9);
+});
+
+test("createTask rejects assignees who are not active project members", async () => {
+  const service = new TaskService({
+    findProjectById: async () => ({
+      id: 2,
+      workspaceId: 1,
+      archivedAt: null,
+    }),
+    findActiveProjectMemberUser: async () => null,
+  } as never, {} as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never, {
+    subscribeTaskCreator: async () => {},
+    syncTaskDueReminder: async () => {},
+  } as never);
+
+  await assert.rejects(
+    () =>
+      service.createTask({
+        ...validTaskInput,
+        projectId: 2,
+        assigneeUserId: 99,
+      } as never),
+    (error) => error instanceof ValidationError && error.code === "task_assignee_invalid",
+  );
+});
+
+test("updateTask can change and clear assignees", async () => {
+  const updateCalls: Array<Record<string, unknown>> = [];
+  const service = new TaskService({
+    findProjectById: async () => ({
+      id: 2,
+      workspaceId: 1,
+      archivedAt: null,
+    }),
+    findActiveProjectMemberUser: async (_projectId: number, userId: number) =>
+      userId === 9 ? { userId: 9 } : null,
+    findById: async () => buildTask({ id: 44, projectId: 2 }),
+    listTasksForHierarchy: async () => [],
+    updateById: async (_id: number, data: Record<string, unknown>) => {
+      updateCalls.push(data);
+      return buildTask({ id: 44, projectId: 2 });
+    },
+    replaceTaskLabels: async () => {},
+  } as never, {
+    deactivateForSourceTask: async () => {},
+  } as never, {
+    getAppContext: async () => ({
+      ...appContext,
+      accessibleProjectIds: [1, 2],
+    }),
+  } as never, {
+    subscribeTaskCreator: async () => {},
+    syncTaskDueReminder: async () => {},
+  } as never);
+
+  await service.updateTask(44, {
+    ...validTaskInput,
+    projectId: 2,
+    assigneeUserId: 9,
+  } as never);
+  await service.updateTask(44, {
+    ...validTaskInput,
+    projectId: 2,
+    assigneeUserId: null,
+  } as never);
+
+  const assigneeUpdates = updateCalls.filter((call) => "assigneeUserId" in call);
+  assert.equal(assigneeUpdates[0].assigneeUserId, 9);
+  assert.equal(assigneeUpdates[1].assigneeUserId, null);
 });
 
 test("updateTask rejects reminder changes from unsubscribed editors", async () => {
@@ -450,4 +599,115 @@ test("reopenTask leaves active tasks unchanged", async () => {
 
   assert.equal(task.status, "in_progress");
   assert.equal(updateCount, 0);
+});
+
+test("createTaskLink persists links for accessible tasks", async () => {
+  const createCalls: Array<Record<string, unknown>> = [];
+  const service = buildTaskService({
+    findById: async () => buildTask(),
+    createTaskLink: async (data: Record<string, unknown>) => {
+      createCalls.push(data);
+      return data;
+    },
+  });
+
+  await service.createTaskLink(10, {
+    title: "Spec",
+    url: "https://example.com/spec",
+  });
+
+  assert.deepEqual(createCalls[0], {
+    taskId: 10,
+    createdByUserId: 7,
+    title: "Spec",
+    url: "https://example.com/spec",
+  });
+});
+
+test("createTaskLink requires task access", async () => {
+  const service = buildTaskService({
+    findById: async () => buildTask({
+      projectId: 99,
+      project: {
+        workspaceId: 1,
+      },
+    }),
+  });
+
+  await assert.rejects(
+    () => service.createTaskLink(10, {
+      title: "Spec",
+      url: "https://example.com/spec",
+    }),
+    (error) => error instanceof AuthorizationError && error.code === "project_access_denied",
+  );
+});
+
+test("deleteTaskLink rejects cross-task links", async () => {
+  const service = buildTaskService({
+    findById: async () => buildTask(),
+    findTaskLink: async () => null,
+  });
+
+  await assert.rejects(
+    () => service.deleteTaskLink(10, 88),
+    (error) => error instanceof NotFoundError && error.code === "task_link_not_found",
+  );
+});
+
+test("createTaskAttachment stores file metadata for accessible tasks", async () => {
+  const createCalls: Array<Record<string, unknown>> = [];
+  const storage = {
+    maxBytes: 100,
+    store: async () => ({
+      originalFileName: "notes.txt",
+      storageKey: "task-10/key.txt",
+      mimeType: "text/plain",
+      sizeBytes: 4,
+    }),
+    delete: async () => {},
+    read: async () => Buffer.from("test"),
+  };
+  const service = new TaskService({
+    findById: async () => buildTask(),
+    createTaskAttachment: async (data: Record<string, unknown>) => {
+      createCalls.push(data);
+      return data;
+    },
+  } as never, {} as never, contextService as never, {
+    subscribeTaskCreator: async () => {},
+    syncTaskDueReminder: async () => {},
+  } as never, storage as never);
+
+  await service.createTaskAttachment(10, {
+    name: "notes.txt",
+    type: "text/plain",
+    size: 4,
+    arrayBuffer: async () => new TextEncoder().encode("test").buffer,
+  });
+
+  assert.deepEqual(createCalls[0], {
+    taskId: 10,
+    uploadedByUserId: 7,
+    originalFileName: "notes.txt",
+    storageKey: "task-10/key.txt",
+    mimeType: "text/plain",
+    sizeBytes: 4,
+  });
+});
+
+test("getTaskAttachmentDownload rejects inaccessible attachment tasks", async () => {
+  const service = buildTaskService({
+    findById: async () => buildTask({
+      projectId: 99,
+      project: {
+        workspaceId: 1,
+      },
+    }),
+  });
+
+  await assert.rejects(
+    () => service.getTaskAttachmentDownload(10, 4),
+    (error) => error instanceof AuthorizationError && error.code === "project_access_denied",
+  );
 });

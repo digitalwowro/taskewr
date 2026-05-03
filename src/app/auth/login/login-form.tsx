@@ -70,8 +70,8 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
         await handleSubmit(formData);
       }}
     >
-      <div className="space-y-2">
-        <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+      <div>
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
           Email
         </label>
         <input
@@ -84,8 +84,8 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
         />
       </div>
 
-      <div className="space-y-2">
-        <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
+      <div>
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-subtle)]">
           Password
         </label>
         <input
